@@ -148,8 +148,9 @@ void redraw_lhist()
 	}
 }
 
-int scr_lhist(struct wavemon_conf *wmconf) {
-	int		key = 0;
+int scr_lhist(struct wavemon_conf *wmconf)
+{
+	int key = 0;
 
 	conf = wmconf;
 
@@ -165,12 +166,21 @@ int scr_lhist(struct wavemon_conf *wmconf) {
 	nodelay(w_menu, FALSE); keypad(w_menu, TRUE);
 	
 	iw_stat_redraw = redraw_lhist;
-	do key = wgetch(w_menu); while (key < 265 || key > 275);
+	while (key < KEY_F(1) || key > KEY_F(10)) {
+		while ((key = wgetch(w_menu)) <= 0)
+			usleep(5000);
+
+		/* Keyboard shortcuts */
+		if (key == 'q')
+			key = KEY_F(10);
+		else if (key == 'i')
+			key = KEY_F(1);
+	}
 	iw_stat_redraw = NULL;
 	
 	werase(w_lhist); wrefresh(w_lhist); delwin(w_lhist);
 	werase(w_key); wrefresh(w_key); delwin(w_key);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
 	
-	return key - 265;
+	return key - KEY_F(1);
 }

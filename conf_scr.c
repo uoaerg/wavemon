@@ -237,7 +237,8 @@ int scr_conf(struct wavemon_conf *wmconf) {
 	wrefresh(w_menu);
 	
 	active_line = m_pref(w_confpad, active_item);
-	do {
+
+	while (key < KEY_F(1) || key > KEY_F(10)) {
 		active_line = m_pref(w_confpad, active_item);
 		
 		if (active_line - list_ofs > subw) {
@@ -249,26 +250,38 @@ int scr_conf(struct wavemon_conf *wmconf) {
 		wrefresh(w_menu);
 		key = wgetch(w_menu);
 		switch (key) {
-			case KEY_DOWN:	active_item = next_item(active_item);
-							break;
-			case KEY_UP:	active_item = prev_item(active_item);
-							break;
-			case KEY_LEFT:	change_item(active_item, -1, 0);
-							break;
-			case KEY_RIGHT:	change_item(active_item, 1, 0);
-							break;
-			case 13:		item = ll_get(conf_items, active_item);
-							if (item->type == t_func) {
-								flash();
-								func = item->v;
-								func();
-							}
+			case KEY_DOWN:
+				active_item = next_item(active_item);
+				break;
+			case KEY_UP:
+				active_item = prev_item(active_item);
+				break;
+			case KEY_LEFT:
+				change_item(active_item, -1, 0);
+				break;
+			case KEY_RIGHT:
+				change_item(active_item, 1, 0);
+				break;
+			case '\r':
+				item = ll_get(conf_items, active_item);
+				if (item->type == t_func) {
+						flash();
+						func = item->v;
+						func();
+				}
+				break;
+			/* Keyboard shortcuts */
+			case 'q':
+				key = KEY_F(10);
+				break;
+			case 'i':
+				key = KEY_F(1);
 		}
-	} while (key < 265 || key > 275);
+	}
 	
 	werase(w_conf); wrefresh(w_conf); delwin(w_conf);
 	delwin(w_confpad);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
 
-	return key - 265;
+	return key - KEY_F(1);
 }

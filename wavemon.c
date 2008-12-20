@@ -198,11 +198,11 @@ int main(int argc, char *argv[]) {
 
 	switch (conf.startup_scr) {
 		case 0:	current_scr = scr_info;
-				break;
+			break;
 		case 1:	current_scr = scr_lhist;
-				break;
+			break;
 		case 2:	current_scr = scr_aplst;
-				break;
+			break;
 	}
 
 	do {
@@ -226,5 +226,5 @@ int main(int argc, char *argv[]) {
 	endwin();
 	dealloc_on_exit();
 	
-	return 1;
+	return 0;
 }

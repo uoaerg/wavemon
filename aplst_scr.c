@@ -83,8 +83,8 @@ void display_aplist(char *ifname, WINDOW *w_aplst)
 }
 
 int scr_aplst(struct wavemon_conf *wmconf) {
-	WINDOW	*w_aplst, *w_menu;
-	struct timer t1;
+	WINDOW		*w_aplst, *w_menu;
+	struct timer	t1;
 	int		key = 0;
 
 	conf = wmconf;
@@ -99,20 +99,24 @@ int scr_aplst(struct wavemon_conf *wmconf) {
 	wrefresh(w_aplst);
 	wrefresh(w_menu);
 	
-	do {
-		do {
-			display_aplist(conf->ifname, w_aplst);
-			wrefresh(w_aplst);
-			wmove(w_menu, 1, 0);
-			wrefresh(w_menu);
-			start_timer(&t1, 50000);
-			while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0) usleep(5000);
-		} while (key <= 0);
-		while (!end_timer(&t1));
-	} while (key < 265 || key > 275);
+	while (key < KEY_F(1) || key > KEY_F(10)) {
+		display_aplist(conf->ifname, w_aplst);
+		wrefresh(w_aplst);
+		wmove(w_menu, 1, 0);
+		wrefresh(w_menu);
+		start_timer(&t1, 50000);
+		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
+			usleep(5000);
+
+		/* Keyboard shortcuts */
+		if (key == 'q')
+			key = KEY_F(10);
+		else if (key == 'i')
+			key = KEY_F(1);
+	}
 	
 	werase(w_aplst); wrefresh(w_aplst); delwin(w_aplst);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
 	
-	return key - 265;
+	return key - KEY_F(1);
 }

@@ -346,8 +346,8 @@ void display_netinfo(char *ifname, WINDOW *w_net)
 }
 
 int scr_info(struct wavemon_conf *wmconf) {
-	struct timer t1;
-	int		key = 0;			/* burn, you devilish gnu compiler */
+	struct timer	t1;
+	int		key = 0;
 	
 	conf = wmconf;
 
@@ -372,15 +372,22 @@ int scr_info(struct wavemon_conf *wmconf) {
 
 	iw_getinf_range(conf->ifname, &range);
 
-	do {
+	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_info(conf->ifname, w_if, w_info);
 		display_netinfo(conf->ifname, w_net);
 		wrefresh(w_if);
 		wrefresh(w_info);
 		wrefresh(w_net);
 		start_timer(&t1, conf->info_iv * 1000000);
-		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0) sleep(1);
-	} while (key < 265 || key > 275);
+		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
+			sleep(1);
+
+		/* Keyboard shortcuts */
+		if (key == 'q')
+			key = KEY_F(10);
+		else if (key == 'i')
+			key = KEY_F(1);
+	}
 
 	iw_stat_redraw = NULL;
 	
@@ -391,5 +398,5 @@ int scr_info(struct wavemon_conf *wmconf) {
 	werase(w_net); wrefresh(w_net); delwin(w_net);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
 	
-	return key - 265;
+	return key - KEY_F(1);
 }

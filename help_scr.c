@@ -31,7 +31,7 @@ struct wavemon_conf *conf;
 
 int scr_help(struct wavemon_conf *wmconf) {
 	WINDOW	*w_help, *w_menu;
-	int		key = 0;
+	int	key = 0;
 
 	conf = wmconf;
 
@@ -47,15 +47,19 @@ int scr_help(struct wavemon_conf *wmconf) {
 	wrefresh(w_help);
 	wrefresh(w_menu);
 	
-	do {
-		do {
-			key = wgetch(w_menu); 
+	while (key < KEY_F(1) || key > KEY_F(10)) {
+		while ((key = wgetch(w_menu)) <= 0)
 			usleep(5000);
-		} while (key <= 0);
-	} while (key < 265 || key > 275);
+
+		/* Keyboard shortcuts */
+		if (key == 'q')
+			key = KEY_F(10);
+		else if (key == 'i')
+			key = KEY_F(1);
+	}
 	
 	werase(w_help); wrefresh(w_help); delwin(w_help);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
 	
-	return key - 265;
+	return key - KEY_F(1);
 }

@@ -82,7 +82,7 @@ void draw_lines(WINDOW *w_about) {
 
 int scr_about(struct wavemon_conf *wmconf) {
 	WINDOW	*w_about, *w_menu;
-	int		key = 0;
+	int	key = 0;
 	
 	conf = wmconf;
 
@@ -94,7 +94,7 @@ int scr_about(struct wavemon_conf *wmconf) {
 
 	init_scramble();
 	
-	do {
+	while (key < KEY_F(1) || key > KEY_F(10)) {
 		do {
 			draw_lines(w_about);
 			wrefresh(w_about);
@@ -103,12 +103,18 @@ int scr_about(struct wavemon_conf *wmconf) {
 			key = wgetch(w_menu);
 			usleep(5000); 
 		} while (key <= 0);
-	} while (key < 265 || key > 275);
+
+		/* Keyboard shortcuts */
+		if (key == 'q')
+			key = KEY_F(10);
+		else if (key == 'i')
+			key = KEY_F(1);
+	}
 	
 	free_scramble();
 	
 	werase(w_about); wrefresh(w_about); delwin(w_about);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
 	
-	return key - 265;
+	return key - KEY_F(1);
 }
