@@ -31,16 +31,16 @@
 
 struct wavemon_conf *conf;
 
-int 	first_item;
-int		list_ofs = 0;
-int		wconfx, wconfy;
+static int	first_item;
+static int	list_ofs = 0;
+static int	wconfx, wconfy;
 
 void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
 	char	s[0x40];
 	
-	int		x1 = 0,
-			x2 = 40;
+	int	x1 = 0,
+		x2 = 40;
 
 	wattrset(w, COLOR_PAIR(CP_PREF_NORMAL));
 
@@ -79,14 +79,16 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 				wattron(w, A_REVERSE);
 				waddstr_b(w, s);
 				wattroff(w, A_REVERSE);
-			} else waddstr_b(w, s);
+			} else
+				waddstr_b(w, s);
 		} else {
 			wmove(w, y, x2 - strlen(s) - strlen(item->unit) - 1);
 			if (hilight) {
 				wattron(w, A_REVERSE);
 				waddstr_b(w, s);
 				wattroff(w, A_REVERSE);
-			} else waddstr_b(w, s);
+			} else
+				waddstr_b(w, s);
 			mvwaddstr(w, y, x2 - strlen(item->unit), item->unit);
 		}
 	} else if (item->type == t_sep && item->name) {
@@ -123,12 +125,16 @@ void change_item(int inum, char sign, char accel)
 					*(long int *)item->v = item->min;
 			}
 			break;
-		case t_switch:	*(char *)item->v = !*(char *)item->v;
-						break;
-		case t_list:	*(long int *)item->v += sign;
-						if (*(long int *)item->v >= ll_size(item->list)) *(long int *)item->v = 0;
-							else if (*(long int *)item->v < 0) *(long int *)item->v = ll_size(item->list) - 1;
-						break;
+		case t_switch:
+			*(char *)item->v = !*(char *)item->v;
+			break;
+		case t_list:
+			*(long int *)item->v += sign;
+			if (*(long int *)item->v >= ll_size(item->list))
+				*(long int *)item->v = 0;
+			else if (*(long int *)item->v < 0)
+				*(long int *)item->v = ll_size(item->list) - 1;
+			break;
 		case t_listval:
 			tmp = ll_scan(item->list, "s", (char *)item->v);
 			if (tmp == -1) {
@@ -154,13 +160,14 @@ void change_item(int inum, char sign, char accel)
 
 int next_item(int inum)
 {
-	int		rv = inum;
+	int	rv = inum;
 	struct conf_item *item = ll_get(conf_items, inum);
 	
 	do {
 		rv++;
 		item = ll_get(conf_items, rv);
 	} while (item->type == t_sep || (item->dep && !*item->dep));
+
 	if (rv >= ll_size(conf_items)) {	
 		rv = first_item;
 		list_ofs = 0;
@@ -171,14 +178,16 @@ int next_item(int inum)
 
 int prev_item(int inum)
 {
-	int		rv = inum;
+	int	rv = inum;
 	struct conf_item *item;
 	
 	do {
 		rv--;
 		item = ll_get(conf_items, rv);
 	} while (item->type == t_sep || (item->dep && !*item->dep));
-	if (rv < first_item) rv = ll_size(conf_items) - 1;
+
+	if (rv < first_item)
+		rv = ll_size(conf_items) - 1;
 	
 	return rv;
 }
@@ -195,23 +204,25 @@ int m_pref(WINDOW *w_conf, int active_item)
 	for (i = 0; i < items; i++) {
 		item = ll_get(conf_items, i);
 		if (!item->dep || *item->dep) {
-			if (i != active_item) waddstr_item(w_conf, j++, item, 0);
-				else {
-					waddstr_item(w_conf, j, item, 1);
-					active_line = j++;
-				}
+			if (i != active_item)
+				waddstr_item(w_conf, j++, item, 0);
+			else {
+				waddstr_item(w_conf, j, item, 1);
+				active_line = j++;
+			}
 		}
 	}
 	
 	return active_line;
 }
 
-int scr_conf(struct wavemon_conf *wmconf) {
+int scr_conf(struct wavemon_conf *wmconf)
+{
 	WINDOW	*w_conf, *w_menu, *w_confpad;
-	int		key = 0;
-	int		num_items;
-	int		active_line, active_item = 0;
-	int		subw;
+	int	key = 0;
+	int	num_items;
+	int	active_line, active_item = 0;
+	int	subw;
 	void	(*func)();
 	struct conf_item *item;
 
@@ -226,12 +237,14 @@ int scr_conf(struct wavemon_conf *wmconf) {
 	getmaxyx(w_conf, wconfy, wconfx);
 	subw = wconfy - 3;
 	
-	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep) active_item++;
+	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep)
+		active_item++;
 	first_item = active_item;
 	
 	wmenubar(w_menu, 6);
 	wmove(w_menu, 1, 0);
-	nodelay(w_menu, FALSE); keypad(w_menu, TRUE);
+	nodelay(w_menu, FALSE);
+	keypad(w_menu, TRUE);
 
 	wrefresh(w_conf);
 	wrefresh(w_menu);
@@ -243,7 +256,8 @@ int scr_conf(struct wavemon_conf *wmconf) {
 		
 		if (active_line - list_ofs > subw) {
 			list_ofs = active_line - subw;
-		} else if (active_line < list_ofs) list_ofs = active_line;
+		} else if (active_line < list_ofs)
+			list_ofs = active_line;
 
 		prefresh(w_confpad, list_ofs, 0, 1, (COLS >> 1) - 20, wconfy - 2, wconfx - 1);
 		wmove(w_menu, 1, 0);
@@ -265,9 +279,9 @@ int scr_conf(struct wavemon_conf *wmconf) {
 			case '\r':
 				item = ll_get(conf_items, active_item);
 				if (item->type == t_func) {
-						flash();
-						func = item->v;
-						func();
+					flash();
+					func = item->v;
+					func();
 				}
 				break;
 			/* Keyboard shortcuts */

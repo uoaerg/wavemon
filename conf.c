@@ -3,18 +3,18 @@
  *
  * Copyright (c) 2001-2002 Jan Morgenstern <jan@jm-music.de>
  *
- * wavemon is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation; either version 2, or (at your option) any later 
+ * wavemon is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2, or (at your option) any later
  * version.
- * 
- * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+ *
+ * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
- * 
- * You should have received a copy of the GNU General Public License along 
- * with wavemon; see the file COPYING.  If not, write to the Free Software 
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
@@ -50,7 +50,7 @@ void help_exit()
 	printf("  -l            Use linear scales in favour of algorithmic ones\n");
 	printf("  -r            Generate random levels (for testing purposes)\n");
 	printf("  -v            Print version number and exit\n\n");
-	exit(0);       
+	exit(0);
 }
 
 void version_exit()
@@ -62,9 +62,9 @@ void version_exit()
 void init_conf_items(struct wavemon_conf *conf)
 {
 	struct conf_item *item;
-	int		if_list = iw_getif();
+	int	if_list = iw_getif();
 	int 	s = sizeof(struct conf_item);
-	
+
 	if (!ll_size(if_list)) fatal_error("no wireless interfaces found!");
 
 	conf_items = ll_create();
@@ -87,7 +87,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->stat_iv;
 	item->name = strdup("Statistics updates");
 	item->type = t_int;
-	item->min = 10; item->max = 4000;
+	item->min = 10;
+	item->max = 4000;
 	item->inc = 10;
 	item->unit = strdup("ms");
 	item->cfname = strdup("stat_updates");
@@ -97,7 +98,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->slotsize;
 	item->name = strdup("Histogram update cycles");
 	item->type = t_int;
-	item->min = 1; item->max = 64;
+	item->min = 1;
+	item->max = 64;
 	item->inc = 1;
 	item->cfname = strdup("lhist_slot_size");
 	ll_push(conf_items, "*", item);
@@ -106,7 +108,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->info_iv;
 	item->name = strdup("Dynamic info updates");
 	item->type = t_int;
-	item->min = 1; item->max = 60;
+	item->min = 1;
+	item->max = 60;
 	item->inc = 1;
 	item->unit = strdup("s");
 	item->cfname = strdup("info_updates");
@@ -133,7 +136,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->sig_min;
 	item->name = strdup("Minimum signal level");
 	item->type = t_int;
-	item->min = -120; item->max = -60;
+	item->min = -120;
+	item->max = -60;
 	item->inc = 1;
 	item->unit = strdup("dBm");
 	item->dep = &conf->override_bounds;
@@ -144,7 +148,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->sig_max;
 	item->name = strdup("Maximum signal level");
 	item->type = t_int;
-	item->min = -59; item->max = 120;
+	item->min = -59;
+	item->max = 120;
 	item->inc = 1;
 	item->unit = strdup("dBm");
 	item->dep = &conf->override_bounds;
@@ -166,7 +171,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->noise_max;
 	item->name = strdup("Maximum noise level");
 	item->type = t_int;
-	item->min = -59; item->max = 120;
+	item->min = -60;
+	item->max = 120;
 	item->inc = 1;
 	item->unit = strdup("dBm");
 	item->dep = &conf->override_bounds;
@@ -179,7 +185,7 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->type = t_switch;
 	item->cfname = strdup("linear_scale");
 	ll_push(conf_items, "*", item);
-	
+
 	item = calloc(1, s);
 	item->v = &conf->random;
 	item->name = strdup("Random signals");
@@ -204,7 +210,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->lthreshold;
 	item->name = strdup("Low threshold");
 	item->type = t_int;
-	item->min = -120; item->max = -60;
+	item->min = -120;
+	item->max = -60;
 	item->inc = 1;
 	item->unit = strdup("dBm");
 	item->dep = (char *)&conf->lthreshold_action;
@@ -227,7 +234,8 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->v = &conf->hthreshold;
 	item->name = strdup("High threshold");
 	item->type = t_int;
-	item->min = -59; item->max = 120;
+	item->min = -59;
+	item->max = 120;
 	item->inc = 1;
 	item->unit = strdup("dBm");
 	item->dep = (char *)&conf->hthreshold_action;
@@ -273,21 +281,30 @@ void getargs(struct wavemon_conf *conf, int argc, char *argv[])
 
 	while ((arg = getopt(argc, argv, "dhi:lrv")) >= 0)
 		switch (arg) {
-			case 'd':	conf->dump = 1;
-						break;
-			case 'h':	help_exit();
-						break;
-			case 'i':	if ((tmp = ll_scan(iw_getif(), "S", optarg)) >= 0)
-							strncpy(conf->ifname, (char *)ll_get(iw_getif(), tmp), sizeof(conf->ifname)); else fatal_error("no wireless extensions found on device %s", optarg);
-						break;
-			case 'l':	conf->linear = 1;
-						break;
-			case 'r':	conf->random = 1;
-						break;
-			case 'v':	version_exit();
-						break;
-			default:	/* bad argument. bad bad */
-					exit(-1);
+			case 'd':
+				conf->dump = 1;
+				break;
+			case 'h':
+				help_exit();
+				break;
+			case 'i':
+				if ((tmp = ll_scan(iw_getif(), "S", optarg)) >= 0)
+					strncpy(conf->ifname, ll_get(iw_getif(), tmp), sizeof(conf->ifname));
+				else
+					fatal_error("no wireless extensions found on device %s", optarg);
+				break;
+			case 'l':
+				conf->linear = 1;
+				break;
+			case 'r':
+				conf->random = 1;
+				break;
+			case 'v':
+				version_exit();
+				break;
+			default:
+				/* bad argument. bad bad */
+				exit(-1);
 		}
 }
 
@@ -303,7 +320,7 @@ void read_cf(struct wavemon_conf *conf)
 	int		v_int;
 	char	*conv_err;
 	float	v_float;
-	
+
 	cfname = malloc(strlen(pw->pw_dir) + strlen(CFNAME) + 3);
 	strcpy(cfname, pw->pw_dir);
 	strcat(cfname, "/"); strcat(cfname, CFNAME);
@@ -319,16 +336,16 @@ void read_cf(struct wavemon_conf *conf)
 				}
 				strncpy(lv, lp, strcspn(lp, " ="));
 				lv[strcspn(lp, " =")] = '\0';
-				
+
 				ll_reset(conf_items);
 				while (!found && (ci = ll_getall(conf_items)))
 					if (ci->type != t_sep && ci->type != t_func && !strcasecmp(ci->cfname, lv)) found = 1;
-				
+
 				if (!found) {
 					fclose(fd);
 					fatal_error("parse error in %s, line %d: unknown identifier '%s'", cfname, lnum, lv);
 				}
-				
+
 				lp += strlen(lv);
 				lp += strspn(lp, " ");
 				if (*lp++ != '=') {
@@ -350,77 +367,89 @@ void read_cf(struct wavemon_conf *conf)
 
 				switch (ci->type) {
 					case t_int:
-							v_int = strtol(rv, &conv_err, 10);
-							if (*conv_err == '\0') {
-								if (v_int > ci->max) {
-									fclose(fd);
-									fatal_error("parse error in %s, line %d: value exceeds maximum of %d", cfname, lnum, (int)ci->max);
-								} else if (v_int < ci->min) {
-									fclose(fd);
-									fatal_error("parse error in %s, line %d: value is below minimum of %d", cfname, lnum, (int)ci->min);
-								} else {
-									*(int *)ci->v = v_int;
-								}
-							} else {
+						v_int = strtol(rv, &conv_err, 10);
+						if (*conv_err == '\0') {
+							if (v_int > ci->max) {
 								fclose(fd);
-								fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead", cfname, lnum, rv);
-							}
-							break;
-					case t_float:
-							v_float = strtod(rv, &conv_err);
-							if (*conv_err == '\0') {
-								if (v_float > ci->max) {
-									fclose(fd);
-									fatal_error("parse error in %s, line %d: value exceeds maximum of %g", cfname, lnum, ci->max);
-								} else if (v_float < ci->min) {
-									fclose(fd);
-									fatal_error("parse error in %s, line %d: value is below minimum of %g", cfname, lnum, ci->min);
-								} else {
-									*(float *)ci->v = v_float;
-								}
-							} else {
+								fatal_error("parse error in %s, line %d: value exceeds maximum of %d",
+									    cfname, lnum, (int)ci->max);
+							} else if (v_int < ci->min) {
 								fclose(fd);
-								fatal_error("parse error in %s, line %d: float value expected, '%s' found instead", cfname, lnum, rv);
-							}
-							break;
-					case t_string:
-							if (strlen(rv) <= ci->max) {
-								ci->v = strdup(rv);
+								fatal_error("parse error in %s, line %d: value is below minimum of %d",
+									    cfname, lnum, (int)ci->min);
 							} else {
-								fclose(fd);
-								fatal_error("parse error in %s, line %d: argument too long (max %d chars)", cfname, lnum, ci->max);
-							}
-							break;
-					case t_switch:
-							if (!strcasecmp(rv, "on") || !strcasecmp(rv, "enabled")
-							    || !strcasecmp(rv, "yes") || !strcasecmp(rv, "1")) {
-								*(char *)ci->v = 1;
-							} else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "disabled")
-								|| !strcasecmp(rv, "no") || !strcasecmp(rv, "0")) {
-								*(char *)ci->v = 0;
-							} else {
-								fclose(fd);
-								fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead", cfname, lnum, rv);
-							}
-							break;
-					case t_list:
-							if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
 								*(int *)ci->v = v_int;
-							} else {
-								fclose(fd);
-								fatal_error("parse error in %s, line %d: '%s' is not a valid argument here", cfname, lnum, rv);
+						fprintf(stderr, "%s %d\n", cfname, v_int);
+						fprintf(stderr, "%s %d\n", cfname, *(int *)ci->v);
 							}
-							break;
+						} else {
+							fclose(fd);
+							fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead",
+								    cfname, lnum, rv);
+						}
+						break;
+					case t_float:
+						v_float = strtod(rv, &conv_err);
+						if (*conv_err == '\0') {
+							if (v_float > ci->max) {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: value exceeds maximum of %g",
+									    cfname, lnum, ci->max);
+							} else if (v_float < ci->min) {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: value is below minimum of %g",
+									    cfname, lnum, ci->min);
+							} else {
+								*(float *)ci->v = v_float;
+							}
+						} else {
+							fclose(fd);
+							fatal_error("parse error in %s, line %d: float value expected, '%s' found instead",
+								    cfname, lnum, rv);
+						}
+						break;
+					case t_string:
+						if (strlen(rv) <= ci->max) {
+							ci->v = strdup(rv);
+						} else {
+							fclose(fd);
+							fatal_error("parse error in %s, line %d: argument too long (max %d chars)",
+								    cfname, lnum, ci->max);
+						}
+						break;
+					case t_switch:
+						if (!strcasecmp(rv, "on") || !strcasecmp(rv, "enabled")
+						    || !strcasecmp(rv, "yes") || !strcasecmp(rv, "1")) {
+							*(char *)ci->v = 1;
+						} else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "disabled")
+							|| !strcasecmp(rv, "no") || !strcasecmp(rv, "0")) {
+							*(char *)ci->v = 0;
+						} else {
+							fclose(fd);
+							fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead",
+								    cfname, lnum, rv);
+						}
+						break;
+					case t_list:
+						if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
+							*(int *)ci->v = v_int;
+						} else {
+							fclose(fd);
+							fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
+								    cfname, lnum, rv);
+						}
+						break;
 					case t_listval:
-							if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
-								strncpy(ci->v, (char *)ll_get(ci->list, v_int), 32);
-							} else {
-								fclose(fd);
-								fatal_error("parse error in %s, line %d: '%s' is not a valid argument here", cfname, lnum, rv);
-							}
+						if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
+							strncpy(ci->v, (char *)ll_get(ci->list, v_int), 32);
+						} else {
+							fclose(fd);
+							fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
+								    cfname, lnum, rv);
+						}
 					case t_sep:	/* These two cases are missing from the enum, they are not handled */
 					case t_func:	/* To pacify gcc -Wall, fall through here */
-							break;
+						break;
 
 				}
 			}
@@ -428,54 +457,65 @@ void read_cf(struct wavemon_conf *conf)
 		fclose(fd);
 	} else if (errno != ENOENT) {
 		switch (errno) {
-			case EACCES:	fatal_error("cannot open %s: permission denied", cfname);
-							break;
-			case EAGAIN:	fatal_error("cannot open %s: resource temporarily unavailable", cfname);
-							break;
-			case EBUSY:		fatal_error("cannot open %s: resource busy", cfname);
-							break;
-			case EINTR:		fatal_error("cannot open %s: interrupted function call", cfname);
-							break;
-			case EINVAL:	fatal_error("cannot open %s: invalid argument", cfname);
-							break;
-			case EIO:		fatal_error("cannot open %s: i/o error", cfname);
-							break;
-			case EISDIR:	fatal_error("cannot open %s: is a directory", cfname);
-							break;
-			case EMFILE:	fatal_error("cannot open %s: too many open files", cfname);
-							break;
-			case EPERM:		fatal_error("cannot open %s: operation not permitted", cfname);
-							break;
-			case EPIPE:		fatal_error("cannot open %s: broken pipe", cfname);
-							break;
+			case EACCES:
+				fatal_error("cannot open %s: permission denied", cfname);
+				break;
+			case EAGAIN:
+				fatal_error("cannot open %s: resource temporarily unavailable", cfname);
+				break;
+			case EBUSY:
+				fatal_error("cannot open %s: resource busy", cfname);
+				break;
+			case EINTR:
+				fatal_error("cannot open %s: interrupted function call", cfname);
+				break;
+			case EINVAL:
+				fatal_error("cannot open %s: invalid argument", cfname);
+				break;
+			case EIO:
+				fatal_error("cannot open %s: i/o error", cfname);
+				break;
+			case EISDIR:
+				fatal_error("cannot open %s: is a directory", cfname);
+				break;
+			case EMFILE:
+				fatal_error("cannot open %s: too many open files", cfname);
+				break;
+			case EPERM:
+				fatal_error("cannot open %s: operation not permitted", cfname);
+				break;
+			case EPIPE:
+				fatal_error("cannot open %s: broken pipe", cfname);
+				break;
 		}
 	}
 }
 
 void write_cf()
 {
+	struct passwd *pw = getpwuid(getuid());
+	struct conf_item *ci = NULL;
 	char	tmp[0x100], rv[0x40], *cfname;
 	char	*lp, *cp;
 	FILE	*fd;
-	int		cfld;
-	int		add;
-	struct conf_item *ci = NULL;
-	struct passwd *pw = getpwuid(getuid());
-	int		i;
-	
+	int	cfld;
+	int	add;
+	int	i;
+
 	cfname = malloc(strlen(pw->pw_dir) + strlen(CFNAME) + 3);
 	strcpy(cfname, pw->pw_dir);
 	strcat(cfname, "/"); strcat(cfname, CFNAME);
 
 	cfld = ll_create();
 	if ((fd = fopen(cfname, "r"))) {
-		while (fgets(tmp, 0x100, fd)) ll_push(cfld, "s", tmp);
+		while (fgets(tmp, 0x100, fd))
+			ll_push(cfld, "s", tmp);
 		fclose(fd);
 	}
 
 	ll_reset(conf_items);
 	while ((ci = ll_getall(conf_items))) {
-		if (ci->type != t_sep && ci->type != t_func 
+		if (ci->type != t_sep && ci->type != t_func
 			&& (!ci->dep || (ci->dep && *ci->dep))) {
 			switch (ci->type) {
 				case t_int:
@@ -503,7 +543,7 @@ void write_cf()
 				case t_func:
 					break;
 			}
-			
+
 			add = 1;
 
 			for (i = 0; i < ll_size(cfld); i++) {
@@ -517,7 +557,7 @@ void write_cf()
 					strncpy(tmp, cp, strcspn(cp, " #\n"));
 					if (strcasecmp(tmp, rv)) {
 						strncpy(tmp, lp, strcspn(lp, " ="));
-						tmp[strcspn(lp, " =")] = '\0'; 
+						tmp[strcspn(lp, " =")] = '\0';
 						strcat(tmp, " = ");
 						strcat(tmp, rv);
 						strcat(tmp, "\n");
@@ -535,19 +575,21 @@ void write_cf()
 			}
 		}
 	}
-	
-	if ((fd = fopen(cfname, "w")) < 0) fatal_error("cannot open %s", cfname);
+
+	if ((fd = fopen(cfname, "w")) < 0)
+		fatal_error("cannot open %s", cfname);
 	ll_reset(cfld);
-	while ((lp = ll_getall(cfld))) fputs(lp, fd);
+	while ((lp = ll_getall(cfld)))
+		fputs(lp, fd);
 	fclose(fd);
-	
+
 	ll_destroy(cfld);
 	free(cfname);
 }
 
 void set_defaults(struct wavemon_conf *conf)
 {
-	strncpy(conf->ifname, (char *)ll_get(iw_getif(), 0), sizeof(conf->ifname));
+	strncpy(conf->ifname, ll_get(iw_getif(), 0), sizeof(conf->ifname));
 
 	conf->stat_iv = 100;
 	conf->info_iv = 10;
@@ -564,17 +606,18 @@ void set_defaults(struct wavemon_conf *conf)
 	conf->lthreshold = -80;
 	conf->hthreshold_action = 0;
 	conf->hthreshold = -10;
-	
+
 	conf->startup_scr = 0;
 }
 
 void dealloc_on_exit()
 {
 	struct conf_item *ci;
-	
+
 	if (conf_items) {
 	  while ((ci = ll_getall(conf_items)))
-		if ((ci->type == t_list) || (ci->type == t_listval)) ll_destroy(ci->list);
+		if ((ci->type == t_list) || (ci->type == t_listval))
+			ll_destroy(ci->list);
 
 	  ll_destroy(conf_items);
 	}
