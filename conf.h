@@ -39,9 +39,9 @@ struct conf_item {
 	/* name for preferences screen */
 	char	*name;
 	/* type of parameter */
-	enum {t_int, t_float, t_string, t_switch, t_list, t_listval, t_sep, t_func} type;
+	enum	{t_int, t_float, t_string, t_switch, t_list, t_listval, t_sep, t_func} type;
 	/* list of available settings (for t_list) */
-	int		list;
+	int	list;
 	/* value boundaries */
 	double	min, max;
 	/* increment for value changes */

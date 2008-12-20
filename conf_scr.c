@@ -51,7 +51,7 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 
 		switch (item->type) {
 			case t_int:
-				sprintf(s, "%ld", *(long int *)item->v);
+				sprintf(s, "%d", *(int *)item->v);
 				break;
 			case t_float:
 				sprintf(s, "%f", *(double *)item->v);
