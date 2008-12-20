@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <ncurses.h>
+#include <stdlib.h>
 #include "conf.h"
 
 void fatal_error(char *format, ...)
@@ -29,9 +30,11 @@ void fatal_error(char *format, ...)
 	
 	endwin();
 	fprintf(stderr, "fatal error: ");
+
 	va_start(argp, format);
 	vfprintf(stderr, format, argp);
 	va_end(argp);
+
 	fprintf(stderr, "\n");
 	dealloc_on_exit();
 	exit(-1);

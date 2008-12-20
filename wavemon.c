@@ -20,6 +20,7 @@
 
 #include <sys/time.h>
 #include <ncurses.h>
+#include <stdlib.h>
 
 #include "conf.h"
 #include "ui.h"
@@ -170,7 +171,7 @@ int main(int argc, char *argv[]) {
 
 	if (conf.dump == 1) {
 	  dump_parameters(&conf);
-	  exit();
+	  exit(0);
 	}
 
 	/* initialize the ncurses interface */

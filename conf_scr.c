@@ -50,20 +50,27 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 		mvwaddstr(w, y, (item->dep ? x1 + 2 : x1), item->name);
 
 		switch (item->type) {
-			case t_int:		sprintf(s, "%ld", *(long int *)item->v);
-							break;
-			case t_float:	sprintf(s, "%f", *(double *)item->v);
-							break;
-			case t_string:	strncpy(s, item->v, item->max);
-							break;
-			case t_switch:	strcpy(s, (*(char *)item->v ? "Enabled" : "Disabled"));
-							break;
-			case t_list:	strncpy(s, ll_get(item->list, *(int *)item->v), 32);
-							break;
-			case t_listval:	strncpy(s, (char *)item->v, 32);
-							break;
-			case t_sep:		/* gcc -Wall sucks */
+			case t_int:
+				sprintf(s, "%ld", *(long int *)item->v);
+				break;
+			case t_float:
+				sprintf(s, "%f", *(double *)item->v);
+				break;
+			case t_string:
+				strncpy(s, item->v, item->max);
+				break;
+			case t_switch:
+				strcpy(s, (*(char *)item->v ? "Enabled" : "Disabled"));
+				break;
+			case t_list:
+				strncpy(s, ll_get(item->list, *(int *)item->v), 32);
+				break;
+			case t_listval:
+				strncpy(s, (char *)item->v, 32);
+			/* Fall through, dummy statements to pacify gcc -Wall */
+			case t_sep:
 			case t_func:
+				break;
 		}
 
 		if (!item->unit) {
@@ -101,42 +108,47 @@ void change_item(int inum, char sign, char accel)
 	int tmp;
 		
 	switch (item->type) {
-		case t_int:		if (!accel) {
-							if (*(long int *)item->v + item->inc * sign <= item->max && 
-								*(long int *)item->v + item->inc * sign >= item->min) *(long int *)item->v += item->inc * sign;
-						} else {
-							if (*(long int *)item->v + 10 * item->inc * sign <= item->max &&
-								*(long int *)item->v + 10 * item->inc * sign >= item->min) *(long int *)item->v += 10 * item->inc * sign;
-							else if (sign > 0) {
-									if (*(long int *)item->v < item->max) *(long int *)item->v = item->max;
-								} else {
-									if (*(long int *)item->v > item->min) *(long int *)item->v = item->min;
-								}
-						}
-						break;
-		case t_float:	break;
-		case t_string:	break;
+		case t_int:
+			if (!accel) {
+				if (*(long int *)item->v + item->inc * sign <= item->max &&
+				    *(long int *)item->v + item->inc * sign >= item->min)
+					*(long int *)item->v += item->inc * sign;
+			} else if (*(long int *)item->v + 10 * item->inc * sign <= item->max &&
+				   *(long int *)item->v + 10 * item->inc * sign >= item->min) {
+					*(long int *)item->v += 10 * item->inc * sign;
+			} else if (sign > 0) {
+				if (*(long int *)item->v < item->max)
+					*(long int *)item->v = item->max;
+			} else if (*(long int *)item->v > item->min) {
+					*(long int *)item->v = item->min;
+			}
+			break;
 		case t_switch:	*(char *)item->v = !*(char *)item->v;
 						break;
 		case t_list:	*(long int *)item->v += sign;
 						if (*(long int *)item->v >= ll_size(item->list)) *(long int *)item->v = 0;
 							else if (*(long int *)item->v < 0) *(long int *)item->v = ll_size(item->list) - 1;
 						break;
-		case t_listval:	tmp = ll_scan(item->list, "s", (char *)item->v);
-						if (tmp == -1) {
-							tmp = 0;
-						} else {
-							tmp += sign;
-							if (tmp >= ll_size(item->list)) {
-								tmp = 0;
-							} else if (tmp < 0) {
-								tmp = ll_size(item->list) - 1;
-							}
-						}
-						strncpy((char *)item->v, ll_get(item->list, tmp), 32);
-						break;
-		case t_sep:		/* gcc -Wall sucks */
+		case t_listval:
+			tmp = ll_scan(item->list, "s", (char *)item->v);
+			if (tmp == -1) {
+				tmp = 0;
+			} else {
+				tmp += sign;
+				if (tmp >= ll_size(item->list)) {
+					tmp = 0;
+				} else if (tmp < 0) {
+					tmp = ll_size(item->list) - 1;
+				}
+			}
+			strncpy(item->v, ll_get(item->list, tmp), 32);
+			break;
+		/* Dummy statements to pacify gcc -Wall */
+		case t_float:
+		case t_string:
+		case t_sep:
 		case t_func:
+			break;
 	}
 }	
 

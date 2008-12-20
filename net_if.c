@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "net_if.h"
 

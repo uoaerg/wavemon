@@ -349,68 +349,79 @@ void read_cf(struct wavemon_conf *conf)
 				rv[strcspn(lp, " \n")] = '\0';
 
 				switch (ci->type) {
-					case t_int:		v_int = strtol(rv, &conv_err, 10);
-									if (*conv_err == '\0')
-										if (v_int > ci->max) {
-											fclose(fd);
-											fatal_error("parse error in %s, line %d: value exceeds maximum of %d", cfname, lnum, (int)ci->max);
-										} else if (v_int < ci->min) {
-											fclose(fd);
-											fatal_error("parse error in %s, line %d: value is below minimum of %d", cfname, lnum, (int)ci->min);
-										} else *(int *)ci->v = v_int;
-									else {
-										fclose(fd);
-										fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead", cfname, lnum, rv);
-									}
-									break;
-					case t_float:	v_float = strtod(rv, &conv_err);
-									if (*conv_err == '\0')
-										if (v_float > ci->max) {
-											fclose(fd);
-											fatal_error("parse error in %s, line %d: value exceeds maximum of %g", cfname, lnum, ci->max);
-										} else if (v_float < ci->min) {
-											fclose(fd);
-											fatal_error("parse error in %s, line %d: value is below minimum of %g", cfname, lnum, ci->min);
-										} else *(float *)ci->v = v_float;
-									else {
-										fclose(fd);
-										fatal_error("parse error in %s, line %d: float value expected, '%s' found instead", cfname, lnum, rv);
-									}
-									break;
-					case t_string:	if (strlen(rv) <= ci->max)
-										ci->v = strdup(rv);
-									else {
-										fclose(fd);
-										fatal_error("parse error in %s, line %d: argument too long (max %d chars)", cfname, lnum, ci->max);
-									}
-									break;
-					case t_switch:	if (!strcasecmp(rv, "on") || !strcasecmp(rv, "enabled")
-										|| !strcasecmp(rv, "yes") || !strcasecmp(rv, "1"))
-										*(char *)ci->v = 1;
-									else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "disabled")
-										|| !strcasecmp(rv, "no") || !strcasecmp(rv, "0"))
-										*(char *)ci->v = 0;
-									else {
-										fclose(fd);
-										fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead", cfname, lnum, rv);
-									}										
-									break;
-					case t_list:	if ((v_int = ll_scan(ci->list, "S", rv)) >= 0)
-										*(int *)ci->v = v_int;
-									else {
-										fclose(fd);
-										fatal_error("parse error in %s, line %d: '%s' is not a valid argument here", cfname, lnum, rv);
-									}
-									break;
-					case t_listval:	if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
-										strncpy((char *)ci->v, (char *)ll_get(ci->list, v_int), 32);
-									} else {
-										fclose(fd);
-										fatal_error("parse error in %s, line %d: '%s' is not a valid argument here", cfname, lnum, rv);
-									}
-									break;
-					case t_sep: 	/* gcc -Wall sucks */
-					case t_func:
+					case t_int:
+							v_int = strtol(rv, &conv_err, 10);
+							if (*conv_err == '\0') {
+								if (v_int > ci->max) {
+									fclose(fd);
+									fatal_error("parse error in %s, line %d: value exceeds maximum of %d", cfname, lnum, (int)ci->max);
+								} else if (v_int < ci->min) {
+									fclose(fd);
+									fatal_error("parse error in %s, line %d: value is below minimum of %d", cfname, lnum, (int)ci->min);
+								} else {
+									*(int *)ci->v = v_int;
+								}
+							} else {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead", cfname, lnum, rv);
+							}
+							break;
+					case t_float:
+							v_float = strtod(rv, &conv_err);
+							if (*conv_err == '\0') {
+								if (v_float > ci->max) {
+									fclose(fd);
+									fatal_error("parse error in %s, line %d: value exceeds maximum of %g", cfname, lnum, ci->max);
+								} else if (v_float < ci->min) {
+									fclose(fd);
+									fatal_error("parse error in %s, line %d: value is below minimum of %g", cfname, lnum, ci->min);
+								} else {
+									*(float *)ci->v = v_float;
+								}
+							} else {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: float value expected, '%s' found instead", cfname, lnum, rv);
+							}
+							break;
+					case t_string:
+							if (strlen(rv) <= ci->max) {
+								ci->v = strdup(rv);
+							} else {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: argument too long (max %d chars)", cfname, lnum, ci->max);
+							}
+							break;
+					case t_switch:
+							if (!strcasecmp(rv, "on") || !strcasecmp(rv, "enabled")
+							    || !strcasecmp(rv, "yes") || !strcasecmp(rv, "1")) {
+								*(char *)ci->v = 1;
+							} else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "disabled")
+								|| !strcasecmp(rv, "no") || !strcasecmp(rv, "0")) {
+								*(char *)ci->v = 0;
+							} else {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead", cfname, lnum, rv);
+							}
+							break;
+					case t_list:
+							if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
+								*(int *)ci->v = v_int;
+							} else {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: '%s' is not a valid argument here", cfname, lnum, rv);
+							}
+							break;
+					case t_listval:
+							if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
+								strncpy(ci->v, (char *)ll_get(ci->list, v_int), 32);
+							} else {
+								fclose(fd);
+								fatal_error("parse error in %s, line %d: '%s' is not a valid argument here", cfname, lnum, rv);
+							}
+					case t_sep:	/* These two cases are missing from the enum, they are not handled */
+					case t_func:	/* To pacify gcc -Wall, fall through here */
+							break;
+
 				}
 			}
 		}
@@ -467,21 +478,30 @@ void write_cf()
 		if (ci->type != t_sep && ci->type != t_func 
 			&& (!ci->dep || (ci->dep && *ci->dep))) {
 			switch (ci->type) {
-				case t_int:	sprintf(rv, "%d", *(int *)ci->v);
-							break;
-				case t_float: sprintf(rv, "%g", *(float *)ci->v);
-							break;
-				case t_string: strcpy(rv, (char *)ci->v);
-							break;
-				case t_switch: sprintf(rv, "%s", (*(char *)ci->v ? "on" : "off"));
-							break;
-				case t_list: sprintf(rv, "%s", (char *)ll_get(ci->list, *(int *)ci->v));
-							for (i = 0; i < strlen(rv); i++)
-								if (*(rv + i) >= 65 && *(rv + i) <= 90) *(rv + i) += 32;
-							break;
-				case t_listval: sprintf(rv, "%s", (char *)ci->v);
-				case t_sep: break;
+				case t_int:
+					sprintf(rv, "%d", *(int *)ci->v);
+					break;
+				case t_float:
+					sprintf(rv, "%g", *(float *)ci->v);
+					break;
+				case t_string:
+					strcpy(rv, (char *)ci->v);
+					break;
+				case t_switch:
+					sprintf(rv, "%s", (*(char *)ci->v ? "on" : "off"));
+					break;
+				case t_list:
+					sprintf(rv, "%s", (char *)ll_get(ci->list, *(int *)ci->v));
+					for (i = 0; i < strlen(rv); i++)
+						if (*(rv + i) >= 65 && *(rv + i) <= 90)
+							*(rv + i) += 32;
+					break;
+				case t_listval:
+					sprintf(rv, "%s", (char *)ci->v);
+				/* Fall through, the rest are dummy statements to pacify gcc -Wall */
+				case t_sep:
 				case t_func:
+					break;
 			}
 			
 			add = 1;

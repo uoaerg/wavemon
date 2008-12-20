@@ -352,7 +352,7 @@ llist *arg2element(char type, va_list *ap, llist *next)
 					*((int *)l->e) = va_arg(*ap, int);
 					break;
 		case 's':	l->e = (void *)malloc(sizeof(char *));
-					(char *)l->e = strdup(va_arg(*ap, char *));
+					l->e = strdup(va_arg(*ap, char *));
 					break;
 		case 'f':	l->e = (void *)malloc(sizeof(double));
 					*((double *)l->e) = va_arg(*ap, double);
