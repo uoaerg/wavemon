@@ -190,7 +190,7 @@ void init_conf_items(struct wavemon_conf *conf)
 	/* thresholds */
 	item = calloc(1, s);
 	item->v = &conf->lthreshold_action;
-	item->name = strdup("Low treshold action");
+	item->name = strdup("Low threshold action");
 	item->type = t_list;
 	item->list = ll_create();
 	ll_push(item->list, "s", "Disabled");
@@ -213,7 +213,7 @@ void init_conf_items(struct wavemon_conf *conf)
 
 	item = calloc(1, s);
 	item->v = &conf->hthreshold_action;
-	item->name = strdup("High treshold action");
+	item->name = strdup("High threshold action");
 	item->type = t_list;
 	item->list = ll_create();
 	ll_push(item->list, "s", "Disabled");
