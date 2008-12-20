@@ -83,7 +83,7 @@ void waddstr_b(WINDOW *win, char *s)
 	wattroff(win, A_BOLD);
 }
 
-void waddbar(WINDOW *win, float v, float minv, float maxv, char y, char x, char maxx, char *cscale, char rev)
+void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x, int maxx, char *cscale, char rev)
 {
 	int c;
 	int col;
@@ -102,7 +102,7 @@ void waddbar(WINDOW *win, float v, float minv, float maxv, char y, char x, char 
 	while (x + c < maxx) mvwaddch(win, y, x + c++, 183);
 }
 
-void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv, char y, char x, char maxx, char *cscale, char rev, char tch)
+void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv, int y, int x, int maxx, char *cscale, char rev, char tch)
 {
 	int col;
 	char steps = maxx - x;
