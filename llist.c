@@ -264,13 +264,12 @@ void ll_del(int ld, unsigned long n)
 
 signed long ll_scan(int ld, const char *format, ...)
 {
-	llist *l = lists[ld];
+	llist	*l = lists[ld];
 	va_list ap;
-	unsigned long rv = -1, i = 0, j;
-	int strdiff;
-	int int_v;
-	double double_v;
-	char *string_v;
+	int	len, i, rv = -1,
+		int_v;
+	double	double_v;
+	char	*string_v;
 
 	va_start(ap, format);
 	switch (*format) {
@@ -295,19 +294,12 @@ signed long ll_scan(int ld, const char *format, ...)
 		break;
 	case 'S':
 		string_v = strdup(va_arg(ap, char *));
-		for (i = 0; (l = l->next); i++) {
-			if ((strdiff = strlen(l->e) - strlen(string_v)) > 0) {
-				for (j = 0; j < strdiff; j++)
-					if (!strncasecmp
-					    (l->e + j, string_v,
-					     strlen(string_v)))
-						rv = i;
-			} else
-			    if (!strncasecmp(l->e, string_v, strlen(string_v)))
-			{
+		len = strlen(string_v);
+		for (i = 0; (l = l->next); i++)
+			if (strlen(l->e) == len && !strcasecmp(l->e, string_v)) {
 				rv = i;
+				break;
 			}
-		}
 		free(string_v);
 	}
 	va_end(ap);
