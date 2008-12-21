@@ -85,10 +85,10 @@ int ll_create()
 void *ll_get(int ld, unsigned long n)
 {
 	llist 	*l = lists[ld]->next;
-	int		i;
+	int	i;
 	
-	for (i = 0; i < n && l->next; i++) l = l->next;
-	
+	for (i = 0; i < n && l->next; i++)
+		l = l->next;
 	return l->e;
 }
 
@@ -217,11 +217,13 @@ void ll_replace(int ld, unsigned long n, const char *format, ...)
 	va_list ap;
 	
 	for (i = 0; i < n && l->next; i++) {
-		prevl = l; l = l->next;
+		prevl = l;
+		l = l->next;
 	}
 	
 	va_start(ap, format);
-	if (*format) prevl->next = arg2element(*format, &ap, l->next);
+	if (*format)
+		prevl->next = arg2element(*format, &ap, l->next);
 	va_end(ap);
 
 	free(l->e);
@@ -239,7 +241,8 @@ void ll_del(int ld, unsigned long n)
 	int		i;
 	
 	for (i = 0; i < n && l->next; i++) {
-		prevl = l; l = l->next;
+		prevl = l;
+		l = l->next;
 	}
 	
 	prevl->next = l->next;
@@ -256,36 +259,45 @@ signed long ll_scan(int ld, const char *format, ...)
 	llist *l = lists[ld];
 	va_list ap;
 	unsigned long rv = -1, i = 0, j;
-	int		strdiff;
-	int		int_v;
+	int	strdiff;
+	int	int_v;
 	double	double_v;
 	char 	*string_v;
 	
 	va_start(ap, format);
-
 	switch (*format) {
-		case 'd':	int_v = va_arg(ap, int);
-					for (i = 0; (l = l->next); i++) 
-						if (*(int *)l->e == int_v) rv = i;
-					break;
-		case 'f':	double_v = va_arg(ap, double);
-					for (i = 0; (l = l->next); i++) 
-						if (*(double *)l->e == double_v) rv = i;
-					break;
-		case 's':	string_v = strdup(va_arg(ap, char *));
-					for (i = 0; (l = l->next); i++) 
-						if (!strcmp(l->e, string_v)) rv = i;
-					free(string_v);
-					break;
-		case 'S':	string_v = strdup(va_arg(ap, char *));
-					for (i = 0; (l = l->next); i++)
-						if ((strdiff = strlen(l->e) - strlen(string_v)) > 0) {
-							for (j = 0; j < strdiff; j++)
-								if (!strncasecmp(l->e + j, string_v, strlen(string_v))) rv = i;
-						} else if (!strncasecmp(l->e, string_v, strlen(string_v))) rv = i;
-					free(string_v);
+		case 'd':
+			int_v = va_arg(ap, int);
+			for (i = 0; (l = l->next); i++)
+				if (*(int *)l->e == int_v)
+					rv = i;
+			break;
+		case 'f':
+			double_v = va_arg(ap, double);
+			for (i = 0; (l = l->next); i++)
+				if (*(double *)l->e == double_v)
+					rv = i;
+			break;
+		case 's':
+			string_v = strdup(va_arg(ap, char *));
+			for (i = 0; (l = l->next); i++)
+				if (!strcmp(l->e, string_v))
+					rv = i;
+			free(string_v);
+			break;
+		case 'S':
+			string_v = strdup(va_arg(ap, char *));
+			for (i = 0; (l = l->next); i++) {
+				if ((strdiff = strlen(l->e) - strlen(string_v)) > 0) {
+					for (j = 0; j < strdiff; j++)
+						if (!strncasecmp(l->e + j, string_v, strlen(string_v)))
+							rv = i;
+				} else if (!strncasecmp(l->e, string_v, strlen(string_v))) {
+					rv = i;
+				}
+			}
+			free(string_v);
 	}
-	
 	va_end(ap);
 	return rv;
 }
@@ -299,7 +311,8 @@ char ll_type(int ld, unsigned long n)
 	llist 	*l = lists[ld]->next;
 	int		i;
 	
-	for (i = 0; i < n && l->next; i++) l = l->next;
+	for (i = 0; i < n && l->next; i++)
+		l = l->next;
 	
 	return l->type;
 }
@@ -313,7 +326,8 @@ unsigned long ll_size(int ld)
 	llist *l = lists[ld];
 	unsigned long i;
 
-	for (i = 0; (l = l->next); i++);
+	for (i = 0; (l = l->next); i++)
+		/* do nothing */;
 	return i;
 }
 

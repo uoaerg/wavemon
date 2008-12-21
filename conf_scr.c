@@ -31,14 +31,13 @@
 
 struct wavemon_conf *conf;
 
-static int	first_item;
-static int	list_ofs = 0;
-static int	wconfx, wconfy;
+static int first_item;
+static int list_ofs = 0;
+static int wconfx, wconfy;
 
 void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
 	char	s[0x40];
-	
 	int	x1 = 0,
 		x2 = 40;
 
@@ -51,22 +50,22 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 
 		switch (item->type) {
 			case t_int:
-				sprintf(s, "%d", *(int *)item->v);
+				sprintf(s, "%d", *item->v.i);
 				break;
 			case t_float:
-				sprintf(s, "%f", *(double *)item->v);
+				sprintf(s, "%f", item->v.f);
 				break;
 			case t_string:
-				strncpy(s, item->v, item->max);
+				strncpy(s, item->v.s, item->max);
 				break;
 			case t_switch:
-				strcpy(s, (*(char *)item->v ? "Enabled" : "Disabled"));
+				strcpy(s, *item->v.b ? "Enabled" : "Disabled");
 				break;
 			case t_list:
-				strncpy(s, ll_get(item->list, *(int *)item->v), 32);
+				strncpy(s, (char *)ll_get(item->list, *item->v.b), 32);
 				break;
 			case t_listval:
-				strncpy(s, (char *)item->v, 32);
+				strncpy(s, item->v.s, 32);
 			/* Fall through, dummy statements to pacify gcc -Wall */
 			case t_sep:
 			case t_func:
@@ -100,7 +99,8 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 			wattron(w, A_REVERSE);
 			waddstr(w, item->name);
 			wattroff(w, A_REVERSE);
-		} else waddstr(w, item->name);
+		} else
+			waddstr(w, item->name);
 	}
 }
 
@@ -112,31 +112,31 @@ void change_item(int inum, char sign, char accel)
 	switch (item->type) {
 		case t_int:
 			if (!accel) {
-				if (*(long int *)item->v + item->inc * sign <= item->max &&
-				    *(long int *)item->v + item->inc * sign >= item->min)
-					*(long int *)item->v += item->inc * sign;
-			} else if (*(long int *)item->v + 10 * item->inc * sign <= item->max &&
-				   *(long int *)item->v + 10 * item->inc * sign >= item->min) {
-					*(long int *)item->v += 10 * item->inc * sign;
+				if (*item->v.i + item->inc * sign <= item->max &&
+				    *item->v.i + item->inc * sign >= item->min)
+					*item->v.i += item->inc * sign;
+			} else if (*item->v.i + 10 * item->inc * sign <= item->max &&
+				   *item->v.i + 10 * item->inc * sign >= item->min) {
+					*item->v.i += 10 * item->inc * sign;
 			} else if (sign > 0) {
-				if (*(long int *)item->v < item->max)
-					*(long int *)item->v = item->max;
-			} else if (*(long int *)item->v > item->min) {
-					*(long int *)item->v = item->min;
+				if (*item->v.i < item->max)
+					*item->v.i = item->max;
+			} else if (*item->v.i > item->min) {
+					*item->v.i = item->min;
 			}
 			break;
 		case t_switch:
-			*(char *)item->v = !*(char *)item->v;
+			*item->v.b = *item->v.b == 0 ? 1 : 0;
 			break;
 		case t_list:
-			*(long int *)item->v += sign;
-			if (*(long int *)item->v >= ll_size(item->list))
-				*(long int *)item->v = 0;
-			else if (*(long int *)item->v < 0)
-				*(long int *)item->v = ll_size(item->list) - 1;
+			*item->v.b = *item->v.b + sign;
+			if (*item->v.b >= ll_size(item->list))
+				*item->v.b = 0;
+			else if (*item->v.b < 0)
+				*item->v.b = ll_size(item->list) - 1;
 			break;
 		case t_listval:
-			tmp = ll_scan(item->list, "s", (char *)item->v);
+			tmp = ll_scan(item->list, "s", item->v.s);
 			if (tmp == -1) {
 				tmp = 0;
 			} else {
@@ -147,7 +147,7 @@ void change_item(int inum, char sign, char accel)
 					tmp = ll_size(item->list) - 1;
 				}
 			}
-			strncpy(item->v, ll_get(item->list, tmp), 32);
+			strncpy(item->v.s, ll_get(item->list, tmp), 32);
 			break;
 		/* Dummy statements to pacify gcc -Wall */
 		case t_float:
@@ -158,27 +158,25 @@ void change_item(int inum, char sign, char accel)
 	}
 }	
 
-int next_item(int inum)
+int next_item(int rv)
 {
-	int	rv = inum;
-	struct conf_item *item = ll_get(conf_items, inum);
+	struct conf_item *item = ll_get(conf_items, rv);
 	
 	do {
 		rv++;
 		item = ll_get(conf_items, rv);
+
 	} while (item->type == t_sep || (item->dep && !*item->dep));
 
 	if (rv >= ll_size(conf_items)) {	
 		rv = first_item;
 		list_ofs = 0;
 	}
-	
 	return rv;
 }
 
-int prev_item(int inum)
+int prev_item(int rv)
 {
-	int	rv = inum;
 	struct conf_item *item;
 	
 	do {
@@ -195,13 +193,12 @@ int prev_item(int inum)
 int m_pref(WINDOW *w_conf, int active_item)
 {
 	struct conf_item *item;
-	int active_line = 0;
-	int items, i, j = 0;
+	int active_line, i, j,
+	    items = ll_size(conf_items);
 
 	werase(w_conf);
 
-	items = ll_size(conf_items);
-	for (i = 0; i < items; i++) {
+	for (active_line = i = j = 0; i < items; i++) {
 		item = ll_get(conf_items, i);
 		if (!item->dep || *item->dep) {
 			if (i != active_item)
@@ -280,7 +277,7 @@ int scr_conf(struct wavemon_conf *wmconf)
 				item = ll_get(conf_items, active_item);
 				if (item->type == t_func) {
 					flash();
-					func = item->v;
+					func = item->v.fp;
 					func();
 				}
 				break;

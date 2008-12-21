@@ -164,14 +164,14 @@ void dump_parameters(struct wavemon_conf *conf)
 
 int main(int argc, char *argv[]) {
 	struct wavemon_conf conf;
-	int		(*current_scr)(struct wavemon_conf *conf) = NULL;
+	int	(*current_scr)(struct wavemon_conf *conf) = NULL;
 	int 	nextscr;
 
 	getconf(&conf, argc, argv);
 
-	if (conf.dump == 1) {
-	  dump_parameters(&conf);
-	  exit(0);
+	if (conf.dump) {
+		dump_parameters(&conf);
+		exit(0);
 	}
 
 	/* initialize the ncurses interface */

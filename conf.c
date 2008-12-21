@@ -31,10 +31,7 @@
 #include "iw_if.h"
 #include "llist.h"
 
-#define CFNAME ".wavemonrc"
-
-#define DEB(VALUE) fprintf(stderr, "checkpoint: %d\n", VALUE);
-
+/* GLOBALS */
 int conf_items;
 
 char	*version_str = "wavemon wireless monitor 0.4.0b by Jan Morgenstern <jan@jm-music.de>",
@@ -46,7 +43,7 @@ void help_exit()
 	printf("Usage: wavemon [ -dhlrv ] [ -i ifname ]\n\n");
 	printf("  -d            Dump the current device status to stdout and exit\n");
 	printf("  -h            This help screen\n");
-	printf("  -i <ifname>   Use specified network interface (default eth0)\n");
+	printf("  -i <ifname>   Use specified network interface (default: auto)\n");
 	printf("  -l            Use linear scales in favour of algorithmic ones\n");
 	printf("  -r            Generate random levels (for testing purposes)\n");
 	printf("  -v            Print version number and exit\n\n");
@@ -75,44 +72,44 @@ void init_conf_items(struct wavemon_conf *conf)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->ifname;
-	item->name = strdup("Interface");
-	item->type = t_listval;
-	item->list = if_list;
-	item->max = 10;
-	item->cfname = strdup("interface");
+	item->name	= strdup("Interface");
+	item->cfname	= strdup("interface");
+	item->type	= t_listval;
+	item->v.s	= strdup(conf->ifname);
+	item->max	= 10;
+	item->list	= if_list;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->stat_iv;
-	item->name = strdup("Statistics updates");
-	item->type = t_int;
-	item->min = 10;
-	item->max = 4000;
-	item->inc = 10;
-	item->unit = strdup("ms");
-	item->cfname = strdup("stat_updates");
+	item->name	= strdup("Statistics updates");
+	item->cfname	= strdup("stat_updates");
+	item->type	= t_int;
+	item->v.i	= &conf->stat_iv;
+	item->min	= 10;
+	item->max	= 4000;
+	item->inc	= 10;
+	item->unit	= strdup("ms");
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->slotsize;
-	item->name = strdup("Histogram update cycles");
-	item->type = t_int;
-	item->min = 1;
-	item->max = 64;
-	item->inc = 1;
-	item->cfname = strdup("lhist_slot_size");
+	item->name	= strdup("Histogram update cycles");
+	item->cfname	= strdup("lhist_slot_size");
+	item->type	= t_int;
+	item->v.i	= &conf->slotsize;
+	item->min	= 1;
+	item->max	= 64;
+	item->inc	= 1;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->info_iv;
-	item->name = strdup("Dynamic info updates");
-	item->type = t_int;
-	item->min = 1;
-	item->max = 60;
-	item->inc = 1;
+	item->name	= strdup("Dynamic info updates");
+	item->cfname	= strdup("info_updates");
+	item->type	= t_int;
+	item->v.i	= &conf->info_iv;
+	item->min	= 1;
+	item->max	= 60;
+	item->inc	= 1;
 	item->unit = strdup("s");
-	item->cfname = strdup("info_updates");
 	ll_push(conf_items, "*", item);
 
 	/* level scale items */
@@ -126,120 +123,121 @@ void init_conf_items(struct wavemon_conf *conf)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->override_bounds;
-	item->name = strdup("Override scale autodetect");
-	item->type = t_switch;
-	item->cfname = strdup("override_auto_scale");
+	item->name	= strdup("Override scale autodetect");
+	item->cfname	= strdup("override_auto_scale");
+	item->type	= t_switch;
+	item->v.b	= &conf->override_bounds;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->sig_min;
-	item->name = strdup("Minimum signal level");
-	item->type = t_int;
-	item->min = -120;
-	item->max = -60;
-	item->inc = 1;
-	item->unit = strdup("dBm");
-	item->dep = &conf->override_bounds;
-	item->cfname = strdup("min_signal_level");
+	item->name	= strdup("Minimum signal level");
+	item->cfname	= strdup("min_signal_level");
+	item->type	= t_int;
+	item->v.i	= &conf->sig_min;
+	item->min	= -120;
+	item->max	= -60;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf->override_bounds;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->sig_max;
-	item->name = strdup("Maximum signal level");
-	item->type = t_int;
-	item->min = -59;
-	item->max = 120;
-	item->inc = 1;
-	item->unit = strdup("dBm");
-	item->dep = &conf->override_bounds;
-	item->cfname = strdup("max_signal_level");
+	item->name	= strdup("Maximum signal level");
+	item->cfname	= strdup("max_signal_level");
+	item->type	= t_int;
+	item->v.i	= &conf->sig_max;
+	item->min	= -59;
+	item->max	= 120;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf->override_bounds;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->noise_min;
-	item->name = strdup("Minimum noise level");
-	item->type = t_int;
-	item->min = -120; item->max = -60;
-	item->inc = 1;
-	item->unit = strdup("dBm");
-	item->dep = &conf->override_bounds;
-	item->cfname = strdup("min_noise_level");
+	item->name	= strdup("Minimum noise level");
+	item->cfname	= strdup("min_noise_level");
+	item->type	= t_int;
+	item->v.i	= &conf->noise_min;
+	item->min	= -120;
+	item->max	= -60;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf->override_bounds;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->noise_max;
-	item->name = strdup("Maximum noise level");
-	item->type = t_int;
-	item->min = -60;
-	item->max = 120;
-	item->inc = 1;
-	item->unit = strdup("dBm");
-	item->dep = &conf->override_bounds;
-	item->cfname = strdup("max_noise_level");
+	item->name	= strdup("Maximum noise level");
+	item->cfname	= strdup("max_noise_level");
+	item->type	= t_int;
+	item->v.i	= &conf->noise_max;
+	item->min	= -60;
+	item->max	= 120;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf->override_bounds;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->linear;
-	item->name = strdup("Linear level scales");
-	item->type = t_switch;
-	item->cfname = strdup("linear_scale");
+	item->name	= strdup("Linear level scales");
+	item->cfname	= strdup("linear_scale");
+	item->type	= t_switch;
+	item->v.b	= &conf->linear;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->random;
-	item->name = strdup("Random signals");
-	item->type = t_switch;
-	item->cfname = strdup("random");
+	item->name	= strdup("Random signals");
+	item->cfname	= strdup("random");
+	item->type	= t_switch;
+	item->v.b	= &conf->random;
 	ll_push(conf_items, "*", item);
 
 	/* thresholds */
 	item = calloc(1, s);
-	item->v = &conf->lthreshold_action;
-	item->name = strdup("Low threshold action");
-	item->type = t_list;
-	item->list = ll_create();
+	item->name	= strdup("Low threshold action");
+	item->cfname	= strdup("lo_threshold_action");
+	item->type	= t_list;
+	item->v.b	= &conf->lthreshold_action;
+	item->list	= ll_create();
 	ll_push(item->list, "s", "Disabled");
 	ll_push(item->list, "s", "Beep");
 	ll_push(item->list, "s", "Flash");
 	ll_push(item->list, "s", "Beep+Flash");
-	item->cfname = strdup("lo_threshold_action");
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->lthreshold;
-	item->name = strdup("Low threshold");
-	item->type = t_int;
-	item->min = -120;
-	item->max = -60;
-	item->inc = 1;
-	item->unit = strdup("dBm");
-	item->dep = (char *)&conf->lthreshold_action;
-	item->cfname = strdup("lo_threshold");
+	item->name	= strdup("Low threshold");
+	item->cfname	= strdup("lo_threshold");
+	item->type	= t_int;
+	item->v.i	= &conf->lthreshold;
+	item->min	= -120;
+	item->max	= -60;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf->lthreshold_action;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->hthreshold_action;
-	item->name = strdup("High threshold action");
-	item->type = t_list;
-	item->list = ll_create();
+	item->name	= strdup("High threshold action");
+	item->cfname	= strdup("hi_threshold_action");
+	item->type	= t_list;
+	item->v.b	= &conf->hthreshold_action;
+	item->list	= ll_create();
 	ll_push(item->list, "s", "Disabled");
 	ll_push(item->list, "s", "Beep");
 	ll_push(item->list, "s", "Flash");
 	ll_push(item->list, "s", "Beep+Flash");
-	item->cfname = strdup("hi_threshold_action");
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->hthreshold;
-	item->name = strdup("High threshold");
-	item->type = t_int;
-	item->min = -59;
-	item->max = 120;
-	item->inc = 1;
-	item->unit = strdup("dBm");
-	item->dep = (char *)&conf->hthreshold_action;
-	item->cfname = strdup("hi_threshold");
+	item->name	= strdup("High threshold");
+	item->cfname	= strdup("hi_threshold");
+	item->type	= t_int;
+	item->v.i	= &conf->hthreshold;
+	item->min	= -59;
+	item->max	= 120;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf->hthreshold_action;
 	ll_push(conf_items, "*", item);
 
 	/* start-up items */
@@ -253,14 +251,14 @@ void init_conf_items(struct wavemon_conf *conf)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = &conf->startup_scr;
-	item->name = strdup("Startup screen");
-	item->type = t_list;
-	item->list = ll_create();
+	item->name	= strdup("Startup screen");
+	item->cfname	= strdup("startup_screen");
+	item->type	= t_list;
+	item->v.b	= &conf->startup_scr;
+	item->list	= ll_create();
 	ll_push(item->list, "s", "Info");
 	ll_push(item->list, "s", "Histogram");
 	ll_push(item->list, "s", "Access points");
-	item->cfname = strdup("startup_screen");
 	ll_push(conf_items, "*", item);
 
 	/* functions */
@@ -269,9 +267,9 @@ void init_conf_items(struct wavemon_conf *conf)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, s);
-	item->v = write_cf;
-	item->name = strdup("Save configuration");
-	item->type = t_func;
+	item->name	= strdup("Save configuration");
+	item->type	= t_func;
+	item->v.fp	= write_cf;
 	ll_push(conf_items, "*", item);
 }
 
@@ -282,7 +280,7 @@ void getargs(struct wavemon_conf *conf, int argc, char *argv[])
 	while ((arg = getopt(argc, argv, "dhi:lrv")) >= 0)
 		switch (arg) {
 			case 'd':
-				conf->dump = 1;
+				conf->dump = true;
 				break;
 			case 'h':
 				help_exit();
@@ -294,10 +292,10 @@ void getargs(struct wavemon_conf *conf, int argc, char *argv[])
 					fatal_error("no wireless extensions found on device %s", optarg);
 				break;
 			case 'l':
-				conf->linear = 1;
+				conf->linear = true;
 				break;
 			case 'r':
-				conf->random = 1;
+				conf->random = true;
 				break;
 			case 'v':
 				version_exit();
@@ -317,13 +315,14 @@ void read_cf(struct wavemon_conf *conf)
 	char	found;
 	struct conf_item *ci = NULL;
 	struct passwd *pw = getpwuid(getuid());
-	int		v_int;
+	int	v_int;
 	char	*conv_err;
 	float	v_float;
 
 	cfname = malloc(strlen(pw->pw_dir) + strlen(CFNAME) + 3);
 	strcpy(cfname, pw->pw_dir);
 	strcat(cfname, "/"); strcat(cfname, CFNAME);
+
 	if ((fd = fopen(cfname, "r"))) {
 		while (fgets(tmp, 0x100, fd)) {
 			found = 0;
@@ -339,8 +338,8 @@ void read_cf(struct wavemon_conf *conf)
 
 				ll_reset(conf_items);
 				while (!found && (ci = ll_getall(conf_items)))
-					if (ci->type != t_sep && ci->type != t_func && !strcasecmp(ci->cfname, lv)) found = 1;
-
+					if (ci->type != t_sep && ci->type != t_func && !strcasecmp(ci->cfname, lv))
+						found = 1;
 				if (!found) {
 					fclose(fd);
 					fatal_error("parse error in %s, line %d: unknown identifier '%s'", cfname, lnum, lv);
@@ -378,9 +377,7 @@ void read_cf(struct wavemon_conf *conf)
 								fatal_error("parse error in %s, line %d: value is below minimum of %d",
 									    cfname, lnum, (int)ci->min);
 							} else {
-								*(int *)ci->v = v_int;
-						fprintf(stderr, "%s %d\n", cfname, v_int);
-						fprintf(stderr, "%s %d\n", cfname, *(int *)ci->v);
+								*ci->v.i = v_int;
 							}
 						} else {
 							fclose(fd);
@@ -400,7 +397,7 @@ void read_cf(struct wavemon_conf *conf)
 								fatal_error("parse error in %s, line %d: value is below minimum of %g",
 									    cfname, lnum, ci->min);
 							} else {
-								*(float *)ci->v = v_float;
+								ci->v.f = v_float;
 							}
 						} else {
 							fclose(fd);
@@ -410,7 +407,7 @@ void read_cf(struct wavemon_conf *conf)
 						break;
 					case t_string:
 						if (strlen(rv) <= ci->max) {
-							ci->v = strdup(rv);
+							ci->v.s = strdup(rv);
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: argument too long (max %d chars)",
@@ -420,10 +417,10 @@ void read_cf(struct wavemon_conf *conf)
 					case t_switch:
 						if (!strcasecmp(rv, "on") || !strcasecmp(rv, "enabled")
 						    || !strcasecmp(rv, "yes") || !strcasecmp(rv, "1")) {
-							*(char *)ci->v = 1;
+							*(ci->v.b) = 1;
 						} else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "disabled")
 							|| !strcasecmp(rv, "no") || !strcasecmp(rv, "0")) {
-							*(char *)ci->v = 0;
+							*(ci->v.b) = 0;
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead",
@@ -432,7 +429,7 @@ void read_cf(struct wavemon_conf *conf)
 						break;
 					case t_list:
 						if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
-							*(int *)ci->v = v_int;
+							*ci->v.b = v_int;
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
@@ -441,7 +438,7 @@ void read_cf(struct wavemon_conf *conf)
 						break;
 					case t_listval:
 						if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
-							strncpy(ci->v, (char *)ll_get(ci->list, v_int), 32);
+							ci->v.s = strdup(ll_get(ci->list, v_int));
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
@@ -456,38 +453,7 @@ void read_cf(struct wavemon_conf *conf)
 		}
 		fclose(fd);
 	} else if (errno != ENOENT) {
-		switch (errno) {
-			case EACCES:
-				fatal_error("cannot open %s: permission denied", cfname);
-				break;
-			case EAGAIN:
-				fatal_error("cannot open %s: resource temporarily unavailable", cfname);
-				break;
-			case EBUSY:
-				fatal_error("cannot open %s: resource busy", cfname);
-				break;
-			case EINTR:
-				fatal_error("cannot open %s: interrupted function call", cfname);
-				break;
-			case EINVAL:
-				fatal_error("cannot open %s: invalid argument", cfname);
-				break;
-			case EIO:
-				fatal_error("cannot open %s: i/o error", cfname);
-				break;
-			case EISDIR:
-				fatal_error("cannot open %s: is a directory", cfname);
-				break;
-			case EMFILE:
-				fatal_error("cannot open %s: too many open files", cfname);
-				break;
-			case EPERM:
-				fatal_error("cannot open %s: operation not permitted", cfname);
-				break;
-			case EPIPE:
-				fatal_error("cannot open %s: broken pipe", cfname);
-				break;
-		}
+		fatal_error("cannot open %s: %s", cfname, strerror(errno));
 	}
 }
 
@@ -515,29 +481,26 @@ void write_cf()
 
 	ll_reset(conf_items);
 	while ((ci = ll_getall(conf_items))) {
-		if (ci->type != t_sep && ci->type != t_func
-			&& (!ci->dep || (ci->dep && *ci->dep))) {
+		if (ci->type != t_sep && ci->type != t_func &&
+		    (!ci->dep || (ci->dep && *ci->dep))) {
 			switch (ci->type) {
 				case t_int:
-					sprintf(rv, "%d", *(int *)ci->v);
+					sprintf(rv, "%d", *ci->v.i);
 					break;
 				case t_float:
-					sprintf(rv, "%g", *(float *)ci->v);
+					sprintf(rv, "%g", ci->v.f);
 					break;
-				case t_string:
-					strcpy(rv, (char *)ci->v);
+				case t_string:	/* fall through */
+				case t_listval:
+					strcpy(rv, ci->v.s);
 					break;
 				case t_switch:
-					sprintf(rv, "%s", (*(char *)ci->v ? "on" : "off"));
+					sprintf(rv, "%s", *ci->v.b ? "on" : "off");
 					break;
 				case t_list:
-					sprintf(rv, "%s", (char *)ll_get(ci->list, *(int *)ci->v));
-					for (i = 0; i < strlen(rv); i++)
-						if (*(rv + i) >= 65 && *(rv + i) <= 90)
-							*(rv + i) += 32;
+					sprintf(rv, "%s", (char *)ll_get(ci->list, *ci->v.b));
+					str_tolower(rv);
 					break;
-				case t_listval:
-					sprintf(rv, "%s", (char *)ci->v);
 				/* Fall through, the rest are dummy statements to pacify gcc -Wall */
 				case t_sep:
 				case t_func:
@@ -591,36 +554,41 @@ void set_defaults(struct wavemon_conf *conf)
 {
 	strncpy(conf->ifname, ll_get(iw_getif(), 0), sizeof(conf->ifname));
 
-	conf->stat_iv = 100;
-	conf->info_iv = 10;
-	conf->slotsize = 4;
+	conf->stat_iv		= 100;
+	conf->info_iv		= 10;
+	conf->slotsize		= 4;
 
-	conf->override_bounds = 0;
-	conf->sig_min = -102;
-	conf->sig_max = 10;
-	conf->noise_min = -102;
-	conf->noise_max = 10;
-	conf->random = 0;
-	conf->linear = 0;
-	conf->lthreshold_action = 0;
-	conf->lthreshold = -80;
-	conf->hthreshold_action = 0;
-	conf->hthreshold = -10;
+	conf->override_bounds	= false;
+	conf->dump		= false;
+	conf->random		= false;
+	conf->linear		= false;
 
-	conf->startup_scr = 0;
+	conf->sig_min		= -102;
+	conf->sig_max		= 10;
+	conf->noise_min		= -102;
+	conf->noise_max		= 10;
+
+
+	conf->lthreshold_action	= 0;	/* Disabled, Beep, Flash, Beep+Flash */
+	conf->lthreshold	= -80;
+	conf->hthreshold_action	= 0;	/* Disabled, Beep, Flash, Beep+Flash */
+	conf->hthreshold	= -10;
+
+	conf->startup_scr	= 0;
 }
 
 void dealloc_on_exit()
 {
 	struct conf_item *ci;
 
-	if (conf_items) {
-	  while ((ci = ll_getall(conf_items)))
-		if ((ci->type == t_list) || (ci->type == t_listval))
-			ll_destroy(ci->list);
+	if (!conf_items)
+		return;
 
-	  ll_destroy(conf_items);
+	while ((ci = ll_getall(conf_items))) {
+		if (ci->type == t_list)
+			ll_destroy(ci->list);
 	}
+	ll_destroy(conf_items);
 }
 
 void getconf(struct wavemon_conf *conf, int argc, char *argv[])
