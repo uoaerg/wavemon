@@ -177,6 +177,7 @@ int main(int argc, char *argv[]) {
 	/* initialize the ncurses interface */
 	initscr(); cbreak(); noecho();
 	nonl(); clear();
+	curs_set(0);
 
 	start_color();
 	init_pair(CP_STANDARD, COLOR_WHITE, COLOR_BLACK);
