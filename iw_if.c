@@ -439,7 +439,6 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 			memset(buf, 0, sizeof(buf));
 			strncpy(buf, lp, strcspn(lp, ". "));
 			sscanf(buf, "%d", &stat->signal);
-			stat->signal -= 0x100;
 			if (random)
 				stat->signal = rnd_signal(-102, 10);
 			avg_signal += stat->signal / (float)slotsize;
@@ -450,7 +449,6 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 			memset(buf, 0, sizeof(buf));
 			strncpy(buf, lp, strcspn(lp, ". "));
 			sscanf(buf, "%d", &stat->noise);
-			stat->noise -= 0x100;
 			if (random)
 				stat->noise = rnd_noise(-102, -30);
 			avg_noise += stat->noise / (float)slotsize;
