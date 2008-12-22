@@ -134,11 +134,11 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 	wmove(w_stats, 1, 1);
 	
 	waddstr(w_stats, "RX: ");
-	sprintf(tmp, "%llu (%llu)", nstat.rx_packets, nstat.rx_bytes);
+	sprintf(tmp, "%llu (%s)", nstat.rx_packets, byte_units(nstat.rx_bytes));
 	waddstr_b(w_stats, tmp);
 	
 	waddstr(w_stats, ",  TX: ");
-	sprintf(tmp, "%llu (%llu)", nstat.tx_packets, nstat.tx_bytes);
+	sprintf(tmp, "%llu (%s)", nstat.tx_packets, byte_units(nstat.tx_bytes));
 	waddstr_b(w_stats, tmp);
 	
 	waddstr(w_stats, ",  inv: ");

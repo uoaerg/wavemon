@@ -32,3 +32,5 @@ struct if_stat {
 
 void if_getinf(char *ifname, struct if_info *info);
 void if_getstat(char *ifname, struct if_stat *stat);
+
+char *byte_units(unsigned long long bytes);
