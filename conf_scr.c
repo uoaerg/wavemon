@@ -52,9 +52,6 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 			case t_int:
 				sprintf(s, "%d", *item->v.i);
 				break;
-			case t_float:
-				sprintf(s, "%f", item->v.f);
-				break;
 			case t_string:
 				strncpy(s, item->v.s, item->max);
 				break;
@@ -150,7 +147,6 @@ void change_item(int inum, char sign, char accel)
 			strncpy(item->v.s, ll_get(item->list, tmp), 32);
 			break;
 		/* Dummy statements to pacify gcc -Wall */
-		case t_float:
 		case t_string:
 		case t_sep:
 		case t_func:

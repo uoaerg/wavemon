@@ -317,7 +317,6 @@ void read_cf(struct wavemon_conf *conf)
 	struct passwd *pw = getpwuid(getuid());
 	int	v_int;
 	char	*conv_err;
-	float	v_float;
 
 	cfname = malloc(strlen(pw->pw_dir) + strlen(CFNAME) + 3);
 	strcpy(cfname, pw->pw_dir);
@@ -382,26 +381,6 @@ void read_cf(struct wavemon_conf *conf)
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead",
-								    cfname, lnum, rv);
-						}
-						break;
-					case t_float:
-						v_float = strtod(rv, &conv_err);
-						if (*conv_err == '\0') {
-							if (v_float > ci->max) {
-								fclose(fd);
-								fatal_error("parse error in %s, line %d: value exceeds maximum of %g",
-									    cfname, lnum, ci->max);
-							} else if (v_float < ci->min) {
-								fclose(fd);
-								fatal_error("parse error in %s, line %d: value is below minimum of %g",
-									    cfname, lnum, ci->min);
-							} else {
-								ci->v.f = v_float;
-							}
-						} else {
-							fclose(fd);
-							fatal_error("parse error in %s, line %d: float value expected, '%s' found instead",
 								    cfname, lnum, rv);
 						}
 						break;
@@ -486,9 +465,6 @@ void write_cf()
 			switch (ci->type) {
 				case t_int:
 					sprintf(rv, "%d", *ci->v.i);
-					break;
-				case t_float:
-					sprintf(rv, "%g", ci->v.f);
 					break;
 				case t_string:	/* fall through */
 				case t_listval:
