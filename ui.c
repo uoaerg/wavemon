@@ -83,35 +83,29 @@ void waddstr_b(WINDOW *win, char *s)
 	wattroff(win, A_BOLD);
 }
 
-void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x, int maxx, char *cscale, char rev)
+void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x, int maxx, char *cscale, bool rev)
 {
-	int c;
-	int col;
-	int val = 0;
+	int steps = maxx - x;
+	chtype ch = '=' | A_BOLD | cp_from_scale(v, cscale, rev);
 
-	char steps = maxx - x;
+	if (v >= maxv) {
+		mvwhline(win, y, x, ch, steps);
+	} else {
+		int len = (float)steps * (v - minv)/(maxv - minv);
 
-	val = (v <= maxv ? v : val);
-
-	if (v < cscale[0]) col = (rev ? 2 : 4);
-		else if (v < cscale[1]) col = 3;
-			else col = (rev ? 4 : 2);
-
-	for (c = 0; c < steps / (float)(maxv - minv) * (val - minv); c++)
-		if (c < COLS -2) mvwaddch(win, y, x + c, '=' | A_BOLD | COLOR_PAIR(col));
-	while (x + c < maxx) mvwaddch(win, y, x + c++, 183);
+		mvwhline(win, y, x, ch, len);
+		mvwhline(win, y, x + len, ' ', steps - len);
+	}
 }
 
-void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv, int y, int x, int maxx, char *cscale, char rev, char tch)
+void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv, int y, int x, int maxx, char *cscale, chtype tch)
 {
-	int col;
-	char steps = maxx - x;
+	if (tv > minv && tv < maxv) {
+		if (v > tv)
+			tch |= COLOR_PAIR(CP_STANDARD);
+		else
+			tch |= cp_from_scale(v, cscale, true);
 
-	if (v < cscale[0]) col = (rev ? 2 : 4) | A_BOLD;
-		else if (v < cscale[1]) col = 3 | A_BOLD;
-			else col = (rev ? 4 : 2) | A_BOLD;
-
-	if (tv > minv && tv < maxv)
-		mvwaddch(win, y, x + (steps / (float)(maxv - minv) * (tv - minv)),
-			tch | (v > tv ? COLOR_PAIR(col) | A_BOLD : COLOR_PAIR(CP_STANDARD)));
+		mvwaddch(win, y, x + (float)(maxx - x)  * (tv - minv)/(maxv - minv), tch);
+	}
 }
