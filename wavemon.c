@@ -21,6 +21,8 @@
 #include <sys/time.h>
 #include <ncurses.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <err.h>
 
 #include "conf.h"
 #include "ui.h"
@@ -33,6 +35,13 @@
 #include "iw_if.h"
 #include "net_if.h"
 #include "defs.h"
+
+static void sig_winch(int signo)
+{
+	endwin();
+	dealloc_on_exit();
+	errx(1, "under the pain of death, thou shaltst not resize thyne window");
+}
 
 void reinit_on_changes(struct wavemon_conf *conf)
 {
@@ -173,6 +182,9 @@ int main(int argc, char *argv[]) {
 		dump_parameters(&conf);
 		exit(0);
 	}
+
+	if (signal(SIGWINCH, sig_winch) < 0)
+		err(1, "cannot install handler for window changes");
 
 	/* initialize the ncurses interface */
 	initscr(); cbreak(); noecho();
