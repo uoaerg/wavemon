@@ -8,6 +8,7 @@ CC = @CC@
 LIBS = @LIBS@
 
 CFLAGS = @CFLAGS@
+INSTALL = @INSTALL@
 
 OBJECTS = conf.o llist.o ui.o error.o timer.o info_scr.o lhist_scr.o aplst_scr.o conf_scr.o help_scr.o about_scr.o iw_if.o net_if.o
 
@@ -70,9 +71,9 @@ ipkg: wavemon wavemon.doc wavemonrc.doc
 	ipkg-build ipkg
 
 install: wavemon wavemon.1 wavemonrc.5
-	./install-sh -m 755 wavemon $(bindir)
-	./install-sh -m 755 wavemon.1 $(mandir)/man1
-	./install-sh -m 755 wavemonrc.5 $(mandir)/man5
+	$(INSTALL) -m 755 wavemon $(bindir)
+	$(INSTALL) -m 644 wavemon.1 $(mandir)/man1
+	$(INSTALL) -m 644 wavemonrc.5 $(mandir)/man5
 
 uninstall:
 	rm -f $(bindir)/wavemon
