@@ -26,14 +26,13 @@
 #include "conf.h"
 #include "ui.h"
 #include "about_scr.h"
-#include "defs.h"
 
 struct wavemon_conf *conf;
 
 #define A_LINES 11
 
 char *about_lines[A_LINES] = { "wavemon - status monitor for wireless network devices",
-						WAVEMON_VERSION_STR,
+						"version " WAVEMON_VERSION " (" WAVEMON_RELEASE_DATE ") ",
 						"programmed by jan morgenstern <jan@jm-music.de>",
 						"distributed under the terms of GNU general public license >=v2",
 						"",

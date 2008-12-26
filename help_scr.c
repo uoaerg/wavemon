@@ -25,7 +25,6 @@
 #include "conf.h"
 #include "ui.h"
 #include "help_scr.h"
-#include "defs.h"
 
 struct wavemon_conf *conf;
 

@@ -1,49 +1,37 @@
-prefix = @prefix@
+prefix	    = @prefix@
 exec_prefix = @exec_prefix@
 
-bindir = @bindir@
-mandir = @mandir@
+bindir	    = @bindir@
+mandir	    = @mandir@
 
-CC = @CC@
-LIBS = @LIBS@
+CC	= @CC@
+CFLAGS	= @CFLAGS@
+DEFS	= @DEFS@
+LIBS	= @LIBS@
 
-CFLAGS = @CFLAGS@
 INSTALL = @INSTALL@
+RM	= rm -vf
 
-OBJECTS = conf.o llist.o ui.o error.o timer.o info_scr.o lhist_scr.o aplst_scr.o conf_scr.o help_scr.o about_scr.o iw_if.o net_if.o
+MAIN	= wavemon.c
+PURESRC	= $(filter-out $(MAIN),$(wildcard *.c))
+OBJS	= $(PURESRC:.c=.o)
 
-all: wavemon
+%.o: %.c %.h
+	$(CC) $(CFLAGS) $(DEFS) -c -o $@ $<
 
-wavemon: wavemon.o $(OBJECTS)
-	$(CC) $(CFLAGS) $(LIBS) -o wavemon wavemon.o $(OBJECTS)
+wavemon: $(MAIN) $(OBJS)
+	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
 
-wavemon.o: wavemon.c defs.h $(OBJECTS)
+$(MAIN): Makefile
+Makefile: Makefile.in config.status
+	./config.status
+config.status: configure
+	./config.status --recheck
+configure: configure.in
+	autoconf
 
-conf.o: conf.c conf.h defs.h
-
-llist.o :llist.c llist.h defs.h
-
-ui.o: ui.c ui.h defs.h
-
-error.o: error.c error.h defs.h
-
-timer.o: timer.c timer.h defs.h
-
-info_scr.o: info_scr.c info_scr.h defs.h
-
-lhist_scr.o: lhist_scr.c lhist_scr.h defs.h
-
-aplst_scr.o: aplst_scr.c aplst_scr.h defs.h
-
-conf_scr.o: conf_scr.c conf_scr.h defs.h
-
-help_scr.o: help_scr.c help_scr.h defs.h
-
-about_scr.o: about_scr.c about_scr.h defs.h
-
-iw_if.o: iw_if.c iw_if.h defs.h
-
-net_if.o: net_if.c net_if.h defs.h
+tags: $(wildcard *[ch])
+	ctags $^ > $@
 
 .PHONY: install ipkg clean distclean uninstall
 IPAQ_DOCS = AUTHORS COPYING Changelog Makefile README TODO wavemon.doc wavemonrc.doc
@@ -62,7 +50,7 @@ ipkg: wavemon $(IPAQ_DOCS)
 	echo '?package(wavemon): needs="text" section="Utilities" title="wavemon" command="wavemon"' > ipkg/usr/lib/menu/wavemon
 	mkdir -p  ipkg/CONTROL
 	echo "Package: wavemon" > ipkg/CONTROL/control
-	echo "Version: @wavemon_version@" >> ipkg/CONTROL/control
+	echo "Version: @WAVEMON_VERSION@" >> ipkg/CONTROL/control
 	echo "Architecture: arm" >> ipkg/CONTROL/control
 	echo "Maintainer: dave w capella <dave.capella@cornell.edu>" >> ipkg/CONTROL/control
 	echo "Description: Wireless network monitoring tool" >> ipkg/CONTROL/control
@@ -76,10 +64,13 @@ install: wavemon wavemon.1 wavemonrc.5
 	$(INSTALL) -m 644 wavemonrc.5 $(mandir)/man5
 
 uninstall:
-	rm -f $(bindir)/wavemon
-	rm -f $(mandir)/man1/wavemon.1
-	rm -f $(mandir)/man5/wavemonrc.5
+	@$(RM) $(bindir)/wavemon
+	@$(RM) $(mandir)/man1/wavemon.1
+	@$(RM) $(mandir)/man5/wavemonrc.5
 
 clean:
-	rm -f *.o *.doc wavemon
-	rm -rf ipkg
+	@$(RM) *.o *.doc wavemon tags
+	@$(RM) -r ipkg
+
+distclean: uninstall clean
+	@$(RM) config.status config.log config.cache Makefile

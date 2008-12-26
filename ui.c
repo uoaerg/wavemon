@@ -25,7 +25,6 @@
 #include <ncurses.h>
 
 #include "ui.h"
-#include "defs.h"
 
 char *screens[] = { "info", "lhist", "aplst", "", "", "", "prefs", "help", "about", "quit" };
 

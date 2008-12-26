@@ -28,7 +28,6 @@
 #include "iw_if.h"
 #include "net_if.h"
 #include "info_scr.h"
-#include "defs.h"
 
 struct wavemon_conf *conf;
 

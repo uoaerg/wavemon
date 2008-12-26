@@ -29,7 +29,6 @@
 #include "timer.h"
 #include "iw_if.h"
 #include "lhist_scr.h"
-#include "defs.h"
 
 struct wavemon_conf *conf;
 

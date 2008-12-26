@@ -34,7 +34,6 @@
 #include "about_scr.h"
 #include "iw_if.h"
 #include "net_if.h"
-#include "defs.h"
 
 static void sig_winch(int signo)
 {
