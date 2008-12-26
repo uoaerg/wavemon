@@ -1780,7 +1780,7 @@ s%@includedir@%$includedir%g
 s%@oldincludedir@%$oldincludedir%g
 s%@infodir@%$infodir%g
 s%@mandir@%$mandir%g
-s%@WAVEMON_VERSION@%$WAVEMON_VERSION%g
+s%@wavemon_version@%$WAVEMON_VERSION%g
 s%@host@%$host%g
 s%@host_alias@%$host_alias%g
 s%@host_cpu@%$host_cpu%g
