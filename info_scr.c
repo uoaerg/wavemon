@@ -85,7 +85,7 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 
 	wmove(w_levels, 3, 1);
 	waddstr(w_levels, "signal level: ");
-	sprintf(tmp, "%d dBm (%.2f uW)  ", iw_stats.signal, dbm2mw(iw_stats.signal) * 1000);
+	sprintf(tmp, "%d dBm (%s)", iw_stats.signal, dbm2units(iw_stats.signal));
 	waddstr_b(w_levels, tmp);
 	if (conf->linear) {
 		waddbar(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->sig_min), 
@@ -116,7 +116,7 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 	}
 	wmove(w_levels, 5, 1);
 	waddstr(w_levels, "noise level: ");
-	sprintf(tmp, "%d dBm (%.2f uW)  ", iw_stats.noise, dbm2mw(iw_stats.noise) * 1000);
+	sprintf(tmp, "%4d dBm (%s)", iw_stats.noise, dbm2units(iw_stats.noise));
 	waddstr_b(w_levels, tmp);
 	if (conf->linear)
 		waddbar(w_levels, dbm2mw(iw_stats.noise), dbm2mw(conf->noise_min),

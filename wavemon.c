@@ -150,8 +150,8 @@ void dump_parameters(struct wavemon_conf *conf)
   printf("\n\n");
 
   printf("     link quality: %d/%d\n", stat.link, range.max_qual.qual);
-  printf("     signal level: %d dBm (%.2f uW)\n", stat.signal, dbm2mw(stat.signal) * 1000);
-  printf("      noise level: %d dBm (%.2f uW)\n", stat.noise, dbm2mw(stat.noise) * 1000);
+  printf("     signal level: %d dBm (%s)\n", stat.signal, dbm2units(stat.signal));
+  printf("      noise level: %d dBm (%s)\n", stat.noise, dbm2units(stat.noise));
   printf("              SNR: %d dB\n", stat.signal - stat.noise);
   printf("         total TX: %llu packets (%s)\n", nstat.tx_packets, byte_units(nstat.tx_bytes));
   printf("         total RX: %llu packets (%s)\n", nstat.rx_packets, byte_units(nstat.rx_bytes));

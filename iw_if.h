@@ -109,6 +109,7 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack, int sl
 int iw_get_aplist(char *ifname, struct iw_aplist *lst);
 void init_stat_iv(struct wavemon_conf *conf);
 int iw_getif();
-float dbm2mw(float in);
-float mw2dbm(float in);
+double dbm2mw(float in);
+char *dbm2units(float in);
+double mw2dbm(float in);
 float freq2ghz(struct iw_freq *f);

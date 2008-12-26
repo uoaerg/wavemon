@@ -45,18 +45,35 @@ struct wavemon_conf *conf;
  * convert log dBm values to linear mW
  */
 
-float dbm2mw(float in)
+double dbm2mw(float in)
 {
-	return ((float)pow(10.0, in / 10.0));
+	return pow(10.0, in / 10.0);
+}
+
+char *dbm2units(float in)
+{
+	static char with_units[0x100];
+	double val = dbm2mw(in);
+
+	if (val < 0.00000001) {
+		sprintf(with_units, "%.2f pW", val * 1e9);
+	} else if (val < 0.00001) {
+		sprintf(with_units, "%.2f nW", val * 1e6);
+	} else if (val < 0.01) {
+		sprintf(with_units, "%.2f uW", val * 1e3);
+	} else {
+		sprintf(with_units, "%.2f mW", val);
+	}
+	return with_units;
 }
 
 /*
  * convert linear mW values to log dBm
  */
 
-float mw2dbm(float in)
+double mw2dbm(float in)
 {
-	return ((float)pow(10.0, in / 10.0));
+	return pow(10.0, in / 10.0);
 }
 
 /*
@@ -65,7 +82,7 @@ float mw2dbm(float in)
 
 float freq2ghz(struct iw_freq *f)
 {
-	return ((f->e ? f->m * pow(10, f->e) : f->m) / 1000000000);
+	return (f->e ? f->m * pow(10, f->e) : f->m) / 1e9;
 }
 
 /*
