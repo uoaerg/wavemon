@@ -1,0 +1,84 @@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+mandir = @mandir@
+
+CC = @CC@
+LIBS = @LIBS@
+
+CFLAGS = @CFLAGS@
+
+OBJECTS = conf.o llist.o ui.o error.o timer.o info_scr.o lhist_scr.o aplst_scr.o conf_scr.o help_scr.o about_scr.o iw_if.o net_if.o
+
+all: wavemon
+
+wavemon: wavemon.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(LIBS) -o wavemon wavemon.o $(OBJECTS)
+
+wavemon.o: wavemon.c defs.h $(OBJECTS)
+
+conf.o: conf.c conf.h defs.h
+
+llist.o :llist.c llist.h defs.h
+
+ui.o: ui.c ui.h defs.h
+
+error.o: error.c error.h defs.h
+
+timer.o: timer.c timer.h defs.h
+
+info_scr.o: info_scr.c info_scr.h defs.h
+
+lhist_scr.o: lhist_scr.c lhist_scr.h defs.h
+
+aplst_scr.o: aplst_scr.c aplst_scr.h defs.h
+
+conf_scr.o: conf_scr.c conf_scr.h defs.h
+
+help_scr.o: help_scr.c help_scr.h defs.h
+
+about_scr.o: about_scr.c about_scr.h defs.h
+
+iw_if.o: iw_if.c iw_if.h defs.h
+
+net_if.o: net_if.c net_if.h defs.h
+
+wavemon.doc: wavemon.1
+	groff -Tascii -man wavemon.1 > wavemon.doc
+
+wavemonrc.doc: wavemon.5
+	groff -Tascii -man wavemonrc.5 > wavemonrc.doc
+
+IPAQ_DOCS = AUTHORS COPYING Changelog Makefile README TODO wavemon.doc wavemonrc.doc
+
+ipkg: wavemon wavemon.doc wavemonrc.doc
+	mkdir -p ipkg/usr/local/bin
+	cp wavemon ipkg/usr/local/bin
+	mkdir -p ipkg/usr/doc/wavemon
+	for f in $(IPAQ_DOCS) ; do cp $f ipkg/usr/doc/wavemon ; done
+	mkdir -p ipkg/usr/lib/menu
+	echo '?package(wavemon): needs="text" section="Utilities" title="wavemon" command="wavemon"' > ipkg/usr/lib/menu/wavemon
+	mkdir ipkg/CONTROL
+	echo "Package: wavemon" > ipkg/CONTROL/control
+	echo "Version: @wavemon_version@" >> ipkg/CONTROL/control
+	echo "Architecture: arm" >> ipkg/CONTROL/control
+	echo "Maintainer: dave w capella <dave.capella@cornell.edu>" >> ipkg/CONTROL/control
+	echo "Description: Wireless network monitoring tool" >> ipkg/CONTROL/control
+	echo "Priority: optional" >> ipkg/CONTROL/control
+	echo "Section: extras" >> ipkg/CONTROL/control
+	ipkg-build ipkg
+
+install: wavemon wavemon.1 wavemonrc.5
+	./install-sh -m 755 wavemon $(bindir)
+	./install-sh -m 755 wavemon.1 $(mandir)/man1
+	./install-sh -m 755 wavemonrc.5 $(mandir)/man5
+
+uninstall:
+	rm -f $(bindir)/wavemon
+	rm -f $(mandir)/man1/wavemon.1
+	rm -f $(mandir)/man5/wavemonrc.5
+
+clean:
+	rm -f *.o *.doc wavemon
+	rm -rf ipkg

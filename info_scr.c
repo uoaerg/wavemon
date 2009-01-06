@@ -1,0 +1,395 @@
+/*
+ * wavemon - a wireless network monitoring aplication
+ *
+ * Copyright (c) 2001-2002 Jan Morgenstern <jan@jm-music.de>
+ *
+ * wavemon is free software; you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation; either version 2, or (at your option) any later 
+ * version.
+ * 
+ * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+ * details.
+ * 
+ * You should have received a copy of the GNU General Public License along 
+ * with wavemon; see the file COPYING.  If not, write to the Free Software 
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <ncurses.h>
+
+#include "conf.h"
+#include "ui.h"
+#include "timer.h"
+#include "iw_if.h"
+#include "net_if.h"
+#include "info_scr.h"
+#include "defs.h"
+
+struct wavemon_conf *conf;
+
+WINDOW	*w_if, *w_levels, *w_stats, *w_info, *w_net, *w_menu;
+
+struct iw_range range;
+
+char *opmodes[] = { "auto", "ad-hoc", "managed", "master", "repeater", "secondary" };
+
+signed int random_level1(int min, int max)
+{
+	static signed int rlvl, rlvl_next;
+	int i;
+
+	for (i = 0; i < 1; i++)
+		if (rlvl < rlvl_next) rlvl++;
+		else if (rlvl > rlvl_next) rlvl--;
+		else if (rlvl == rlvl_next)
+			rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
+	return rlvl;
+}
+
+int random_level2(int min, int max)
+{
+	static signed int rlvl, rlvl_next;
+	int i;
+
+	for (i = 0; i < 1; i++)
+		if (rlvl < rlvl_next) rlvl++;
+		else if (rlvl > rlvl_next) rlvl--;
+		else if (rlvl == rlvl_next)
+			rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
+	return rlvl;
+}
+
+void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
+{
+	int snr;
+	char nscale[2], lvlscale[2];
+	char snrscale[2] = { 6, 12 };
+	struct if_stat nstat;
+	char tmp[0x100];
+	
+	if (conf->linear) { lvlscale[0] = 10; lvlscale[1] = 50; }
+		else { lvlscale[0] = -40; lvlscale[1] = -20; };
+
+/*	iw_getstat(ifname, &stat, &stack, 256, conf->random); */
+	if_getstat(ifname, &nstat);
+	wmove(w_levels, 1, 1);
+	waddstr(w_levels, "link quality: ");
+	sprintf(tmp, "%d/%d  ", iw_stats.link, range.max_qual.qual);
+	waddstr_b(w_levels, tmp);
+	waddbar(w_levels, iw_stats.link, 0, range.max_qual.qual, 2, 1, COLS - 1, lvlscale, 1);
+
+	wmove(w_levels, 3, 1);
+	waddstr(w_levels, "signal level: ");
+	sprintf(tmp, "%d dBm (%.2f uW)  ", iw_stats.signal, dbm2mw(iw_stats.signal) * 1000);
+	waddstr_b(w_levels, tmp);
+	if (conf->linear) {
+		waddbar(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->sig_min), 
+			dbm2mw(conf->sig_max), 4, 1, COLS - 1, lvlscale, 1);
+		if (conf->lthreshold_action)
+			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->lthreshold), 
+				dbm2mw(conf->sig_min), dbm2mw(conf->sig_max), 4, 1, COLS - 1, lvlscale, 1, '>');
+		if (conf->hthreshold_action)
+			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->hthreshold), 
+				dbm2mw(conf->sig_min), dbm2mw(conf->sig_max), 4, 1, COLS - 1, lvlscale, 1, '<');
+	} else {
+		waddbar(w_levels, iw_stats.signal, conf->sig_min, conf->sig_max, 4, 1, COLS - 1, lvlscale, 1);
+		if (conf->lthreshold_action)
+			waddthreshold(w_levels, iw_stats.signal, conf->lthreshold, conf->sig_min, conf->sig_max, 4, 1,
+				COLS - 1, lvlscale, 1, '>');
+		if (conf->hthreshold_action)
+			waddthreshold(w_levels, iw_stats.signal, conf->hthreshold, conf->sig_min, conf->sig_max, 4, 1,
+				COLS - 1, lvlscale, 1, '<');
+	}
+
+
+	if (conf->linear) {
+		nscale[0] = dbm2mw(iw_stats.signal) - 10;
+		nscale[1] = dbm2mw(iw_stats.signal);
+	} else {
+		nscale[0] = iw_stats.signal - 20;
+		nscale[1] = iw_stats.signal;
+	}
+	wmove(w_levels, 5, 1);
+	waddstr(w_levels, "noise level: ");
+	sprintf(tmp, "%d dBm (%.2f uW)  ", iw_stats.noise, dbm2mw(iw_stats.noise) * 1000);
+	waddstr_b(w_levels, tmp);
+	if (conf->linear)
+		waddbar(w_levels, dbm2mw(iw_stats.noise), dbm2mw(conf->noise_min),
+			dbm2mw(conf->noise_max), 6, 1, COLS - 1, nscale, 0);
+		else waddbar(w_levels, iw_stats.noise, conf->noise_min, conf->noise_max, 6, 1, COLS - 1, nscale, 0);
+	
+	snr = iw_stats.signal - iw_stats.noise;
+	wmove(w_levels, 7, 1);
+	waddstr(w_levels, "signal-to-noise ratio: ");
+	if (snr > 0) waddstr_b(w_levels, "+");
+	sprintf(tmp, "%d dB   ", snr);	
+	waddstr_b(w_levels, tmp);
+	waddbar(w_levels, snr, 0, 110, 8, 1, COLS - 1, snrscale, 1);
+	
+	wmove(w_stats, 1, 1);
+	
+	waddstr(w_stats, "RX: ");
+	sprintf(tmp, "%llu (%llu)", nstat.rx_packets, nstat.rx_bytes);
+	waddstr_b(w_stats, tmp);
+	
+	waddstr(w_stats, ",  TX: ");
+	sprintf(tmp, "%llu (%llu)", nstat.tx_packets, nstat.tx_bytes);
+	waddstr_b(w_stats, tmp);
+	
+	waddstr(w_stats, ",  inv: ");
+	sprintf(tmp, "%lu", iw_stats.dsc_nwid);
+	waddstr_b(w_stats, tmp);
+	waddstr(w_stats, " nwid, ");
+	sprintf(tmp, "%lu", iw_stats.dsc_enc);
+	waddstr_b(w_stats, tmp);
+	waddstr(w_stats, " key, ");
+	sprintf(tmp, "%lu", iw_stats.dsc_misc);
+	waddstr_b(w_stats, tmp);
+	waddstr(w_stats, " misc");
+}
+
+void redraw_stats()
+{
+	display_stats(conf->ifname, w_levels, w_stats);
+	wrefresh(w_levels);
+	wrefresh(w_stats);
+	wmove(w_menu, 1, 0);
+	wrefresh(w_menu);
+}
+
+void display_info(char *ifname, WINDOW *w_if, WINDOW *w_info)
+{
+	struct iw_dyn_info info;
+	char 	tmp[0x100];
+	int 	ysize, xsize;
+	int 	i;
+	
+	getmaxyx(w_if, ysize, xsize);
+	for (i = 1; i < ysize - 1; i++)
+		mvwhline(w_if, i, 1, ' ', xsize - 2);
+	getmaxyx(w_info, ysize, xsize);
+	for (i = 1; i < ysize - 1; i++)
+		mvwhline(w_info, i, 1, ' ', xsize - 2);
+	
+	iw_getinf_dyn(ifname, &info);
+
+	wmove(w_if, 1, 1);
+	sprintf(tmp, "%s (%s)", ifname, info.name);
+	waddstr_b(w_if, tmp);
+	
+	waddstr(w_if, ",  ESSID: ");
+	if (info.cap_essid) {
+		sprintf(tmp, "\"%s\"", info.essid);
+		waddstr_b(w_if, tmp);
+	} else waddstr(w_if, "n/a");
+	
+	waddstr(w_if, ",  nick: ");
+	if (info.cap_nickname) {
+		sprintf(tmp, "\"%s\"", info.nickname);
+		waddstr_b(w_if, tmp);
+	} else waddstr(w_if, "n/a");
+		
+	wmove(w_info, 1, 1);
+	waddstr(w_info, "frequency: ");
+	if (info.cap_freq) {
+		sprintf(tmp, "%.4f GHz", info.freq);
+		waddstr_b(w_info, tmp);
+	} else waddstr(w_if, "n/a");
+
+	waddstr(w_info, ",  sensitivity: ");
+	if (info.cap_sens) {
+		sprintf(tmp, "%ld/%d", info.sens, range.sensitivity);
+		waddstr_b(w_info, tmp);
+	} else waddstr(w_info, "n/a");
+
+	waddstr(w_info, ",  TX power: ");
+	if (info.cap_txpower) {
+		sprintf(tmp, "%d dBm (%.2f mW)", info.txpower_dbm, info.txpower_mw);
+		waddstr_b(w_info, tmp);
+	} else waddstr(w_info, "n/a");
+	
+	wmove(w_info, 2, 1);
+	waddstr(w_info, "mode: ");
+	if (info.cap_mode) waddstr_b(w_info, opmodes[info.mode]);
+	else waddstr(w_info, "n/a");
+
+	if (info.mode != 1) {
+		waddstr(w_info, ",  access point: ");
+		if (info.cap_ap) {
+			sprintf(tmp, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX", 
+				info.ap_addr.sa_data[0] & 0xFF,
+				info.ap_addr.sa_data[1] & 0xFF,
+				info.ap_addr.sa_data[2] & 0xFF,
+				info.ap_addr.sa_data[3] & 0xFF, 
+				info.ap_addr.sa_data[4] & 0xFF,
+				info.ap_addr.sa_data[5] & 0xFF);
+			waddstr_b(w_info, tmp);
+		} else waddstr(w_info, "n/a");
+	}
+	
+	wmove(w_info, 3, 1);
+	waddstr(w_info, "bitrate: ");
+	if (info.cap_bitrate) {
+		sprintf(tmp, "%g Mbit/s", (double)info.bitrate / 1000000);
+		waddstr_b(w_info, tmp);
+	} else waddstr(w_info, "n/a");
+	
+	waddstr(w_info, ",  RTS thr: ");
+	if (info.cap_rts) {
+		if (info.rts_on) sprintf(tmp, "%d bytes", info.rts);
+			else sprintf(tmp, "off");
+		waddstr_b(w_info, tmp);
+	} else waddstr(w_info, "n/a");
+	
+	waddstr(w_info, ",  frag thr: ");
+	if (info.cap_frag) {
+		if (info.frag_on) sprintf(tmp, "%d bytes", info.frag);
+			else sprintf(tmp, "off");
+		waddstr_b(w_info, tmp);
+	} else waddstr(w_info, "n/a");
+
+	wmove(w_info, 4, 1);
+	waddstr(w_info, "encryption: ");
+	if (info.cap_encode) {
+		if (info.eflags.disabled || info.keysize == 0) {
+			waddstr_b(w_info, "off");
+		} else {
+			for (i = 0; i < info.keysize; i++) {
+				sprintf(tmp, "%2X", info.key[i]);
+				waddstr_b(w_info, tmp);
+			}
+			if (info.eflags.index) {
+				sprintf(tmp, " [%d]", info.key_index);
+				waddstr_b(w_info, tmp);
+			}
+			if (info.eflags.restricted) waddstr(w_info, ", restricted");
+			if (info.eflags.open) waddstr(w_info, ", open");
+		}
+	} else waddstr(w_info, "n/a");
+
+	wmove(w_info, 5, 1);
+	waddstr(w_info, "power management:");
+	if (info.cap_power) {
+		if (info.pflags.disabled) {
+			waddstr_b(w_info, " off");
+		} else {
+			if (info.pflags.min) waddstr_b(w_info, " min"); else waddstr_b(w_info, " max");
+			if (info.pflags.timeout) waddstr_b(w_info, " timeout"); else waddstr_b(w_info, " period");
+			if (info.pflags.rel) {
+				if (info.pmvalue > 0) sprintf(tmp, " +%ld", info.pmvalue);
+					else sprintf(tmp, " %ld", info.pmvalue);
+				waddstr_b(w_info, tmp);
+			} else {
+				if (info.pmvalue > 1000000) sprintf(tmp, " %ld s", info.pmvalue / 1000000);
+				else if (info.pmvalue > 1000) sprintf(tmp, " %ld ms", info.pmvalue / 1000);
+				else sprintf(tmp, " %ld us", info.pmvalue);
+				waddstr_b(w_info, tmp);
+			}
+			if (info.pflags.unicast && info.pflags.multicast)
+				waddstr_b(w_info, ", rcv all");
+			else if (info.pflags.multicast) waddstr_b(w_info, ", rcv multicast");
+			else waddstr_b(w_info, ", rcv unicast");
+			if (info.pflags.forceuc) waddstr_b(w_info, ", force unicast");
+			if (info.pflags.repbc) waddstr_b(w_info, ", repeat broadcast");
+		}
+	} else waddstr(w_info, "n/a");
+}
+
+void display_netinfo(char *ifname, WINDOW *w_net)
+{
+	struct if_info info;
+	char 	tmp[0x100];
+	int		ysize, xsize;
+	int		i;
+	
+	getmaxyx(w_net, ysize, xsize);
+	for (i = 1; i < ysize - 1; i++)
+		mvwhline(w_net, i, 1, ' ', xsize - 2);
+
+	if_getinf(ifname, &info);
+
+	wmove(w_net, 1, 1);
+
+	waddstr(w_net, "if: ");
+	waddstr_b(w_net, ifname);
+
+	waddstr(w_net, ",  hwaddr: ");
+	sprintf(tmp, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
+		info.hwaddr[0] & 0xFF, info.hwaddr[1] & 0xFF,
+		info.hwaddr[2] & 0xFF, info.hwaddr[3] & 0xFF,
+		info.hwaddr[4] & 0xFF, info.hwaddr[5] & 0xFF);
+	waddstr_b(w_net, tmp);
+
+	wmove(w_net, 2, 1);
+
+	waddstr(w_net, "addr: ");
+	sprintf(tmp, "%hhu.%hhu.%hhu.%hhu", info.addr[0] & 0xFF,
+		info.addr[1] & 0xFF, info.addr[2] & 0xFF, info.addr[3] & 0xFF);
+	waddstr_b(w_net, tmp);
+
+	waddstr(w_net, ",  netmask: ");
+	sprintf(tmp, "%hhu.%hhu.%hhu.%hhu", info.netmask[0] & 0xFF,
+		info.netmask[1] & 0xFF, info.netmask[2] & 0xFF,
+		info.netmask[3] & 0xFF);
+	waddstr_b(w_net, tmp);
+
+	waddstr(w_net, ",  bcast: ");
+	sprintf(tmp, "%hhu.%hhu.%hhu.%hhu", info.bcast[0] & 0xFF,
+		info.bcast[1] & 0xFF, info.bcast[2] & 0xFF,
+		info.bcast[3] & 0xFF);
+	waddstr_b(w_net, tmp);
+}
+
+int scr_info(struct wavemon_conf *wmconf) {
+	struct timer t1;
+	int		key = 0;			/* burn, you devilish gnu compiler */
+	
+	conf = wmconf;
+
+	w_if = newwin_title(2, COLS, 0, 0, "Interface", 0, 1);
+	w_levels = newwin_title(9, COLS, 2, 0, "Levels", 1, 1);
+	w_stats = newwin_title(2, COLS, 11, 0, "Statistics", 1, 1);
+	w_info = newwin_title(6, COLS, 13, 0, "Info", 1, 1);
+	w_net = newwin_title(4, COLS, 19, 0, "Network", 1, 0);
+	w_menu = newwin(1, COLS, LINES - 1, 0);
+	
+	display_info(conf->ifname, w_if, w_info);
+	wrefresh(w_if);
+	wrefresh(w_info);
+	display_netinfo(conf->ifname, w_net);
+	wrefresh(w_net);
+	wmenubar(w_menu, 0);
+	wrefresh(w_menu);
+	
+	nodelay(w_menu, TRUE); keypad(w_menu, TRUE);
+	
+	iw_stat_redraw = redraw_stats;
+
+	iw_getinf_range(conf->ifname, &range);
+
+	do {
+		display_info(conf->ifname, w_if, w_info);
+		display_netinfo(conf->ifname, w_net);
+		wrefresh(w_if);
+		wrefresh(w_info);
+		wrefresh(w_net);
+		start_timer(&t1, conf->info_iv * 1000000);
+		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0) sleep(1);
+	} while (key < 265 || key > 275);
+
+	iw_stat_redraw = NULL;
+	
+	werase(w_if); wrefresh(w_if); delwin(w_if);
+	werase(w_levels); wrefresh(w_levels); delwin(w_levels);
+	werase(w_stats); wrefresh(w_stats); delwin(w_stats);
+	werase(w_info); wrefresh(w_info); delwin(w_info);
+	werase(w_net); wrefresh(w_net); delwin(w_net);
+	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
+	
+	return key - 265;
+}

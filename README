@@ -1,0 +1,34 @@
+wavemon 0.4.0b README
+---------------------
+
+wavemon is a wireless device monitoring application that allows you to watch
+signal and noise levels, packet statistics, device configuration and network
+parameters of your wireless network hardware. It has currently only been
+tested with the Lucent Orinoco series of cards, although it *should* work 
+(though with varying features) with all devices supported by the wireless 
+kernel extensions by Jean Tourrilhes <jt@hpl.hp.com>.
+
+While most of the planned features are more or less implemented, plase keep 
+in mind that this is an beta release, and as such, it is likely not to work 
+as you may expect sometimes.
+
+The access point list is sill broken on most cards; please don't report this
+as a bug. I'm planning to incorporate the much-enhanced scanning feature of
+recent wireless extension versions in the near future.
+
+See the man page for an in-depth description of program operation and
+configuration.
+
+wavemon is free software; it is distributed under the terms of the GNU General
+Public License. Please refer to the file COPYING within the archive for 
+details. Last but by no means least, wavemon is a fun project and the result
+of the urge to play a little around with my new wavelan card, so while I
+definitely hope that some people may find it useful, you should not expect too
+much of this. Also, although it shouldn't do any damage to you system when
+using it, you'll understand that I won't take any responsibility for this. In
+other words: YOU USE THIS ON YOUR OWN RISK.
+
+If you have bug reports or suggestions, please contact me at <jan@jm-music.de>.
+
+You can always find the latest version of this software at the wavemon page:
+http://www.jm-music.de/projects.html

@@ -1,0 +1,111 @@
+0.4.0b (12/21/2002):
+
+	- I want to take the opportunity to apologize for the lack of
+	updates. It has been more than a year since the last revision,
+	and I guess a lot of you have already perceived wavemon as being
+	dead. This is not the case, and I sincerely hope that I'll be able
+	to pick up the pace in the near future. Special thanks and big
+	apologies go out to people who sent me patches, only to find the
+	project seemingly abandoned. Here you go. Sorry for my laziness.
+
+	- access point list works correctly now if your card supports the
+	SIOCGIWAPLIST ioctl (which is propably not the case - the scanning
+	feature of recent wireless extension versions will be supported
+	in the near future) (Jan, Dave Wagner <dave@sauron.lipscomb.edu>)
+
+	- project now uses autoconf for building (Jan)
+
+	- Makefile modifications for ipkg package building (for mobile
+	devices) (Dave W Capella <dave.capella@cornell.edu>)
+
+	- changed "histogram slot size" in configuration screen to less
+	confusing (I hope) "histogram update cycles" (Jan)
+
+	- modifications for wireless extensions v15 compatability (now
+	in kernel tree 2.5, later to be incorporated into 2.4) (Jan,
+	Bruno Randolf <br1@subnet.at>)
+
+	- configuration dump implemented (try wavemon -d) (Jan)
+
+	- display bug on info screen (power management) fixed (Jan)
+
+	- fixed nasty SEGV bug upon encountering unknown configuration
+	specifiers (Jan)
+
+	- problems with using multiple interfaces fixed (Sven Koch)
+
+	- fixed parameter mismatch (va_arg / va_arg *) (Bjoern Kriews)
+
+	- now compiles on SuSE/Alpha AXP (Kernel 2.4.4) (Bjoern)
+
+	- some include changes (Bjoern)
+
+0.3.3 (08/19/2001):
+
+	- wavemon no longer segfaults when there are no wireless extensions
+	installed or no interfaces can be found (Jan)
+
+	- no more compiler errors concerning va_arg types with gcc3 (Jan)
+	
+	- now works with Lucent Wavelan (pre-Orinoco) interfaces (Sven
+	Koch <haegar@cut.de>)
+
+	- ncurses window confusion in info_scr.c fixed (Sven Koch 
+	<haegar@cut.de>)
+	
+	- MAC and IP address elements are truncated to bytes before being 
+	displayed (Jean Tourrilhes <jt@hpl.hp.com>)
+
+0.3.2a (01/07/2001)
+
+	- the access point list now uses the SIOCGIWSPY call; this is merely a
+	workaround, since SIOCGIWLIST seems to be broken ATM. However, this
+	means you have to execute iwspy from the wireless tools before APs
+	will show up.
+
+	- man pages
+	
+	- "about" screen
+
+	- small bug fixes
+	
+0.3 (05/01/2001)
+	
+	- level histogram implemented
+	
+	- statistics are now obtained and averaged into a history cache
+	in the background using an interval timer
+	
+	- dynamic device information is now correctly updated at the info 
+	screen
+	
+	- primitive access point list (just the MACs)
+
+	- somewhat fancier random signal generator (look mom, noise!)
+
+	- displays maximum signal quality
+
+	- code cleanups
+
+0.2a (04/23/2001):
+
+	- implemented an UI based on different monitor screens along with
+	dummy screens for histogram, access points, preferences and help
+	
+	- network information (such as IP and MAC addresses) is now obtained
+	and displayed (Ethernet and IPv4 only)
+	
+	- network statistics (total TX/RX packets and bytes) are now obtained
+	along with the wireless statistics about discarded packets
+	
+	- several command line arguments added, along with -h
+	
+	- about page
+	
+	- added a random level generator for testing purposes
+	
+	- general cleanup of the wireless API link
+
+0.1a (04/21/2001)
+
+	Initial version

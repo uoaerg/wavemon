@@ -1,0 +1,7 @@
+Original author and maintainer
+------------------------------
+Jan Morgenstern <jan@jm-music.de>
+
+
+wavemon uses the Wireless Extensions, the kernel drivers for wireless
+network devices written by Jean Tourrilhes <jt@hpl.hp.com>.

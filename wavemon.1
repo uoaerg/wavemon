@@ -1,0 +1,89 @@
+.TH WAVEMON 1 "DECEMBER 2002" Linux "User Manuals"
+.SH NAME
+wavemon \- a wireless network monitor application
+.SH SYNOPSIS
+.B wavemon [-h] [-i
+.I ifname
+.B ] [-l] [-r] [-v]
+.SH DESCRIPTION
+.B wavemon
+is a ncurses-based monitoring application for wireless network devices. It displays continuously updated information about signal levels as well as wireless-specific and general network information. Currently, wavemon can be used for monitoring devices supported by the wireless extensions by Jean Tourrilhes <jt@hpl.hp.com>, included in kernels version 2.4 and higher. 
+
+The wavemon interface is separated into several different sections, hereby referred to as "screens". Every screen displays information about distinct parameter types and/or in a special manner. For example, the "info" screen shows the current signal and noise levels as bargraphs, while the level histogram shows the exact same values as a level plot, so their development over time can be seen.
+On startup, you'll see one of the different monitor screens (which of the screens will actually be displayed depends on your configuration). On the bottom, you'll see a bar showing the available screens along with function key strokes.
+.LP
+These screens are currently implemented:
+.TP
+.B Info (F1)
+This is the most "conclusive" of the monitor screens. It displays a condensed overview of all available wireless-specific parameters and network statistics, as well as bar graphs of the current signal and noise levels. There are several sub-sections to further separate the information.
+
+At the
+.B Interface
+section, the name, ESSID and nickname of the current wireless interface are shown.
+
+Below, at the
+.B Levels
+section, you can see four bargraphs showing the quality of the link to the next station (if established), the level of the received signal, the current receiver's noise level and the signal-to-noise ration, which gives a good approximation of the overall signal quality. The colour of the signal level bargraph changes from red to yellow and green at fixed levels, while the colour of the noise level graph is adapted to the current signal level (it turns red when the signal-to-noise-ratio gets below 0dB). If the thresholds are associated with any actions, two arrows on the signal level graph will show the positions of the current thresholds. More on this topic later.
+
+The
+.B Statistics
+section displays packet and byte counters. The first four values, preceded RX and TX, show the current total number of packets received and transceived since the initialization of the interface. The following three values display the number of packets that were discarded from the interface because of invalid network ids, wrong encryption keys and other errors.
+
+Below, at the
+.B Info
+subsection, various wireless-specific parameters of the interface are displayed. What parameters are actually shown may vary and depends on the capabilities and the operation mode of your network device. The top line shows the current frequency the interface operates on, the sensitivity threshold of the receiver and the transmission power. Below, the operation mode of the interface (managed, ad-hoc...) and, if appropriate, the MAC address of the current access point are displayed. The third line shows the current data transfer speed in Mbit/s and the retransmission and fragmentation thresholds. Whether or not the details about encryption show up in the next line depends on the permissions of the user. Finally, the last line displays the power management parameters, if this feature is available and active.
+
+The last section, titled
+.B Network,
+shows - you guessed it - network parameters, such as the interface name and hardware address as well as the interface, netmask and broadcast IP addresses. These parameters are not wireless-related.
+.TP
+.B Level histogram (F2)
+This is a full-screen histogram plot of the signal/noise levels and the signal-to-noise levels. It shows the level changes with time. Below the plot, the key is shown. If available, the terminfo scanline chars are used in order to enhance the precision of the level plots, i.e. this screen will particularly look nifty in a xterm.
+.TP
+.B Access point list (F3)
+This screen provides a list of MAC addresses specifying the access points within range. This feature is currently _very_ rudimentary and may not even work for you. Stay tuned, as a more useable access point list is on its way.
+.TP
+.B Preferences (F7)
+This screen allows you to change all program options such as interface and level scale parameters, and to save the new settings to the configuration file. Select a parameter with <up> and <down>, then change the value with <left> and <right>. Please refer to the
+.B wavemonrc
+man page for an in-depth description of all available settings.
+.TP
+.B Help (F8)
+This page will show an online-help in the near future; it is currently not implemented.
+.TP
+.B About (F9)
+This screen contains information about the current
+.B wavemon 
+release.
+.TP
+.B Quit (F10)
+The associated function key will immediately exit 
+.B wavemon.
+.SH OPTIONS
+.IP -h
+print a short explanation of the command line arguments and exit.
+.IP "-i interface"
+override autodetection and use the specified interface.
+.IP -l
+use linear level scales in favour of the usual logarithmic ones.
+.IP -r
+generate random levels (for testing purposes).
+.IP -v
+dump the version number to stdout and exit.
+.SH FILES
+.I ~/.wavemonrc
+is the local configuration file for the user. Refer to the
+.B wavemonrc
+man page for an in-depth explanation of available settings.
+.SH BUGS
+Please keep in mind that this is an alpha release, and as such, it is likely not to behave as you may expect sometimes. It also means that the future of wavemon relies heavily on YOUR feedback (insert over-used "uncle sam" picture here), so please report all bugs and suggestions to me. Furthermore, please refer to the file BUGS you received along with the program archive for a list of known bugs. Thanks!
+.SH AUTHOR
+Jan Morgenstern <jan@jm-music.de>
+.SH COPYRIGHT
+Copyright \(co 2001-2002 Jan Morgenstern <jan@jm-music.de>.
+.LP
+wavemon is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2, or (at your option) any later version.
+.LP
+wavemon is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.LP
+You should have received a copy of the GNU General Public License along with wavemon; see the file COPYING.  If not, write to the Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.

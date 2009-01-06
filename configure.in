@@ -1,0 +1,63 @@
+# Process this file with autoconf to produce a configure script.
+AC_PREREQ(2.13)
+AC_INIT("wavemon.c")
+
+AC_CONFIG_HEADER(defs.h)
+
+WAVEMON_VERSION=`cat ./VERSION`
+AC_SUBST(WAVEMON_VERSION)
+AC_DEFINE_UNQUOTED(WAVEMON_VERSION, "${WAVEMON_VERSION}")
+
+WAVEMON_RELEASE_DATE=`cat ./RELEASE_DATE`
+AC_DEFINE_UNQUOTED(WAVEMON_RELEASE_DATE, "${WAVEMON_RELEASE_DATE}")
+
+AC_DEFINE_UNQUOTED(WAVEMON_VERSION_STR, "version ${WAVEMON_VERSION} (${WAVEMON_RELEASE_DATE})")
+
+CFLAGS="-O2 -Wall"
+
+AC_ARG_ENABLE(debug, [  --enable-debug             Enable debugging support],
+	[
+		if test x$enableval = xyes ; then
+			CFLAGS="-O -Wall -g -DDEBUG"
+		fi
+	]
+)
+
+AC_CANONICAL_HOST
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+# Check for linux
+case "$host_os" in
+	*linux*|*LINUX* ) ;; 
+	*               ) AC_MSG_ERROR('wavemon is incompatible with your host OS ($host_os). It depends on a GNU/Linux system with the wireless kernel extensions.');;
+esac
+
+# Check for wireless extensions
+AC_CHECK_HEADER(linux/wireless.h,
+		wireless=yes,
+		AC_MSG_ERROR(wireless kernel extensions not found!))
+
+# Checks for libraries.
+AC_CHECK_LIB([m], [pow])
+AC_CHECK_LIB([ncurses], [waddstr])
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([fcntl.h netdb.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_HEADER_TIME
+
+# Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+AC_TYPE_SIGNAL
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS([gettimeofday memmove memset modf pow socket strcasecmp strchr strcspn strdup strncasecmp strspn strtol])
+
+AC_OUTPUT(Makefile)
