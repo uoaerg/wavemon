@@ -134,7 +134,7 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->cfname	= strdup("min_signal_level");
 	item->type	= t_int;
 	item->v.i	= &conf->sig_min;
-	item->min	= -120;
+	item->min	= -128;
 	item->max	= -60;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
@@ -158,7 +158,7 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->cfname	= strdup("min_noise_level");
 	item->type	= t_int;
 	item->v.i	= &conf->noise_min;
-	item->min	= -120;
+	item->min	= -128;
 	item->max	= -60;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");

@@ -34,6 +34,11 @@ struct wavemon_conf *conf;
 
 WINDOW *w_lhist, *w_key, *w_menu;
 
+static inline int max(const int a, const int b)
+{
+	return a > b ? a : b;
+}
+
 void display_lhist(char *ifname, WINDOW *w_lhist)
 {
 	chtype	ch;
@@ -53,7 +58,7 @@ void display_lhist(char *ifname, WINDOW *w_lhist)
 		for (y = 1; y <= ysize; y++)
 			mvwaddch(w_lhist, y, xsize - x, ' ');
 
-		snr = iw_stats_cache[x].signal - iw_stats_cache[x].noise;
+		snr = iw_stats_cache[x].signal - max(iw_stats_cache[x].noise, conf->noise_min);
 
 		if (snr > 0) {
 			if (snr < (conf->sig_max - conf->sig_min)) {
@@ -143,7 +148,7 @@ void display_key(WINDOW *w_key)
 	wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	sprintf(s, "] ns lvl (dBm)  [");
+	sprintf(s, "] ns lvl (%d..%d dBm)  [", conf->noise_min, conf->noise_max);
 	waddstr(w_key, s);
 	wattrset(w_key, COLOR_PAIR(CP_STATSNR));
 	waddch(w_key, ' ');
