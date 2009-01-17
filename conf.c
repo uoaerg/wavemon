@@ -34,7 +34,8 @@
 /* GLOBALS */
 int conf_items;
 
-char	*version_str = "wavemon wireless monitor 0.4.0b by Jan Morgenstern <jan@jm-music.de>",
+
+char	*version_str = "wavemon wireless monitor " WAVEMON_VERSION " by Jan Morgenstern <jan@jm-music.de>",
 	*license_str = "Distributed under the terms of the GNU General Public License >=v2.";
 
 void help_exit()

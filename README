@@ -1,18 +1,17 @@
-wavemon 0.4.0b README
----------------------
+wavemon README
+--------------
 
 wavemon is a wireless device monitoring application that allows you to watch
 signal and noise levels, packet statistics, device configuration and network
-parameters of your wireless network hardware. It has currently only been
-tested with the Lucent Orinoco series of cards, although it *should* work 
-(though with varying features) with all devices supported by the wireless 
-kernel extensions by Jean Tourrilhes <jt@hpl.hp.com>.
+parameters of your wireless network hardware. It *should* work (though with
+varying features) with all devices supported by the Linux wireless kernel
+extensions by Jean Tourrilhes.
 
 While most of the planned features are more or less implemented, plase keep 
 in mind that this is an beta release, and as such, it is likely not to work 
 as you may expect sometimes.
 
-The access point list is sill broken on most cards; please don't report this
+The access point list is still broken on most cards; please don't report this
 as a bug. I'm planning to incorporate the much-enhanced scanning feature of
 recent wireless extension versions in the near future.
 
@@ -28,7 +27,10 @@ much of this. Also, although it shouldn't do any damage to you system when
 using it, you'll understand that I won't take any responsibility for this. In
 other words: YOU USE THIS ON YOUR OWN RISK.
 
-If you have bug reports or suggestions, please contact me at <jan@jm-music.de>.
+Please send any bug reports or suggestions to <gerrit@erg.abdn.ac.uk>
 
 You can always find the latest version of this software at the wavemon page:
-http://www.jm-music.de/projects.html
+
+	http://eden-feed.erg.abdn.ac.uk/wavemon
+
+which also keeps a git tree with a detailed changelog.
