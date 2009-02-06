@@ -19,6 +19,7 @@
  */
 
 #include <netdb.h>
+#include <linux/if.h>
 #include <linux/wireless.h>
 
 #define IW_STACKSIZE 1024
