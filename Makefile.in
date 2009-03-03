@@ -59,9 +59,12 @@ ipkg: wavemon $(IPAQ_DOCS)
 	ipkg-build ipkg
 
 install: wavemon wavemon.1 wavemonrc.5
-	$(INSTALL) -m 755 wavemon $(bindir)
-	$(INSTALL) -m 644 wavemon.1 $(mandir)/man1
-	$(INSTALL) -m 644 wavemonrc.5 $(mandir)/man5
+	$(INSTALL) -m 0755 -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 wavemon $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man1
+	$(INSTALL) -m 0644 wavemon.1 $(DESTDIR)$(mandir)/man1
+	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man5
+	$(INSTALL) -m 0644 wavemonrc.5 $(DESTDIR)$(mandir)/man5
 
 uninstall:
 	@$(RM) $(bindir)/wavemon
