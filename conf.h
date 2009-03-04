@@ -22,9 +22,6 @@
 
 #define CFNAME ".wavemonrc"
 
-#define DEB(VALUE) fprintf(stderr, "checkpoint: %d\n", VALUE);
-
-
 struct wavemon_conf {
 	char	ifname[32];
 	int	stat_iv,
