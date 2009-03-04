@@ -45,7 +45,7 @@ void help_exit()
 	printf("  -d            Dump the current device status to stdout and exit\n");
 	printf("  -h            This help screen\n");
 	printf("  -i <ifname>   Use specified network interface (default: auto)\n");
-	printf("  -l            Use linear scales in favour of algorithmic ones\n");
+	printf("  -l            Use linear scales in favour of logarithmic ones\n");
 	printf("  -r            Generate random levels (for testing purposes)\n");
 	printf("  -v            Print version number and exit\n\n");
 	exit(0);
