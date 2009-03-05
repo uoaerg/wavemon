@@ -33,30 +33,7 @@ configure: configure.in
 tags: $(wildcard *[ch])
 	ctags $^ > $@
 
-.PHONY: install ipkg clean distclean uninstall
-IPAQ_DOCS = AUTHORS COPYING Changelog Makefile README TODO wavemon.doc wavemonrc.doc
-
-wavemon.doc: wavemon.1
-	groff -Tascii -man $^ > $@
-wavemonrc.doc: wavemonrc.5
-	groff -Tascii -man $^ > $@
-
-ipkg: wavemon $(IPAQ_DOCS)
-	mkdir -p ipkg/usr/local/bin
-	$(INSTALL) -c -m 755 wavemon ipkg/usr/local/bin
-	mkdir -p ipkg/usr/doc/wavemon
-	for f in $(IPAQ_DOCS); do $(INSTALL) -c -m 644 $$f ipkg/usr/doc/wavemon ; done
-	mkdir -p ipkg/usr/lib/menu
-	echo '?package(wavemon): needs="text" section="Utilities" title="wavemon" command="wavemon"' > ipkg/usr/lib/menu/wavemon
-	mkdir -p  ipkg/CONTROL
-	echo "Package: wavemon" > ipkg/CONTROL/control
-	echo "Version: @WAVEMON_VERSION@" >> ipkg/CONTROL/control
-	echo "Architecture: arm" >> ipkg/CONTROL/control
-	echo "Maintainer: dave w capella <dave.capella@cornell.edu>" >> ipkg/CONTROL/control
-	echo "Description: Wireless network monitoring tool" >> ipkg/CONTROL/control
-	echo "Priority: optional" >> ipkg/CONTROL/control
-	echo "Section: extras" >> ipkg/CONTROL/control
-	ipkg-build ipkg
+.PHONY: install uninstall clean distclean
 
 install: wavemon wavemon.1 wavemonrc.5
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(bindir)
@@ -73,7 +50,6 @@ uninstall:
 
 clean:
 	@$(RM) *.o *.doc wavemon tags
-	@$(RM) -r ipkg
 
 distclean: uninstall clean
 	@$(RM) config.status config.log config.cache Makefile
