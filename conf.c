@@ -76,7 +76,7 @@ void init_conf_items(struct wavemon_conf *conf)
 	item->name	= strdup("Interface");
 	item->cfname	= strdup("interface");
 	item->type	= t_listval;
-	item->v.s	= strdup(conf->ifname);
+	item->v.s	= conf->ifname;
 	item->max	= 10;
 	item->list	= if_list;
 	ll_push(conf_items, "*", item);
@@ -387,7 +387,7 @@ void read_cf(struct wavemon_conf *conf)
 						break;
 					case t_string:
 						if (strlen(rv) <= ci->max) {
-							ci->v.s = strdup(rv);
+							strncpy(ci->v.s, rv, LISTVAL_MAX);
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: argument too long (max %d chars)",
@@ -418,7 +418,7 @@ void read_cf(struct wavemon_conf *conf)
 						break;
 					case t_listval:
 						if ((v_int = ll_scan(ci->list, "S", rv)) >= 0) {
-							ci->v.s = strdup(ll_get(ci->list, v_int));
+							strncpy(ci->v.s,  ll_get(ci->list, v_int), LISTVAL_MAX);
 						} else {
 							fclose(fd);
 							fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",

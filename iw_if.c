@@ -33,7 +33,6 @@
 
 #include "conf.h"
 #include "error.h"
-#include "llist.h"
 #include "iw_if.h"
 
 struct iw_stat iw_stats;
@@ -206,7 +205,7 @@ int iw_getif()
 	FILE *fd;
 	int ld;
 	int interfaces = 0;
-	char tmp[0x20];
+	char tmp[LISTVAL_MAX];
 	char *lp;
 
 	ld = ll_create();
@@ -214,7 +213,7 @@ int iw_getif()
 	if (!(fd = fopen("/proc/net/wireless", "r")))
 		fatal_error("no wireless extensions found!");
 
-	while (fgets(tmp, 0x20, fd)) {
+	while (fgets(tmp, LISTVAL_MAX, fd)) {
 		if (strchr(tmp, ':')) {
 			lp = tmp + strspn(tmp, " ");
 			lp[strcspn(lp, ":")] = '\0';
@@ -519,8 +518,7 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
  */
 void s_handler(int signum)
 {
-	iw_getstat(ll_get(((struct conf_item *)ll_get(conf_items, 0))->list, 0),
-		   &iw_stats, iw_stats_cache, conf->slotsize, conf->random);
+	iw_getstat(conf->ifname, &iw_stats, iw_stats_cache, conf->slotsize, conf->random);
 	if (iw_stat_redraw)
 		iw_stat_redraw();
 }

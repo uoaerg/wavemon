@@ -17,6 +17,7 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+#define LISTVAL_MAX	32	/* maximum string length of `s' elements */
 
 int 	ll_create();
 void 	*ll_get(int ld, unsigned long n);

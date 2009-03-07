@@ -19,11 +19,13 @@
  */
 #include <ctype.h>
 #include <stdbool.h>
+#include "llist.h"
 
 #define CFNAME ".wavemonrc"
 
+
 struct wavemon_conf {
-	char	ifname[32];
+	char	ifname[LISTVAL_MAX];
 	int	stat_iv,
 		info_iv,
 		sig_min, sig_max,

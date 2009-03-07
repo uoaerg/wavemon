@@ -26,7 +26,6 @@
 #include "conf.h"
 #include "ui.h"
 #include "conf_scr.h"
-#include "llist.h"
 
 struct wavemon_conf *conf;
 
@@ -58,10 +57,10 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 				strcpy(s, *item->v.b ? "Enabled" : "Disabled");
 				break;
 			case t_list:
-				strncpy(s, (char *)ll_get(item->list, *item->v.b), 32);
+				strncpy(s, ll_get(item->list, *item->v.b), LISTVAL_MAX);
 				break;
 			case t_listval:
-				strncpy(s, item->v.s, 32);
+				strncpy(s, item->v.s, LISTVAL_MAX);
 			/* Fall through, dummy statements to pacify gcc -Wall */
 			case t_sep:
 			case t_func:
@@ -143,7 +142,7 @@ void change_item(int inum, char sign, char accel)
 					tmp = ll_size(item->list) - 1;
 				}
 			}
-			strncpy(item->v.s, ll_get(item->list, tmp), 32);
+			strncpy(item->v.s, ll_get(item->list, tmp), LISTVAL_MAX);
 			break;
 		/* Dummy statements to pacify gcc -Wall */
 		case t_string:
