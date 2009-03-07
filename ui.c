@@ -47,7 +47,7 @@ void wmenubar(WINDOW *win, int active)
 	}
 }
 
-void waddstr_center(WINDOW *win, int y, char *s)
+void waddstr_center(WINDOW *win, int y, const char *s)
 {
 	mvwaddstr(win, y, (COLS >> 1) - (strlen(s) >> 1), s);
 }
@@ -75,7 +75,7 @@ WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b)
 	return win;
 }
 
-void waddstr_b(WINDOW *win, char *s)
+void waddstr_b(WINDOW *win, const char *s)
 {
 	wattron(win, A_BOLD);
 	waddstr(win, s);

@@ -33,7 +33,6 @@
 #include "help_scr.h"
 #include "about_scr.h"
 #include "iw_if.h"
-#include "net_if.h"
 
 static void sig_winch(int signo)
 {
@@ -52,123 +51,6 @@ void reinit_on_changes(struct wavemon_conf *conf)
 	}
 }
 
-void dump_parameters(struct wavemon_conf *conf)
-{
-  char *opmodes[] = { "auto", "ad-hoc", "managed", "master", "repeater", "secondary" };
-
-  struct iw_dyn_info info;
-  struct iw_stat stat;
-  struct iw_range range;
-  struct if_stat nstat;
-  int i;
-
-  iw_getinf_dyn(conf->ifname, &info);
-  iw_getinf_range(conf->ifname, &range);
-  iw_getstat(conf->ifname, &stat, NULL, 2, 0);
-  if_getstat(conf->ifname, &nstat);
-
-  printf("\n           device: %s\n\n", conf->ifname);
-  printf("            ESSID: %s", (info.cap_essid ? info.essid : "n/a"));
-  if (!info.essid_on) printf(" (off)"); else printf("\n");
-  printf("             nick: %s\n", (info.cap_nickname ? info.nickname : "n/a"));
-
-  if (info.cap_freq)
-	printf("        frequency: %.4f GHz\n", info.freq);
-  else
-	printf("        frequency: n/a\n");
-
-  if (info.cap_sens)
-	printf("      sensitivity: %ld/%d\n", info.sens, range.sensitivity);
-  else
-	printf("      sensitivity: n/a\n");
-
-  if (info.cap_txpower)
-	printf("         TX power: %d dBm (%.2f mW)\n", info.txpower_dbm, info.txpower_mw);
-  else
-	printf("         TX power: n/a\n");
-  
-  printf("             mode: %s\n", opmodes[info.mode]);
-
-  if (info.mode != 1 && info.cap_ap) {
-	printf("     access point: ");
-	if (info.cap_ap)
-	  printf("%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX\n", 
-			  info.ap_addr.sa_data[0] & 0xFF,
-			  info.ap_addr.sa_data[1] & 0xFF,
-			  info.ap_addr.sa_data[2] & 0xFF,
-			  info.ap_addr.sa_data[3] & 0xFF, 
-			  info.ap_addr.sa_data[4] & 0xFF,
-			  info.ap_addr.sa_data[5] & 0xFF);
-	else printf("n/a\n");
-  }
-
-  if (info.cap_bitrate)
-	printf("          bitrate: %g Mbit/s\n", (double)info.bitrate / 1000000);
-  else
-	printf("          bitrate: n/a\n");
-
-  printf("          RTS thr: ");
-  if (info.cap_rts && (!info.rts_on || info.rts)) {
-	if (info.rts_on) printf("%d bytes\n", info.rts);
-	else printf("off\n");
-  } else printf("n/a\n");
-
-  printf("         frag thr: ");
-  if (info.cap_frag && (!info.frag_on || info.frag)) {
-	if (info.frag_on) printf("%d bytes\n", info.frag);
-	else printf("off\n");
-  } else printf("n/a\n");
-
-  printf("       encryption: ");
-  if (info.cap_encode) {
-	if (info.eflags.disabled || info.keysize == 0) {
-	  printf("off");
-	} else {
-	  for (i = 0; i < info.keysize; i++) printf("%2X", info.key[i]);
-	  if (info.eflags.index) printf(" [%d]", info.key_index);
-	  if (info.eflags.restricted) printf(", restricted");
-	  if (info.eflags.open) printf(", open");
-	}
-  } else printf("n/a");
-  printf("\n");
-  
-  printf(" power management:");
-  if (info.cap_power) {
-	if (info.pflags.disabled) {
-	  printf(" off");
-	} else {
-	  if (info.pflags.min) printf(" min"); else printf(" max");
-	  if (info.pflags.timeout) printf(" timeout"); else printf(" period");
-	  if (info.pflags.rel) {
-		if (info.pmvalue > 0) printf(" +%ld", info.pmvalue);
-		else printf(" %ld", info.pmvalue);
-	  } else {
-		if (info.pmvalue > 1000000) printf(" %ld s", info.pmvalue / 1000000);
-		else if (info.pmvalue > 1000) printf(" %ld ms", info.pmvalue / 1000);
-		else printf(" %ld us", info.pmvalue);
-	  }
-	  if (info.pflags.unicast && info.pflags.multicast)
-		printf(", rcv all");
-	  else if (info.pflags.multicast) printf(", rcv multicast");
-	  else printf(", rcv unicast");
-	  if (info.pflags.forceuc) printf(", force unicast");
-	  if (info.pflags.repbc) printf(", repeat broadcast");
-	}
-  } else printf("n/a");
-  printf("\n\n");
-
-  printf("     link quality: %d/%d\n", stat.link, range.max_qual.qual);
-  printf("     signal level: %d dBm (%s)\n", stat.signal, dbm2units(stat.signal));
-  printf("      noise level: %d dBm (%s)\n", stat.noise, dbm2units(stat.noise));
-  printf("              SNR: %d dB\n", stat.signal - stat.noise);
-  printf("         total TX: %llu packets (%s)\n", nstat.tx_packets, byte_units(nstat.tx_bytes));
-  printf("         total RX: %llu packets (%s)\n", nstat.rx_packets, byte_units(nstat.rx_bytes));
-  printf("     invalid NWID: %lu packets\n", stat.dsc_nwid);
-  printf("      invalid key: %lu packets\n", stat.dsc_enc);
-  printf("      misc errors: %lu packets\n", stat.dsc_misc);
-
-  printf("\n");
-}
 
 int main(int argc, char *argv[]) {
 	struct wavemon_conf conf;

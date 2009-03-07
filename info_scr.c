@@ -35,8 +35,6 @@ WINDOW	*w_if, *w_levels, *w_stats, *w_info, *w_net, *w_menu;
 
 struct iw_range range;
 
-char *opmodes[] = { "auto", "ad-hoc", "managed", "master", "repeater", "secondary" };
-
 signed int random_level1(int min, int max)
 {
 	static signed int rlvl, rlvl_next;
@@ -222,7 +220,8 @@ void display_info(char *ifname, WINDOW *w_if, WINDOW *w_info)
 	
 	wmove(w_info, 2, 1);
 	waddstr(w_info, "mode: ");
-	if (info.cap_mode) waddstr_b(w_info, opmodes[info.mode]);
+	if (info.cap_mode)
+		waddstr_b(w_info, iw_opmode(info.mode));
 	else waddstr(w_info, "n/a");
 
 	if (info.mode != 1) {

@@ -53,7 +53,9 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
 
 void wmenubar(WINDOW *win, int active);
 WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b);
-void waddstr_b(WINDOW *win, char *s);
-void waddstr_center(WINDOW *win, int y, char *s);
+
+void waddstr_b(WINDOW *win, const char *s);
+void waddstr_center(WINDOW *win, int y, const char *s);
+
 void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x, int maxx, char *cscale, bool rev);
 void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv, int y, int x, int maxx, char *cscale, chtype tch);

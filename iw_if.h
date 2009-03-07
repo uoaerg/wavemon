@@ -110,7 +110,22 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack, int sl
 int iw_get_aplist(char *ifname, struct iw_aplist *lst);
 void init_stat_iv(struct wavemon_conf *conf);
 int iw_getif();
+
+static inline const char *iw_opmode(const uint8_t mode)
+{
+	static char *modes[] = {"Auto",
+				"Ad-Hoc",
+				"Managed",
+				"Master",
+				"Repeater",
+				"Secondary",
+				"Monitor"
+	};
+	return mode > 6 ? "Unknown/bug" : modes[mode];
+}
 double dbm2mw(float in);
 char *dbm2units(float in);
 double mw2dbm(float in);
 float freq2ghz(struct iw_freq *f);
+
+extern void dump_parameters(struct wavemon_conf *conf);
