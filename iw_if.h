@@ -108,7 +108,6 @@ extern int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 		      int slotsize, char random);
 void (*iw_stat_redraw)(void);
 
-int iw_check_extensions(char *ifname);
 void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 void iw_getinf_range(char *ifname, struct iw_range *range);
 int iw_get_aplist(char *ifname, struct iw_aplist *lst);

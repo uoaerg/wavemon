@@ -59,32 +59,6 @@ void reinit_on_changes(void)
 	}
 }
 
-signed int random_level1(int min, int max)
-{
-	static signed int rlvl, rlvl_next;
-	int i;
-
-	for (i = 0; i < 1; i++)
-		if (rlvl < rlvl_next) rlvl++;
-		else if (rlvl > rlvl_next) rlvl--;
-		else if (rlvl == rlvl_next)
-			rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
-	return rlvl;
-}
-
-int random_level2(int min, int max)
-{
-	static signed int rlvl, rlvl_next;
-	int i;
-
-	for (i = 0; i < 1; i++)
-		if (rlvl < rlvl_next) rlvl++;
-		else if (rlvl > rlvl_next) rlvl--;
-		else if (rlvl == rlvl_next)
-			rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
-	return rlvl;
-}
-
 static void display_levels(void)
 {
 	char   nscale[2],

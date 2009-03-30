@@ -178,70 +178,8 @@ void ll_push(int ld, const char *format, ...)
 }
 
 /*
- * pop the last element off the list
- */
-
-void *ll_pop(int ld)
-{
-	llist *l = lists[ld], *llast;
-	void *rv;
-
-	if (l->next) {
-		while (l->next->next)
-			l = l->next;
-
-		llast = l->next;
-		l->next = NULL;
-		l = llast;
-
-		rv = l->e;
-
-		free(l);
-	} else
-		rv = NULL;
-	return rv;
-}
-
-/*
- * push an element onto the beginning of the list
- */
-
-void ll_unshift(int ld, const char *format, ...)
-{
-	llist *l, *l1;
-	va_list ap;
-
-	va_start(ap, format);
-	l = l1 = arg2element(*format++, &ap, NULL);
-	while (*format)
-		l = l->next = arg2element(*format++, &ap, NULL);
-	l->next = lists[ld]->next;
-	lists[ld]->next = l1;
-	va_end(ap);
-}
-
-/*
- * return an element from the beginning of the list
- */
-
-void *ll_shift(int ld)
-{
-	llist *l = lists[ld];
-	void *rv;
-
-	if ((l = l->next)) {
-		rv = l->e;
-		lists[ld]->next = l->next;
-		free(l);
-	} else
-		rv = NULL;
-	return rv;
-}
-
-/*
  * replace an element it with a new one
  */
-
 void ll_replace(int ld, unsigned long n, const char *format, ...)
 {
 	llist *prevl = lists[ld], *l = lists[ld]->next;
@@ -258,25 +196,6 @@ void ll_replace(int ld, unsigned long n, const char *format, ...)
 		prevl->next = arg2element(*format, &ap, l->next);
 	va_end(ap);
 
-	free(l->e);
-	free(l);
-}
-
-/*
- * delete an element with the given number from ll_list
- */
-
-void ll_del(int ld, unsigned long n)
-{
-	llist *prevl = lists[ld], *l = lists[ld]->next;
-	int i;
-
-	for (i = 0; i < n && l->next; i++) {
-		prevl = l;
-		l = l->next;
-	}
-
-	prevl->next = l->next;
 	free(l->e);
 	free(l);
 }
@@ -326,21 +245,6 @@ signed long ll_scan(int ld, const char *format, ...)
 	}
 	va_end(ap);
 	return rv;
-}
-
-/*
- * return the type identifier of a given element
- */
-
-char ll_type(int ld, unsigned long n)
-{
-	llist *l = lists[ld]->next;
-	int i;
-
-	for (i = 0; i < n && l->next; i++)
-		l = l->next;
-
-	return l->type;
 }
 
 /*

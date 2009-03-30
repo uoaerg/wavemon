@@ -358,25 +358,6 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 }
 
 /*
- * check availability of wireless extensions
- */
-int iw_check_extensions(char *ifname)
-{
-	int skfd;
-	struct iwreq iwr;
-	int res;
-
-	if ((skfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-		fatal_error("cannot open socket\n");
-
-	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
-	res = ioctl(skfd, SIOCGIWNAME, &iwr);
-	close(skfd);
-
-	return res;
-}
-
-/*
  * get range information
  */
 void iw_getinf_range(char *ifname, struct iw_range *range)
