@@ -22,8 +22,74 @@
 /* GLOBALS */
 static WINDOW *w_lhist, *w_menu;
 
+/*
+ * Simple array-based circular FIFO buffer
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * Insertion works from lower to higher indices.
+ * Access works from higher down to lower indices.
+ *
+ * Cases & assumptions:
+ * ~~~~~~~~~~~~~~~~~~~~
+ * - principle: unsigned counter + hash function to handle array wrap-around;
+ * - buffer is empty if count == 0;
+ * - else count indicates the next place to insert(modulo %IW_STACKSIZE).
+ */
+#define IW_STACKSIZE		1024
+static struct iw_levelstat	iw_stats_cache[IW_STACKSIZE];
+static uint32_t			count;
+#define COUNTMAX		(typeof(count))-1
+
+static void iw_cache_insert(const struct iw_levelstat new)
+{
+	iw_stats_cache[count % IW_STACKSIZE] = new;
+	/*
+	 * Handle counter overflow by mapping into a smaller index which is
+	 * identical (modulo %IW_STACKSIZE) to the old value. (The datatype
+	 * of 'count' must be able to express at least 2 * IW_STACKSIZE.)
+	 */
+	if (++count == COUNTMAX)
+		count = IW_STACKSIZE + (COUNTMAX % IW_STACKSIZE);
+}
+
+static struct iw_levelstat iw_cache_get(const uint32_t index)
+{
+	struct iw_levelstat zero = {0, 0};
+
+	if (index > IW_STACKSIZE || index > count)
+		return zero;
+	return iw_stats_cache[(count - index) % IW_STACKSIZE];
+}
+
+void iw_cache_update(struct iw_stat *iw)
+{
+	static struct iw_levelstat avg, prev;
+	static int slot;
+
+	avg.signal += (float)iw->signal / conf.slotsize;
+	avg.noise  += (float)iw->noise  / conf.slotsize;
+
+	if (++slot >= conf.slotsize) {
+		iw_cache_insert(avg);
+
+		if (conf.lthreshold_action &&
+		    prev.signal < conf.lthreshold &&
+		    avg.signal >= conf.lthreshold)
+			threshold_action(conf.lthreshold);
+		else if (conf.hthreshold_action &&
+			 prev.signal > conf.hthreshold &&
+			 avg.signal <= conf.hthreshold)
+			threshold_action(conf.hthreshold);
+
+		prev = avg;
+		avg.signal = avg.noise = slot = 0;
+	}
+}
+
+
 static void display_lhist(void)
 {
+	struct iw_levelstat iwl;
 	chtype	ch;
 	double	ratio, p, p_fract;
 	int	snr,
@@ -41,7 +107,8 @@ static void display_lhist(void)
 		for (y = 1; y <= ysize; y++)
 			mvwaddch(w_lhist, y, xsize - x, ' ');
 
-		snr = iw_stats_cache[x].signal - max(iw_stats_cache[x].noise, conf.noise_min);
+		iwl = iw_cache_get(x);
+		snr = iwl.signal - max(iwl.noise, conf.noise_min);
 
 		if (snr > 0) {
 			if (snr < (conf.sig_max - conf.sig_min)) {
@@ -69,10 +136,9 @@ static void display_lhist(void)
 			wattroff(w_lhist, COLOR_PAIR(CP_STATBKG));
 		}
 
-		if (iw_stats_cache[x].noise >= conf.sig_min &&
-		    iw_stats_cache[x].noise <= conf.sig_max) {
+		if (iwl.noise >= conf.sig_min && iwl.noise <= conf.sig_max) {
 
-			p_fract = modf((iw_stats_cache[x].noise - conf.noise_min) * ratio, &p);
+			p_fract = modf((iwl.noise - conf.noise_min) * ratio, &p);
 			/*
 			 *      the 5 different scanline chars provide a pretty good accuracy.
 			 *      ncurses will fall back to standard ASCII chars anyway if they're
@@ -94,10 +160,9 @@ static void display_lhist(void)
 			mvwaddch(w_lhist, ysize - (int)p, xsize - x, ch);
 		}
 
-		if (iw_stats_cache[x].signal >= conf.sig_min &&
-		    iw_stats_cache[x].signal <= conf.sig_max) {
+		if (iwl.signal >= conf.sig_min && iwl.signal <= conf.sig_max) {
 
-			p_fract = modf((iw_stats_cache[x].signal - conf.sig_min) * ratio, &p);
+			p_fract = modf((iwl.signal - conf.sig_min) * ratio, &p);
 			if (p_fract < 0.2)
 				ch = ACS_S9;
 			else if (p_fract < 0.4)

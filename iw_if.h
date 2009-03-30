@@ -28,8 +28,6 @@
 /* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
 #define MAC_ADDR_MAX	18
 
-#define IW_STACKSIZE 1024
-
 /* Static network interface information - see netdevice(7) */
 struct if_info {			/* modified ifreq */
 	unsigned char	hwaddr[6];
@@ -98,22 +96,29 @@ struct iw_dyn_info {			/* modified iwreq */
 	struct sockaddr ap_addr;
 };
 
-struct iw_stat {
-	int		link;
-	int		signal, noise;
-	unsigned long dsc_nwid, dsc_enc, dsc_misc;
-};
-
-extern struct iw_stat iw_stats;
-extern struct iw_stat iw_stats_cache[IW_STACKSIZE];
-extern void iw_getstat(struct iw_stat *stat, struct iw_stat *stack);
-
 struct if_stat {
 	unsigned long long rx_packets, tx_packets;
 	unsigned long long rx_bytes, tx_bytes;
 };
 
 extern void if_getstat(char *ifname, struct if_stat *stat);
+
+/*
+ *	 Structs to communicate WiFi statistics
+ */
+struct iw_levelstat {
+	float	signal;		/* signal level in dBm */
+	float	noise;		/* noise  level in dBm */
+};
+
+struct iw_stat {
+	int		link;
+	int		signal, noise;
+	unsigned long dsc_nwid, dsc_enc, dsc_misc;
+};
+extern void iw_getstat(struct iw_stat *stat);
+extern void iw_cache_update(struct iw_stat *stat);
+
 extern void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 extern void iw_getinf_range(char *ifname, struct iw_range *range);
 

@@ -19,9 +19,6 @@
  */
 #include "iw_if.h"
 
-struct iw_stat iw_stats;
-struct iw_stat iw_stats_cache[IW_STACKSIZE];
-
 /*
  * Obtain network device information
  */
@@ -401,38 +398,13 @@ static void iw_getstat_old_style(struct iw_stat *stat)
 	fclose(fd);
 }
 
-void iw_getstat(struct iw_stat *stat, struct iw_stat *stack)
+void iw_getstat(struct iw_stat *stat)
 {
-	static int slot = 0;
-	static float avg_signal = 0, avg_noise = 0;
-
 	memset(stat, 0, sizeof(*stat));
 	if (conf.random)
 		iw_getstat_random(stat);
 	else
 		iw_getstat_old_style(stat);
-
-	avg_signal += stat->signal / (float)conf.slotsize;
-	avg_noise  += stat->noise  / (float)conf.slotsize;
-
-	if (stack == NULL || ++slot < conf.slotsize)
-		return;
-
-	memmove(&stack[1], &stack[0], (IW_STACKSIZE - 1) * sizeof(*stat));
-	stack->signal = avg_signal;
-	stack->noise  = avg_noise;
-
-	/* Reset */
-	avg_signal = avg_noise = slot = 0;
-
-	if (conf.lthreshold_action &&
-	    ((stack + 1)->signal < conf.lthreshold &&
-		  stack->signal >= conf.lthreshold))
-		threshold_action(conf.lthreshold);
-	else if (conf.hthreshold_action &&
-		((stack + 1)->signal > conf.hthreshold &&
-		      stack->signal <= conf.hthreshold))
-		threshold_action(conf.hthreshold);
 }
 
 void dump_parameters(void)
@@ -445,7 +417,7 @@ void dump_parameters(void)
 
 	iw_getinf_dyn(conf.ifname, &info);
 	iw_getinf_range(conf.ifname, &range);
-	iw_getstat(&stat, NULL);
+	iw_getstat(&stat);
 	if_getstat(conf.ifname, &nstat);
 
 	printf("\n");

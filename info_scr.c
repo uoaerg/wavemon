@@ -22,7 +22,8 @@
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_menu;
 
-struct iw_range range;
+static struct iw_range	range;
+static struct iw_stat	iw_stats;
 void (*iw_stat_redraw)(void);
 
 /*
@@ -30,7 +31,9 @@ void (*iw_stat_redraw)(void);
  */
 static void sampling_handler(int signum)
 {
-	iw_getstat(&iw_stats, iw_stats_cache);
+	iw_getstat(&iw_stats);
+	iw_cache_update(&iw_stats);
+
 	if (iw_stat_redraw)
 		iw_stat_redraw();
 }
