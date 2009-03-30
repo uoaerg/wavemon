@@ -106,8 +106,7 @@ struct iw_stat {
 
 extern struct iw_stat iw_stats;
 extern struct iw_stat iw_stats_cache[IW_STACKSIZE];
-extern int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
-		      int slotsize, char random);
+extern void iw_getstat(struct iw_stat *stat, struct iw_stat *stack);
 
 struct if_stat {
 	unsigned long long rx_packets, tx_packets;

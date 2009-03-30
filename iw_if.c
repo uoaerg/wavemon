@@ -109,61 +109,6 @@ void if_getstat(char *ifname, struct if_stat *stat)
 }
 
 /*
- * Random signal generator
- */
-
-static signed int rnd_signal(int min, int max)
-{
-	static float rlvl, rlvl_next;
-	static float step = 1.0;
-	int i;
-
-	for (i = 0; i < 1; i++)
-		if (rlvl < rlvl_next) {
-			if (rlvl_next - rlvl < step)
-				step /= 2;
-			rlvl += step;
-		} else if (rlvl > rlvl_next) {
-			if (rlvl - rlvl_next < step)
-				step /= 2;
-			rlvl -= step;
-		}
-	step += (rand() / (float)RAND_MAX) - 0.5;
-	if ((rlvl == rlvl_next) || (step < 0.05)) {
-		rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
-		step = rand() / (float)RAND_MAX;
-	}
-	return (int)rlvl;
-}
-
-/* 
- * Random noise generator
- */
-static signed int rnd_noise(int min, int max)
-{
-	static float rlvl, rlvl_next;
-	static float step = 1.0;
-	int i;
-
-	for (i = 0; i < 1; i++)
-		if (rlvl < rlvl_next) {
-			if (rlvl_next - rlvl < step)
-				step /= 2;
-			rlvl += step;
-		} else if (rlvl > rlvl_next) {
-			if (rlvl - rlvl_next < step)
-				step /= 2;
-			rlvl -= step;
-		}
-	step += (rand() / (float)RAND_MAX) - 0.5;
-	if ((rlvl == rlvl_next) || (step < 0.05)) {
-		rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
-		step = rand() / (float)RAND_MAX;
-	}
-	return (int)rlvl;
-}
-
-/*
  * Notice for crossing the low threshold
  */
 static void low_signal(void)
@@ -388,24 +333,78 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
 }
 
 /*
- * obtain statistics
+ *	Obtain periodic IW statistics
  */
-int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
-		      int slotsize, char random)
+static int rnd_signal(int min, int max)
 {
-	FILE *fd;
-	char tmp[0x100], buf[0x100];
-	static int slot = 0;
-	static float avg_signal = 0, avg_noise = 0;
-	char *lp;
+	static float rlvl, rlvl_next;
+	static float step = 1.0;
+	int i;
 
-	if ((fd = fopen("/proc/net/wireless", "r")) < 0)
+	for (i = 0; i < 1; i++)
+		if (rlvl < rlvl_next) {
+			if (rlvl_next - rlvl < step)
+				step /= 2;
+			rlvl += step;
+		} else if (rlvl > rlvl_next) {
+			if (rlvl - rlvl_next < step)
+				step /= 2;
+			rlvl -= step;
+		}
+	step += (rand() / (float)RAND_MAX) - 0.5;
+	if ((rlvl == rlvl_next) || (step < 0.05)) {
+		rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
+		step = rand() / (float)RAND_MAX;
+	}
+	return rlvl;
+}
+
+static int rnd_noise(int min, int max)
+{
+	static float rlvl, rlvl_next;
+	static float step = 1.0;
+	int i;
+
+	for (i = 0; i < 1; i++)
+		if (rlvl < rlvl_next) {
+			if (rlvl_next - rlvl < step)
+				step /= 2;
+			rlvl += step;
+		} else if (rlvl > rlvl_next) {
+			if (rlvl - rlvl_next < step)
+				step /= 2;
+			rlvl -= step;
+		}
+	step += (rand() / (float)RAND_MAX) - 0.5;
+	if ((rlvl == rlvl_next) || (step < 0.05)) {
+		rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
+		step = rand() / (float)RAND_MAX;
+	}
+	return rlvl;
+}
+
+
+/* Random signal/noise */
+static void iw_getstat_random(struct iw_stat *stat)
+{
+	stat->signal = rnd_signal(-102, 10);
+	stat->noise  = rnd_noise(-102, -30);
+}
+
+
+/* For systems using old wireless extensions */
+static void iw_getstat_old_style(struct iw_stat *stat)
+{
+	char tmp[0x100], buf[0x100], *lp;
+	FILE *fd =fopen("/proc/net/wireless", "r");
+
+	if (fd < 0)
 		fatal_error("cannot open /proc/net/wireless");
 
-	while (fgets(tmp, 0x100, fd)) {
+	while (fgets(tmp, sizeof(tmp), fd)) {
 		lp = tmp + strspn(tmp, " ");
-		if (!strncmp(lp, ifname, strlen(ifname))) {
-			lp += strlen(ifname) + 1;
+		if (!strncmp(lp, conf.ifname, strlen(conf.ifname))) {
+			lp += strlen(conf.ifname) + 1;
 			lp += strspn(lp, " ");
 
 			/* status */
@@ -426,9 +425,6 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 			memset(buf, 0, sizeof(buf));
 			strncpy(buf, lp, strcspn(lp, ". "));
 			sscanf(buf, "%d", &stat->signal);
-			if (random)
-				stat->signal = rnd_signal(-102, 10);
-			avg_signal += stat->signal / (float)slotsize;
 			lp += strlen(buf);
 			lp += strspn(lp, ". ");
 
@@ -436,9 +432,6 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 			memset(buf, 0, sizeof(buf));
 			strncpy(buf, lp, strcspn(lp, ". "));
 			sscanf(buf, "%d", &stat->noise);
-			if (random)
-				stat->noise = rnd_noise(-102, -30);
-			avg_noise += stat->noise / (float)slotsize;
 			lp += strlen(buf);
 			lp += strspn(lp, ". ");
 
@@ -460,28 +453,45 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 			memset(buf, 0, sizeof(buf));
 			strncpy(buf, lp, strcspn(lp, ". "));
 			sscanf(buf, "%lu", &stat->dsc_misc);
+			/* each interface appears just once */
+			break;
 		}
 	}
 	fclose(fd);
+}
 
-	if (++slot >= slotsize) {
-		slot = 0;
-		memmove(&stack[1], &stack[0],
-			(IW_STACKSIZE - 1) * sizeof(struct iw_stat));
-		stack->signal = avg_signal;
-		stack->noise = avg_noise;
-		avg_signal = avg_noise = 0;
-		if (conf.lthreshold_action
-		    && ((stack + 1)->signal < conf.lthreshold
-			&& stack->signal >= conf.lthreshold))
-			low_signal();
-		else if (conf.hthreshold_action
-			 && ((stack + 1)->signal > conf.hthreshold
-			     && stack->signal <= conf.hthreshold))
-			high_signal();
-		return 1;
-	}
-	return 0;
+void iw_getstat(struct iw_stat *stat, struct iw_stat *stack)
+{
+	static int slot = 0;
+	static float avg_signal = 0, avg_noise = 0;
+
+	memset(stat, 0, sizeof(*stat));
+	if (conf.random)
+		iw_getstat_random(stat);
+	else
+		iw_getstat_old_style(stat);
+
+	avg_signal += stat->signal / (float)conf.slotsize;
+	avg_noise  += stat->noise  / (float)conf.slotsize;
+
+	if (stack == NULL || ++slot < conf.slotsize)
+		return;
+
+	memmove(&stack[1], &stack[0], (IW_STACKSIZE - 1) * sizeof(*stat));
+	stack->signal = avg_signal;
+	stack->noise  = avg_noise;
+
+	/* Reset */
+	avg_signal = avg_noise = slot = 0;
+
+	if (conf.lthreshold_action &&
+	    ((stack + 1)->signal < conf.lthreshold &&
+		  stack->signal >= conf.lthreshold))
+		low_signal();
+	else if (conf.hthreshold_action &&
+		((stack + 1)->signal > conf.hthreshold &&
+		      stack->signal <= conf.hthreshold))
+		high_signal();
 }
 
 void dump_parameters(void)
@@ -494,7 +504,7 @@ void dump_parameters(void)
 
 	iw_getinf_dyn(conf.ifname, &info);
 	iw_getinf_range(conf.ifname, &range);
-	iw_getstat(conf.ifname, &stat, NULL, 2, 0);
+	iw_getstat(&stat, NULL);
 	if_getstat(conf.ifname, &nstat);
 
 	printf("\n");

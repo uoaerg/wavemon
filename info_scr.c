@@ -30,7 +30,7 @@ void (*iw_stat_redraw)(void);
  */
 static void sampling_handler(int signum)
 {
-	iw_getstat(conf.ifname, &iw_stats, iw_stats_cache, conf.slotsize, conf.random);
+	iw_getstat(&iw_stats, iw_stats_cache);
 	if (iw_stat_redraw)
 		iw_stat_redraw();
 }
