@@ -237,7 +237,7 @@ signed long ll_scan(int ld, const char *format, ...)
 		string_v = strdup(va_arg(ap, char *));
 		len = strlen(string_v);
 		for (i = 0; (l = l->next); i++)
-			if (strlen(l->e) == len && !strcasecmp(l->e, string_v)) {
+			if (strncasecmp(l->e, string_v, len) == 0) {
 				rv = i;
 				break;
 			}

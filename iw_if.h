@@ -89,16 +89,6 @@ struct iw_dyn_info {			// modified iwreq
 	struct sockaddr ap_addr;
 };
 
-struct iw_aplist {
-	unsigned short num;
-	char	has_quality : 1;
-
-	struct {
-	  struct sockaddr   addr;
-	  struct iw_quality quality;
-	} aplist[IW_MAX_AP];
-};
-
 struct iw_stat {
 	int		link;
 	int		signal, noise;
@@ -113,7 +103,6 @@ void (*iw_stat_redraw)(void);
 
 void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 void iw_getinf_range(char *ifname, struct iw_range *range);
-int iw_get_aplist(char *ifname, struct iw_aplist *lst);
 int iw_getif();
 extern void dump_parameters(void);
 

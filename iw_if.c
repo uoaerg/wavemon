@@ -437,54 +437,6 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 	return 0;
 }
 
-/*
- * get a list of access points in range
- * for now this uses the deprecated SIOCGIWAPLIST facility, next revision
- * will use SIOCSIWSCAN (if available)
- */
-int iw_get_aplist(char *ifname, struct iw_aplist *lst)
-{
-	int skfd;
-	struct iwreq iwr;
-	char buf[(sizeof(struct iw_quality) +
-		  sizeof(struct sockaddr)) * IW_MAX_AP];
-	int i, rv = 1;
-
-	if ((skfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-		fatal_error("could not open socket");
-
-	memset(lst, 0, sizeof(struct iw_aplist));
-
-	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
-	iwr.u.data.pointer = (caddr_t) buf;
-	iwr.u.data.length = IW_MAX_AP;
-	iwr.u.data.flags = 0;
-	if (ioctl(skfd, SIOCGIWAPLIST, &iwr) >= 0) {
-		lst->num = iwr.u.data.length;
-
-		/*
-		 * copy addresses and quality information (if available) to list array
-		 */
-
-		for (i = 0; i < lst->num; i++)
-			memcpy(&lst->aplist[i].addr,
-			       buf + i * sizeof(struct sockaddr),
-			       sizeof(struct sockaddr));
-
-		if ((lst->has_quality = iwr.u.data.flags))
-			for (i = 0; i < lst->num; i++)
-				memcpy(&lst->aplist[i].quality,
-				       buf +
-				       lst->num * sizeof(struct sockaddr) +
-				       i * sizeof(struct iw_quality),
-				       sizeof(struct iw_quality));
-	} else {
-		rv = 0;
-	}
-	close(skfd);
-	return rv;
-}
-
 void dump_parameters(void)
 {
 	struct iw_dyn_info info;

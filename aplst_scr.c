@@ -20,55 +20,58 @@
 #include "wavemon.h"
 #include "iw_if.h"
 
-void display_aplist(WINDOW *w_aplst)
+static void display_aplist(WINDOW *w_aplst)
 {
-	struct iw_aplist axp;
+	uint8_t buf[(sizeof(struct iw_quality) +
+		     sizeof(struct sockaddr)) * IW_MAX_AP];
 	char	s[0x100];
-	int		ysize, xsize;
-	int 	i;
-	
+	int	ysize, xsize, i, line = 2;
+	struct iw_quality *qual;
+	struct iwreq iwr;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		fatal_error("could not open socket");
+
 	getmaxyx(w_aplst, ysize, xsize);
 	for (i = 1; i < ysize - 1; i++)
 		mvwhline(w_aplst, i, 1, ' ', xsize - 2);
 
-	if (iw_get_aplist(conf.ifname, &axp)) {
-		if (axp.num) {
-			sprintf(s, "%d access point(s) in range.", axp.num);
-			mvwaddstr(w_aplst, 1, 1, s);
+	strncpy(iwr.ifr_name, conf.ifname, IFNAMSIZ);
+	iwr.u.data.pointer = (caddr_t) buf;
+	iwr.u.data.length  = IW_MAX_AP;
+	iwr.u.data.flags   = 0;
 
-			if (axp.has_quality) {
-				for (i = 0; i < axp.num; i++) {
-					wmove(w_aplst, 3 + i * 2, 1);
-					sprintf(s, "%2d ", i);
-					waddstr(w_aplst, s);
-					sprintf(s, "%2hhX:%2hhX:%2hhX:%2hhX:%2hhX:%2hhX",
-							axp.aplist[i].addr.sa_data[0], axp.aplist[i].addr.sa_data[1], 
-							axp.aplist[i].addr.sa_data[2], axp.aplist[i].addr.sa_data[3], 
-							axp.aplist[i].addr.sa_data[4], axp.aplist[i].addr.sa_data[5]);
-					waddstr_b(w_aplst, s);
+	if (ioctl(skfd, SIOCGIWAPLIST, &iwr) < 0) {
+		sprintf(s, "%s does not have a list of peers/access points.", conf.ifname);
+		waddstr_center(w_aplst, LINES/2 - 1, s);
+		goto done;
+	}
 
-					wmove(w_aplst, 4 + i * 2, 1);
-					sprintf(s, "Link quality: %d, signal level: %d, noise level: %d",
-							axp.aplist[i].quality.qual, axp.aplist[i].quality.level,
-							axp.aplist[i].quality.noise);
-					waddstr(w_aplst, s);
-				}
-			} else {
-				for (i = 0; i < axp.num; i++) {
-					wmove(w_aplst, 3 + i, 1);
-					sprintf(s, "%2d ", i);
-					waddstr(w_aplst, s);
-					sprintf(s, "%2hhX:%2hhX:%2hhX:%2hhX:%2hhX:%2hhX",
-							axp.aplist[i].addr.sa_data[0], axp.aplist[i].addr.sa_data[1], 
-							axp.aplist[i].addr.sa_data[2], axp.aplist[i].addr.sa_data[3], 
-							axp.aplist[i].addr.sa_data[4], axp.aplist[i].addr.sa_data[5]);
-					waddstr_b(w_aplst, s);
-				}
-				waddstr_center(w_aplst, 4 + axp.num, "No link quality information available.");
-			}
+	if (iwr.u.data.length == 0) {
+		waddstr_center(w_aplst, LINES/2 - 1, "No peer/access point in range.");
+	} else if (iwr.u.data.length == 1) {
+		mvwaddstr(w_aplst, line, 1, "Peer/access point:");
+	} else {
+		sprintf(s, "%d peers/access points in range:", iwr.u.data.length);
+		mvwaddstr(w_aplst, line, 1, s);
+	}
 
-		} else waddstr_center(w_aplst, (LINES >> 1) - 1, "No access points in range.");
-	} else waddstr_center(w_aplst, (LINES >> 1) - 1, "Access point list not available.");
+	qual = (struct iw_quality *)(buf + sizeof(struct sockaddr) * iwr.u.data.length);
+
+	for (i = 0, line += 2; i < iwr.u.data.length; i++, line++) {
+
+		mvwaddstr(w_aplst, line++, 1, "  ");
+		waddstr_b(w_aplst, mac_addr(buf + i * sizeof(struct sockaddr)));
+
+		if (iwr.u.data.flags) {
+			sprintf(s, "Link quality: %2d, signal level: %d, noise level: %d",
+				qual[i].qual, qual[i].level, qual[i].noise);
+			mvwaddstr(w_aplst, line++, 5, s);
+		}
+	}
+done:
+	close(skfd);
 }
 
 int scr_aplst(void)
