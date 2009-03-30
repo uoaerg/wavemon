@@ -32,11 +32,6 @@ int main(int argc, char *argv[]) {
 
 	getconf(argc, argv);
 
-	if (conf.dump) {
-		dump_parameters();
-		exit(0);
-	}
-
 	if (signal(SIGWINCH, sig_winch) < 0)
 		err(1, "cannot install handler for window changes");
 

@@ -26,13 +26,14 @@ struct	wavemon_conf conf;
 int	conf_items;	/* index into array storing menu items */
 static int if_list;	/* index into array of WiFi interface names */
 
-
-static char *version_str = "wavemon wireless monitor " WAVEMON_VERSION " by Jan Morgenstern <jan@jm-music.de>",
-	    *license_str = "Distributed under the terms of the GNU General Public License >=v2.";
-
-static void help_exit(void)
+static void version(void)
 {
-	printf("%s\n%s\n\n", version_str, license_str);
+	printf("wavemon wireless monitor %s\n", WAVEMON_VERSION);
+	printf("Distributed under the terms of the GPL >=v2.\n");
+}
+
+static void usage(void)
+ {
 	printf("Usage: wavemon [ -dhlrv ] [ -i ifname ]\n\n");
 	printf("  -d            Dump the current device status to stdout and exit\n");
 	printf("  -h            This help screen\n");
@@ -40,13 +41,6 @@ static void help_exit(void)
 	printf("  -l            Use linear scales in favour of logarithmic ones\n");
 	printf("  -r            Generate random levels (for testing purposes)\n");
 	printf("  -v            Print version number and exit\n\n");
-	exit(0);
-}
-
-static void version_exit(void)
-{
-	printf("%s\n%s\n\n", version_str, license_str);
-	exit(0);
 }
 
 static void getargs(int argc, char *argv[])
@@ -56,11 +50,11 @@ static void getargs(int argc, char *argv[])
 	while ((arg = getopt(argc, argv, "dhi:lrv")) >= 0)
 		switch (arg) {
 			case 'd':
-				conf.dump = true;
-				break;
+				dump_parameters();
+				exit(0);
 			case 'h':
-				help_exit();
-				break;
+				usage();
+				exit(0);
 			case 'i':
 				if ((tmp = ll_scan(if_list, "S", optarg)) >= 0)
 					strncpy(conf.ifname, ll_get(if_list, tmp), sizeof(conf.ifname));
@@ -74,8 +68,8 @@ static void getargs(int argc, char *argv[])
 				conf.random = true;
 				break;
 			case 'v':
-				version_exit();
-				break;
+				version();
+				exit(0);
 			default:
 				/* bad argument. bad bad */
 				exit(-1);
@@ -538,7 +532,6 @@ static void set_defaults(void)
 	conf.slotsize		= 4;
 
 	conf.override_bounds	= false;
-	conf.dump		= false;
 	conf.random		= false;
 	conf.linear		= false;
 

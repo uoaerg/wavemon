@@ -54,8 +54,7 @@ extern struct wavemon_conf {
 	int	slotsize;
 
 	/* Boolean values which are 'char' for consistency with item->dep */
-	char	dump,
-		random,
+	char	random,
 		linear,
 		override_bounds;
 
