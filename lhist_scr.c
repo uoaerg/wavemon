@@ -20,14 +20,15 @@
 #include "wavemon.h"
 #include "iw_if.h"
 
-WINDOW *w_lhist, *w_key, *w_menu;
+/* GLOBALS */
+static WINDOW *w_lhist, *w_menu;
 
 static inline int max(const int a, const int b)
 {
 	return a > b ? a : b;
 }
 
-void display_lhist(WINDOW *w_lhist)
+static void display_lhist(void)
 {
 	chtype	ch;
 	double	ratio, p, p_fract;
@@ -121,7 +122,7 @@ void display_lhist(WINDOW *w_lhist)
 	}
 }
 
-void display_key(WINDOW *w_key)
+static void display_key(WINDOW *w_key)
 {
 	char s[0x100];
 
@@ -144,13 +145,13 @@ void display_key(WINDOW *w_key)
 	waddstr(w_key, "] S-N ratio (dB)");
 }
 
-void redraw_lhist()
+static void redraw_lhist(void)
 {
 	static int vcount = 1;
 
 	if (!--vcount) {
 		vcount = conf.slotsize;
-		display_lhist(w_lhist);
+		display_lhist();
 		wrefresh(w_lhist);
 		wmove(w_menu, 1, 0);
 		wrefresh(w_menu);
@@ -159,6 +160,7 @@ void redraw_lhist()
 
 int scr_lhist(void)
 {
+	WINDOW *w_key;
 	int key = 0;
 
 	w_lhist = newwin_title(LINES - 4, COLS, 0, 0, "Level histogram", 0, 1);

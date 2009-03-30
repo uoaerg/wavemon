@@ -68,8 +68,6 @@ extern struct wavemon_conf {
 /*
  *	Initialisation & Configuration functions
  */
-extern void read_cf(void);
-extern void write_cf(void);
 extern void getconf(int argc, char *argv[]);
 extern void reinit_on_changes(void);
 
@@ -195,6 +193,8 @@ extern void fatal_error(char *format, ...);
 /*
  *	Helper functions
  */
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 static inline void str_tolower(char *s)
 {
 	while (s && *s != '\0')

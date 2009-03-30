@@ -27,17 +27,6 @@ static void sig_winch(int signo)
 	errx(1, "under the pain of death, thou shaltst not resize thyne window");
 }
 
-void reinit_on_changes(void)
-{
-	static int stat_iv = 0;
-	
-	if (conf.stat_iv != stat_iv) {
-		init_stat_iv();
-		stat_iv = conf.stat_iv;
-	}
-}
-
-
 int main(int argc, char *argv[]) {
 	int	(*current_scr)() = NULL;
 	int 	nextscr;

@@ -28,10 +28,10 @@ struct	wavemon_conf conf;
 int	conf_items;
 
 
-char	*version_str = "wavemon wireless monitor " WAVEMON_VERSION " by Jan Morgenstern <jan@jm-music.de>",
-	*license_str = "Distributed under the terms of the GNU General Public License >=v2.";
+static char *version_str = "wavemon wireless monitor " WAVEMON_VERSION " by Jan Morgenstern <jan@jm-music.de>",
+	    *license_str = "Distributed under the terms of the GNU General Public License >=v2.";
 
-void help_exit()
+static void help_exit(void)
 {
 	printf("%s\n%s\n\n", version_str, license_str);
 	printf("Usage: wavemon [ -dhlrv ] [ -i ifname ]\n\n");
@@ -44,227 +44,10 @@ void help_exit()
 	exit(0);
 }
 
-void version_exit()
+static void version_exit(void)
 {
 	printf("%s\n%s\n\n", version_str, license_str);
 	exit(0);
-}
-
-static void init_conf_items(void)
-{
-	struct conf_item *item;
-	int	if_list = iw_getif();
-	int 	s = sizeof(struct conf_item);
-
-	if (!ll_size(if_list)) fatal_error("no wireless interfaces found!");
-
-	conf_items = ll_create();
-
-	item = calloc(1, s);
-	item->name = strdup("Interface");
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Interface");
-	item->cfname	= strdup("interface");
-	item->type	= t_listval;
-	item->v.s	= conf.ifname;
-	item->max	= 10;
-	item->list	= if_list;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Statistics updates");
-	item->cfname	= strdup("stat_updates");
-	item->type	= t_int;
-	item->v.i	= &conf.stat_iv;
-	item->min	= 10;
-	item->max	= 4000;
-	item->inc	= 10;
-	item->unit	= strdup("ms");
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Histogram update cycles");
-	item->cfname	= strdup("lhist_slot_size");
-	item->type	= t_int;
-	item->v.i	= &conf.slotsize;
-	item->min	= 1;
-	item->max	= 64;
-	item->inc	= 1;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Dynamic info updates");
-	item->cfname	= strdup("info_updates");
-	item->type	= t_int;
-	item->v.i	= &conf.info_iv;
-	item->min	= 1;
-	item->max	= 60;
-	item->inc	= 1;
-	item->unit = strdup("s");
-	ll_push(conf_items, "*", item);
-
-	/* level scale items */
-	item = calloc(1, s);
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name = strdup("Level scales");
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Override scale autodetect");
-	item->cfname	= strdup("override_auto_scale");
-	item->type	= t_switch;
-	item->v.b	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Minimum signal level");
-	item->cfname	= strdup("min_signal_level");
-	item->type	= t_int;
-	item->v.i	= &conf.sig_min;
-	item->min	= -128;
-	item->max	= -60;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Maximum signal level");
-	item->cfname	= strdup("max_signal_level");
-	item->type	= t_int;
-	item->v.i	= &conf.sig_max;
-	item->min	= -59;
-	item->max	= 120;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Minimum noise level");
-	item->cfname	= strdup("min_noise_level");
-	item->type	= t_int;
-	item->v.i	= &conf.noise_min;
-	item->min	= -128;
-	item->max	= -60;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Maximum noise level");
-	item->cfname	= strdup("max_noise_level");
-	item->type	= t_int;
-	item->v.i	= &conf.noise_max;
-	item->min	= -60;
-	item->max	= 120;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Linear level scales");
-	item->cfname	= strdup("linear_scale");
-	item->type	= t_switch;
-	item->v.b	= &conf.linear;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Random signals");
-	item->cfname	= strdup("random");
-	item->type	= t_switch;
-	item->v.b	= &conf.random;
-	ll_push(conf_items, "*", item);
-
-	/* thresholds */
-	item = calloc(1, s);
-	item->name	= strdup("Low threshold action");
-	item->cfname	= strdup("lo_threshold_action");
-	item->type	= t_list;
-	item->v.b	= &conf.lthreshold_action;
-	item->list	= ll_create();
-	ll_push(item->list, "s", "Disabled");
-	ll_push(item->list, "s", "Beep");
-	ll_push(item->list, "s", "Flash");
-	ll_push(item->list, "s", "Beep+Flash");
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Low threshold");
-	item->cfname	= strdup("lo_threshold");
-	item->type	= t_int;
-	item->v.i	= &conf.lthreshold;
-	item->min	= -120;
-	item->max	= -60;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.lthreshold_action;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("High threshold action");
-	item->cfname	= strdup("hi_threshold_action");
-	item->type	= t_list;
-	item->v.b	= &conf.hthreshold_action;
-	item->list	= ll_create();
-	ll_push(item->list, "s", "Disabled");
-	ll_push(item->list, "s", "Beep");
-	ll_push(item->list, "s", "Flash");
-	ll_push(item->list, "s", "Beep+Flash");
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("High threshold");
-	item->cfname	= strdup("hi_threshold");
-	item->type	= t_int;
-	item->v.i	= &conf.hthreshold;
-	item->min	= -59;
-	item->max	= 120;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.hthreshold_action;
-	ll_push(conf_items, "*", item);
-
-	/* start-up items */
-	item = calloc(1, s);
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name = strdup("Startup");
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Startup screen");
-	item->cfname	= strdup("startup_screen");
-	item->type	= t_list;
-	item->v.b	= &conf.startup_scr;
-	item->list	= ll_create();
-	ll_push(item->list, "s", "Info");
-	ll_push(item->list, "s", "Histogram");
-	ll_push(item->list, "s", "Access points");
-	ll_push(conf_items, "*", item);
-
-	/* functions */
-	item = calloc(1, s);
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, s);
-	item->name	= strdup("Save configuration");
-	item->type	= t_func;
-	item->v.fp	= write_cf;
-	ll_push(conf_items, "*", item);
 }
 
 static void getargs(int argc, char *argv[])
@@ -300,7 +83,7 @@ static void getargs(int argc, char *argv[])
 		}
 }
 
-void read_cf(void)
+static void read_cf(void)
 {
 	char	tmp[0x100], lv[0x20], rv[0x20], *cfname;
 	char	*lp;
@@ -430,7 +213,7 @@ void read_cf(void)
 	}
 }
 
-void write_cf()
+static void write_cf(void)
 {
 	struct passwd *pw = getpwuid(getuid());
 	struct conf_item *ci = NULL;
@@ -520,6 +303,236 @@ void write_cf()
 	free(cfname);
 }
 
+static void init_conf_items(void)
+{
+	struct conf_item *item;
+	int	if_list = iw_getif();
+
+	if (!ll_size(if_list)) fatal_error("no wireless interfaces found!");
+
+	conf_items = ll_create();
+
+	item = calloc(1, sizeof(*item));
+	item->name = strdup("Interface");
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Interface");
+	item->cfname	= strdup("interface");
+	item->type	= t_listval;
+	item->v.s	= conf.ifname;
+	item->max	= 10;
+	item->list	= if_list;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Statistics updates");
+	item->cfname	= strdup("stat_updates");
+	item->type	= t_int;
+	item->v.i	= &conf.stat_iv;
+	item->min	= 10;
+	item->max	= 4000;
+	item->inc	= 10;
+	item->unit	= strdup("ms");
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Histogram update cycles");
+	item->cfname	= strdup("lhist_slot_size");
+	item->type	= t_int;
+	item->v.i	= &conf.slotsize;
+	item->min	= 1;
+	item->max	= 64;
+	item->inc	= 1;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Dynamic info updates");
+	item->cfname	= strdup("info_updates");
+	item->type	= t_int;
+	item->v.i	= &conf.info_iv;
+	item->min	= 1;
+	item->max	= 60;
+	item->inc	= 1;
+	item->unit	= strdup("s");
+	ll_push(conf_items, "*", item);
+
+	/* level scale items */
+	item = calloc(1, sizeof(*item));
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name = strdup("Level scales");
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Override scale autodetect");
+	item->cfname	= strdup("override_auto_scale");
+	item->type	= t_switch;
+	item->v.b	= &conf.override_bounds;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Minimum signal level");
+	item->cfname	= strdup("min_signal_level");
+	item->type	= t_int;
+	item->v.i	= &conf.sig_min;
+	item->min	= -128;
+	item->max	= -60;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf.override_bounds;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Maximum signal level");
+	item->cfname	= strdup("max_signal_level");
+	item->type	= t_int;
+	item->v.i	= &conf.sig_max;
+	item->min	= -59;
+	item->max	= 120;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf.override_bounds;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Minimum noise level");
+	item->cfname	= strdup("min_noise_level");
+	item->type	= t_int;
+	item->v.i	= &conf.noise_min;
+	item->min	= -128;
+	item->max	= -60;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf.override_bounds;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Maximum noise level");
+	item->cfname	= strdup("max_noise_level");
+	item->type	= t_int;
+	item->v.i	= &conf.noise_max;
+	item->min	= -60;
+	item->max	= 120;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf.override_bounds;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Linear level scales");
+	item->cfname	= strdup("linear_scale");
+	item->type	= t_switch;
+	item->v.b	= &conf.linear;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Random signals");
+	item->cfname	= strdup("random");
+	item->type	= t_switch;
+	item->v.b	= &conf.random;
+	ll_push(conf_items, "*", item);
+
+	/* thresholds */
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Low threshold action");
+	item->cfname	= strdup("lo_threshold_action");
+	item->type	= t_list;
+	item->v.b	= &conf.lthreshold_action;
+	item->list	= ll_create();
+	ll_push(item->list, "s", "Disabled");
+	ll_push(item->list, "s", "Beep");
+	ll_push(item->list, "s", "Flash");
+	ll_push(item->list, "s", "Beep+Flash");
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Low threshold");
+	item->cfname	= strdup("lo_threshold");
+	item->type	= t_int;
+	item->v.i	= &conf.lthreshold;
+	item->min	= -120;
+	item->max	= -60;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf.lthreshold_action;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("High threshold action");
+	item->cfname	= strdup("hi_threshold_action");
+	item->type	= t_list;
+	item->v.b	= &conf.hthreshold_action;
+	item->list	= ll_create();
+	ll_push(item->list, "s", "Disabled");
+	ll_push(item->list, "s", "Beep");
+	ll_push(item->list, "s", "Flash");
+	ll_push(item->list, "s", "Beep+Flash");
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("High threshold");
+	item->cfname	= strdup("hi_threshold");
+	item->type	= t_int;
+	item->v.i	= &conf.hthreshold;
+	item->min	= -59;
+	item->max	= 120;
+	item->inc	= 1;
+	item->unit	= strdup("dBm");
+	item->dep	= &conf.hthreshold_action;
+	ll_push(conf_items, "*", item);
+
+	/* start-up items */
+	item = calloc(1, sizeof(*item));
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name = strdup("Startup");
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Startup screen");
+	item->cfname	= strdup("startup_screen");
+	item->type	= t_list;
+	item->v.b	= &conf.startup_scr;
+	item->list	= ll_create();
+	ll_push(item->list, "s", "Info");
+	ll_push(item->list, "s", "Histogram");
+	ll_push(item->list, "s", "Access points");
+	ll_push(conf_items, "*", item);
+
+	/* functions */
+	item = calloc(1, sizeof(*item));
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Save configuration");
+	item->type	= t_func;
+	item->v.fp	= write_cf;
+	ll_push(conf_items, "*", item);
+}
+
+void dealloc_on_exit(void)
+{
+	struct conf_item *ci;
+
+	if (!conf_items)
+		return;
+
+	while ((ci = ll_getall(conf_items))) {
+		if (ci->type == t_list)
+			ll_destroy(ci->list);
+	}
+	ll_destroy(conf_items);
+}
+
 static void set_defaults(void)
 {
 	strncpy(conf.ifname, ll_get(iw_getif(), 0), sizeof(conf.ifname));
@@ -545,20 +558,6 @@ static void set_defaults(void)
 	conf.hthreshold		= -10;
 
 	conf.startup_scr	= 0;
-}
-
-void dealloc_on_exit()
-{
-	struct conf_item *ci;
-
-	if (!conf_items)
-		return;
-
-	while ((ci = ll_getall(conf_items))) {
-		if (ci->type == t_list)
-			ll_destroy(ci->list);
-	}
-	ll_destroy(conf_items);
 }
 
 void getconf(int argc, char *argv[])

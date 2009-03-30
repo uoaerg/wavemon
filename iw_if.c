@@ -75,7 +75,7 @@ float freq2ghz(struct iw_freq *f)
  * Random signal generator
  */
 
-signed int rnd_signal(int min, int max)
+static signed int rnd_signal(int min, int max)
 {
 	static float rlvl, rlvl_next;
 	static float step = 1.0;
@@ -102,8 +102,7 @@ signed int rnd_signal(int min, int max)
 /* 
  * Random noise generator
  */
-
-signed int rnd_noise(int min, int max)
+static signed int rnd_noise(int min, int max)
 {
 	static float rlvl, rlvl_next;
 	static float step = 1.0;
@@ -130,7 +129,7 @@ signed int rnd_noise(int min, int max)
 /*
  * Notice for crossing the low threshold
  */
-void low_signal()
+static void low_signal(void)
 {
 	int fd;
 
@@ -159,7 +158,7 @@ void low_signal()
 /*
  * Notice for crossing the high threshold
  */
-void high_signal()
+static void high_signal(void)
 {
 	int fd;
 
@@ -407,7 +406,7 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
  * obtain statistics
  */
 int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
-	       int slotsize, char random)
+		      int slotsize, char random)
 {
 	FILE *fd;
 	char tmp[0x100], buf[0x100];
@@ -498,32 +497,6 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 		return 1;
 	}
 	return 0;
-}
-
-/*
- * gather statistics periodically
- */
-void s_handler(int signum)
-{
-	iw_getstat(conf.ifname, &iw_stats, iw_stats_cache, conf.slotsize, conf.random);
-	if (iw_stat_redraw)
-		iw_stat_redraw();
-}
-
-/*
- * init statistics handler
- */
-void init_stat_iv(void)
-{
-	struct itimerval i, iold;
-
-	i.it_interval.tv_sec = i.it_value.tv_sec = (int)(conf.stat_iv / 1000);
-	i.it_interval.tv_usec = i.it_value.tv_usec =
-	    fmod(conf.stat_iv, 1000) * 1000;
-
-	setitimer(ITIMER_REAL, &i, &iold);
-
-	signal(SIGALRM, s_handler);
 }
 
 /*

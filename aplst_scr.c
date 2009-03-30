@@ -79,14 +79,14 @@ int scr_aplst(void)
 
 	w_aplst = newwin_title(LINES - 1, COLS, 0, 0, "Access point list", 0, 0);
 	w_menu = newwin(1, COLS, LINES - 1, 0);
-	
+
 	wmenubar(w_menu, 2);
 	wmove(w_menu, 1, 0);
 	nodelay(w_menu, TRUE); keypad(w_menu, TRUE);
 
 	wrefresh(w_aplst);
 	wrefresh(w_menu);
-	
+
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);
 		wrefresh(w_aplst);
@@ -102,9 +102,9 @@ int scr_aplst(void)
 		else if (key == 'i')
 			key = KEY_F(1);
 	}
-	
+
 	werase(w_aplst); wrefresh(w_aplst); delwin(w_aplst);
 	werase(w_menu); wrefresh(w_menu); delwin(w_menu);
-	
+
 	return key - KEY_F(1);
 }

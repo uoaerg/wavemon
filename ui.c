@@ -19,7 +19,15 @@
  */
 #include "wavemon.h"
 
-char *screens[] = { "info", "lhist", "aplst", "", "", "", "prefs", "help", "about", "quit" };
+static char *screens[] = { "info",	/* F1		*/
+			   "lhist",	/* F2		*/
+			   "aplst",	/* F3		*/
+			   "", "", "",	/* F4 - F6	*/
+			   "prefs",	/* F7		*/
+			   "help",	/* F8		*/
+			   "about",	/* F9		*/
+			   "quit"	/* F10		*/
+};
 
 void wmenubar(WINDOW *win, int active)
 {

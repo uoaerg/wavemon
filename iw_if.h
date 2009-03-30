@@ -104,14 +104,14 @@ struct iw_stat {
 
 extern struct iw_stat iw_stats;
 extern struct iw_stat iw_stats_cache[IW_STACKSIZE];
+extern int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
+		      int slotsize, char random);
 void (*iw_stat_redraw)(void);
 
 int iw_check_extensions(char *ifname);
 void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 void iw_getinf_range(char *ifname, struct iw_range *range);
-int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack, int slotsize, char random);
 int iw_get_aplist(char *ifname, struct iw_aplist *lst);
-void init_stat_iv(void);
 int iw_getif();
 
 static inline const char *iw_opmode(const uint8_t mode)

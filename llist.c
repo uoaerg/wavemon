@@ -44,22 +44,49 @@ typedef struct chain {
 	char type;
 	struct chain *next;
 } llist;
-
-llist *arg2element(char type, va_list * ap, llist * next);
-
 static llist *lists[NUM_LISTS];
 
-struct listp {
+
+/* position pointer for ll_getall() */
+static struct {
 	unsigned long n;
 	char eol;
-};
+} lp[NUM_LISTS];
 
-static struct listp lp[NUM_LISTS];	// position pointer for ll_getall()
+
+/*
+ * helper function for generating an element from an argument
+ */
+static llist *arg2element(char type, va_list * ap, llist * next)
+{
+	llist *l;
+
+	l = (llist *) malloc(sizeof(llist));
+
+	switch (type) {
+	case 'd':
+		l->e = (void *)malloc(sizeof(int));
+		*((int *)l->e) = va_arg(*ap, int);
+		break;
+	case 's':
+		l->e = (void *)malloc(sizeof(char *));
+		l->e = strdup(va_arg(*ap, char *));
+		break;
+	case 'f':
+		l->e = (void *)malloc(sizeof(double));
+		*((double *)l->e) = va_arg(*ap, double);
+		break;
+	case '*':
+		l->e = (void *)malloc(sizeof(void *));
+		l->e = va_arg(*ap, void *);
+	}
+	l->next = next;
+	return l;
+}
 
 /*
  * start a new list
  */
-
 int ll_create()
 {
 	unsigned long i;
@@ -84,7 +111,6 @@ int ll_create()
 /*
  * get an element without modifying the list
  */
-
 void *ll_get(int ld, unsigned long n)
 {
 	llist *l = lists[ld]->next;
@@ -98,7 +124,6 @@ void *ll_get(int ld, unsigned long n)
 /*
  * return all elements successively
  */
-
 void *ll_getall(int ld)
 {
 	llist *l = lists[ld]->next;
@@ -129,7 +154,6 @@ void *ll_getall(int ld)
 /*
  * reset the position pointer for ll_getall
  */
-
 void ll_reset(int ld)
 {
 	lp[ld].n = lp[ld].eol = 0;
@@ -138,7 +162,6 @@ void ll_reset(int ld)
 /*
  * push an element onto the end of the list
  */
-
 void ll_push(int ld, const char *format, ...)
 {
 	llist *l = lists[ld];
@@ -261,7 +284,6 @@ void ll_del(int ld, unsigned long n)
 /*
  * return the position of a given element in list (or -1)
  */
-
 signed long ll_scan(int ld, const char *format, ...)
 {
 	llist	*l = lists[ld];
@@ -324,7 +346,6 @@ char ll_type(int ld, unsigned long n)
 /*
  * return the number of elements in a given list
  */
-
 unsigned long ll_size(int ld)
 {
 	llist *l = lists[ld];
@@ -338,7 +359,6 @@ unsigned long ll_size(int ld)
 /*
  * destroy a list and free the memory
  */
-
 void ll_destroy(int ld)
 {
 	llist *l = lists[ld], *lnext;
@@ -353,35 +373,4 @@ void ll_destroy(int ld)
 	lp[ld].n = lp[ld].eol = 0;
 
 	lists[ld] = NULL;
-}
-
-/*
- * helper function for generating an element from an argument
- */
-
-llist *arg2element(char type, va_list * ap, llist * next)
-{
-	llist *l;
-
-	l = (llist *) malloc(sizeof(llist));
-
-	switch (type) {
-	case 'd':
-		l->e = (void *)malloc(sizeof(int));
-		*((int *)l->e) = va_arg(*ap, int);
-		break;
-	case 's':
-		l->e = (void *)malloc(sizeof(char *));
-		l->e = strdup(va_arg(*ap, char *));
-		break;
-	case 'f':
-		l->e = (void *)malloc(sizeof(double));
-		*((double *)l->e) = va_arg(*ap, double);
-		break;
-	case '*':
-		l->e = (void *)malloc(sizeof(void *));
-		l->e = va_arg(*ap, void *);
-	}
-	l->next = next;
-	return l;
 }

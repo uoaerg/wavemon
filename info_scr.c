@@ -21,9 +21,43 @@
 #include "iw_if.h"
 #include "net_if.h"
 
-WINDOW	*w_if, *w_levels, *w_stats, *w_info, *w_net, *w_menu;
+/* GLOBALS */
+static WINDOW *w_levels, *w_stats, *w_menu;
 
 struct iw_range range;
+
+/*
+ * Statistics handler for period polling
+ */
+static void sampling_handler(int signum)
+{
+	iw_getstat(conf.ifname, &iw_stats, iw_stats_cache, conf.slotsize, conf.random);
+	if (iw_stat_redraw)
+		iw_stat_redraw();
+}
+
+static void init_stat_iv(void)
+{
+	struct itimerval i;
+	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
+
+	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
+	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
+
+	setitimer(ITIMER_REAL, &i, NULL);
+
+	signal(SIGALRM, sampling_handler);
+}
+
+void reinit_on_changes(void)
+{
+	static int stat_iv = 0;
+
+	if (conf.stat_iv != stat_iv) {
+		init_stat_iv();
+		stat_iv = conf.stat_iv;
+	}
+}
 
 signed int random_level1(int min, int max)
 {
@@ -51,9 +85,8 @@ int random_level2(int min, int max)
 	return rlvl;
 }
 
-void display_stats(WINDOW *w_levels, WINDOW *w_stats)
+static void display_levels(void)
 {
-	struct if_stat nstat;
 	char   nscale[2],
 	     lvlscale[2],
 	     snrscale[2] = { 6, 12 };
@@ -68,7 +101,6 @@ void display_stats(WINDOW *w_levels, WINDOW *w_stats)
 		lvlscale[1] = -20;
 	}
 
-	if_getstat(conf.ifname, &nstat);
 	wmove(w_levels, 1, 1);
 	waddstr(w_levels, "link quality: ");
 	sprintf(tmp, "%d/%d  ", iw_stats.link, range.max_qual.qual);
@@ -126,6 +158,14 @@ void display_stats(WINDOW *w_levels, WINDOW *w_stats)
 	waddstr_b(w_levels, tmp);
 	waddbar(w_levels, snr, 0, 110, 8, 1, COLS - 1, snrscale, true);
 	
+}
+
+static void display_stats(void)
+{
+	struct if_stat nstat;
+	char tmp[0x100];
+
+	if_getstat(conf.ifname, &nstat);
 	wmove(w_stats, 1, 1);
 	
 	waddstr(w_stats, "RX: ");
@@ -148,16 +188,17 @@ void display_stats(WINDOW *w_levels, WINDOW *w_stats)
 	waddstr(w_stats, " misc");
 }
 
-void redraw_stats()
+static void redraw_stats(void)
 {
-	display_stats(w_levels, w_stats);
+	display_levels();
+	display_stats();
 	wrefresh(w_levels);
 	wrefresh(w_stats);
 	wmove(w_menu, 1, 0);
 	wrefresh(w_menu);
 }
 
-void display_info(WINDOW *w_if, WINDOW *w_info)
+static void display_info(WINDOW *w_if, WINDOW *w_info)
 {
 	struct iw_dyn_info info;
 	char 	tmp[0x100];
@@ -296,7 +337,7 @@ void display_info(WINDOW *w_if, WINDOW *w_info)
 	} else waddstr(w_info, "n/a");
 }
 
-void display_netinfo(WINDOW *w_net)
+static void display_netinfo(WINDOW *w_net)
 {
 	struct if_info info;
 	char 	tmp[0x100];
@@ -343,6 +384,7 @@ void display_netinfo(WINDOW *w_net)
 
 int scr_info(void)
 {
+	WINDOW *w_if, *w_info, *w_net;
 	struct timer	t1;
 	int		key = 0;
 	

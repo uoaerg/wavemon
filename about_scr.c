@@ -19,43 +19,49 @@
  */
 #include "wavemon.h"
 
-#define A_LINES 11
+/* GLOBALS */
+static char *about_lines[] = {	"wavemon - status monitor for wireless network devices",
+				"version " WAVEMON_VERSION " (" WAVEMON_RELEASE_DATE ") ",
+				"",
+				"original by jan morgenstern <jan@jm-music.de>",
+				"distributed under the terms of GNU general public license >=v2",
+				"",
+				"wavemon uses the wireless extensions by",
+				"jean tourrilhes <jt@hpl.hp.com>",
+				"",
+				"http://www.jm-music.de/projects.html",
+				"",
+				"please contact me of you have any bug reports or suggestions!"
+};
 
-char *about_lines[A_LINES] = { "wavemon - status monitor for wireless network devices",
-						"version " WAVEMON_VERSION " (" WAVEMON_RELEASE_DATE ") ",
-						"programmed by jan morgenstern <jan@jm-music.de>",
-						"distributed under the terms of GNU general public license >=v2",
-						"",
-						"wavemon uses the wireless extensions API programmed by",
-						"jean tourrilhes <jt@hpl.hp.com>",
-						"",
-						"http://www.jm-music.de/projects.html",
-						"",
-						"please contact me of you have any bug reports or suggestions!" };
+static int *linecd[ARRAY_SIZE(about_lines)];
 
-int *linecd[A_LINES];
 
-void init_scramble() {
+static void init_scramble(void)
+{
 	int 	i, j;
 	
-	for (i = 0; i < A_LINES; i++) {
+	for (i = 0; i < ARRAY_SIZE(about_lines); i++) {
 		linecd[i] = malloc(strlen(about_lines[i]) * sizeof(int));
 		for (j = 0; j < strlen(about_lines[i]); j++)
 			linecd[i][j] = (rand() / (float)RAND_MAX) * 120 + 60;
 	}
 }
 
-void free_scramble() {
-	int 	i;
+static void free_scramble(void)
+{
+	int i;
 	
-	for (i = 0; i < A_LINES; i++) free(linecd[i]);
+	for (i = 0; i < ARRAY_SIZE(about_lines); i++)
+		free(linecd[i]);
 }
 
-void draw_lines(WINDOW *w_about) {
-	int		i, j;
+static void draw_lines(WINDOW *w_about)
+{
+	int	i, j;
 	char	buf[0x100];
 	
-	for (i = 0; i < A_LINES; i++) {
+	for (i = 0; i < ARRAY_SIZE(about_lines); i++) {
 		for (j = 0; j < strlen(about_lines[i]); j++)
 			if (linecd[i][j] > 60) {
 				buf[j] = ' ';
@@ -65,7 +71,7 @@ void draw_lines(WINDOW *w_about) {
 				linecd[i][j]--;
 			} else buf[j] = about_lines[i][j];
 		buf[j] = '\0';
-		waddstr_center(w_about, (LINES >> 1) - (A_LINES >> 1) + i, buf);
+		waddstr_center(w_about, LINES/2 - ARRAY_SIZE(about_lines)/2 + i, buf);
 	}
 }	
 

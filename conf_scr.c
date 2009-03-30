@@ -23,7 +23,7 @@ static int first_item;
 static int list_ofs = 0;
 static int wconfx, wconfy;
 
-void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
+static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
 	char	s[0x40];
 	int	x1 = 0,
@@ -89,7 +89,7 @@ void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 	}
 }
 
-void change_item(int inum, char sign, char accel)
+static void change_item(int inum, char sign, char accel)
 {
 	struct conf_item *item = ll_get(conf_items, inum);
 	int tmp;
@@ -142,7 +142,7 @@ void change_item(int inum, char sign, char accel)
 	}
 }	
 
-int next_item(int rv)
+static int next_item(int rv)
 {
 	struct conf_item *item = ll_get(conf_items, rv);
 	
@@ -159,7 +159,7 @@ int next_item(int rv)
 	return rv;
 }
 
-int prev_item(int rv)
+static int prev_item(int rv)
 {
 	struct conf_item *item;
 	
@@ -174,7 +174,7 @@ int prev_item(int rv)
 	return rv;
 }
 
-int m_pref(WINDOW *w_conf, int active_item)
+static int m_pref(WINDOW *w_conf, int active_item)
 {
 	struct conf_item *item;
 	int active_line, i, j,
