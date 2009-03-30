@@ -17,21 +17,7 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
-#include <sys/time.h>
-#include <ncurses.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <err.h>
-
-#include "conf.h"
-#include "ui.h"
-#include "info_scr.h"
-#include "lhist_scr.h"
-#include "aplst_scr.h"
-#include "conf_scr.h"
-#include "help_scr.h"
-#include "about_scr.h"
+#include "wavemon.h"
 #include "iw_if.h"
 
 static void sig_winch(int signo)

@@ -17,15 +17,7 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <ncurses.h>
-
-#include "conf.h"
-#include "ui.h"
-#include "about_scr.h"
+#include "wavemon.h"
 
 #define A_LINES 11
 

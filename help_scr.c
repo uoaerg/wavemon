@@ -17,16 +17,10 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+#include "wavemon.h"
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <ncurses.h>
-
-#include "conf.h"
-#include "ui.h"
-#include "help_scr.h"
-
-int scr_help(struct wavemon_conf *wmconf) {
+int scr_help(void)
+{
 	WINDOW	*w_help, *w_menu;
 	int	key = 0;
 

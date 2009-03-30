@@ -19,6 +19,9 @@
  */
 
 #include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/wireless.h>
 

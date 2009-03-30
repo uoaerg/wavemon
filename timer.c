@@ -17,11 +17,7 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
-#include <sys/time.h>
-#include <unistd.h>
-
-#include "timer.h"
+#include "wavemon.h"
 
 void start_timer(struct timer *t, unsigned long duration)
 {

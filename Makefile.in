@@ -16,7 +16,7 @@ MAIN	= wavemon.c
 PURESRC	= $(filter-out $(MAIN),$(wildcard *.c))
 OBJS	= $(PURESRC:.c=.o)
 
-%.o: %.c %.h
+%.o: %.c wavemon.h llist.h iw_if.h
 	$(CC) $(CFLAGS) $(DEFS) -c -o $@ $<
 
 wavemon: $(MAIN) $(OBJS)

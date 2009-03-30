@@ -17,18 +17,8 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <math.h>
-#include <ncurses.h>
-
-#include "conf.h"
-#include "ui.h"
-#include "timer.h"
+#include "wavemon.h"
 #include "iw_if.h"
-#include "lhist_scr.h"
 
 WINDOW *w_lhist, *w_key, *w_menu;
 

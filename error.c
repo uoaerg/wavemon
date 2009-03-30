@@ -17,12 +17,8 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
-#include <stdio.h>
+#include "wavemon.h"
 #include <stdarg.h>
-#include <ncurses.h>
-#include <stdlib.h>
-#include "conf.h"
 
 void fatal_error(char *format, ...)
 {
