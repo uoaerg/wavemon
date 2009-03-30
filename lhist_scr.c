@@ -23,11 +23,6 @@
 /* GLOBALS */
 static WINDOW *w_lhist, *w_menu;
 
-static inline int max(const int a, const int b)
-{
-	return a > b ? a : b;
-}
-
 static void display_lhist(void)
 {
 	chtype	ch;

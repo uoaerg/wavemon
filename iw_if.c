@@ -27,49 +27,6 @@
 struct iw_stat iw_stats;
 struct iw_stat iw_stats_cache[IW_STACKSIZE];
 
-/*
- * convert log dBm values to linear mW
- */
-
-double dbm2mw(float in)
-{
-	return pow(10.0, in / 10.0);
-}
-
-char *dbm2units(float in)
-{
-	static char with_units[0x100];
-	double val = dbm2mw(in);
-
-	if (val < 0.00000001) {
-		sprintf(with_units, "%.2f pW", val * 1e9);
-	} else if (val < 0.00001) {
-		sprintf(with_units, "%.2f nW", val * 1e6);
-	} else if (val < 0.01) {
-		sprintf(with_units, "%.2f uW", val * 1e3);
-	} else {
-		sprintf(with_units, "%.2f mW", val);
-	}
-	return with_units;
-}
-
-/*
- * convert linear mW values to log dBm
- */
-
-double mw2dbm(float in)
-{
-	return pow(10.0, in / 10.0);
-}
-
-/*
- * convert frequency to GHz
- */
-
-float freq2ghz(struct iw_freq *f)
-{
-	return (f->e ? f->m * pow(10, f->e) : f->m) / 1e9;
-}
 
 /*
  * Random signal generator
@@ -566,19 +523,9 @@ void dump_parameters(void)
 
 	printf("             mode: %s\n", iw_opmode(info.mode));
 
-	if (info.mode != 1 && info.cap_ap) {
-		printf("     access point: ");
-		if (info.cap_ap)
-			printf("%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX\n",
-			       info.ap_addr.sa_data[0] & 0xFF,
-			       info.ap_addr.sa_data[1] & 0xFF,
-			       info.ap_addr.sa_data[2] & 0xFF,
-			       info.ap_addr.sa_data[3] & 0xFF,
-			       info.ap_addr.sa_data[4] & 0xFF,
-			       info.ap_addr.sa_data[5] & 0xFF);
-		else
-			printf("n/a\n");
-	}
+	if (info.mode != 1 && info.cap_ap)
+		printf("     access point: %s\n",
+			mac_addr((unsigned char *)info.ap_addr.sa_data));
 
 	if (info.cap_bitrate)
 		printf("          bitrate: %g Mbit/s\n",

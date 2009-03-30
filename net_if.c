@@ -80,21 +80,3 @@ void if_getstat(char *ifname, struct if_stat *stat)
 	
 	fclose(fd);
 }
-
-/* SI units -- see units(7) */
-char *byte_units(unsigned long long bytes)
-{
-	static char result[0x100];
-
-	if (bytes >= 1 << 30)
-		sprintf(result, "%0.2lf GiB", (double)bytes / (double)(1 << 30));
-	else if (bytes >= 1 << 20)
-		sprintf(result, "%0.2lf MiB", (double)bytes / (double)(1 << 20));
-	else if (bytes >= 1 << 10)
-		sprintf(result, "%0.2lf KiB", (double)bytes / (double)(1 << 10));
-	else
-		sprintf(result, "%llu B", bytes);
-
-	return result;
-}
-

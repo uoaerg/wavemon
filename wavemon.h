@@ -201,3 +201,24 @@ static inline void str_tolower(char *s)
 		*s++ = tolower(*s);
 }
 
+static inline int max(const int a, const int b)
+{
+	return a > b ? a : b;
+}
+
+/* SI units -- see units(7) */
+static inline char *byte_units(const unsigned long long bytes)
+{
+	static char result[0x100];
+
+	if (bytes >= 1 << 30)
+		sprintf(result, "%0.2lf GiB", (double)bytes / (double)(1 << 30));
+	else if (bytes >= 1 << 20)
+		sprintf(result, "%0.2lf MiB", (double)bytes / (double)(1 << 20));
+	else if (bytes >= 1 << 10)
+		sprintf(result, "%0.2lf KiB", (double)bytes / (double)(1 << 10));
+	else
+		sprintf(result, "%llu B", bytes);
+
+	return result;
+}

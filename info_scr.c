@@ -231,16 +231,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	if (info.mode != 1) {
 		waddstr(w_info, ",  access point: ");
-		if (info.cap_ap) {
-			sprintf(tmp, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX", 
-				info.ap_addr.sa_data[0] & 0xFF,
-				info.ap_addr.sa_data[1] & 0xFF,
-				info.ap_addr.sa_data[2] & 0xFF,
-				info.ap_addr.sa_data[3] & 0xFF, 
-				info.ap_addr.sa_data[4] & 0xFF,
-				info.ap_addr.sa_data[5] & 0xFF);
-			waddstr_b(w_info, tmp);
-		} else waddstr(w_info, "n/a");
+		if (info.cap_ap)
+			waddstr_b(w_info, mac_addr((unsigned char *)info.ap_addr.sa_data));
+		else waddstr(w_info, "n/a");
 	}
 	
 	wmove(w_info, 3, 1);
@@ -330,11 +323,7 @@ static void display_netinfo(WINDOW *w_net)
 	waddstr_b(w_net, conf.ifname);
 
 	waddstr(w_net, ",  hwaddr: ");
-	sprintf(tmp, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
-		info.hwaddr[0] & 0xFF, info.hwaddr[1] & 0xFF,
-		info.hwaddr[2] & 0xFF, info.hwaddr[3] & 0xFF,
-		info.hwaddr[4] & 0xFF, info.hwaddr[5] & 0xFF);
-	waddstr_b(w_net, tmp);
+	waddstr_b(w_net, mac_addr(info.hwaddr));
 
 	wmove(w_net, 2, 1);
 

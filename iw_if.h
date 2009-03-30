@@ -25,6 +25,9 @@
 #include <linux/if.h>
 #include <linux/wireless.h>
 
+/* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
+#define MAC_ADDR_MAX	18
+
 #define IW_STACKSIZE 1024
 
 struct iw_dyn_info {			// modified iwreq
@@ -112,7 +115,11 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 void iw_getinf_range(char *ifname, struct iw_range *range);
 int iw_get_aplist(char *ifname, struct iw_aplist *lst);
 int iw_getif();
+extern void dump_parameters(void);
 
+/*
+ *	Helper routines
+ */
 static inline const char *iw_opmode(const uint8_t mode)
 {
 	static char *modes[] = {"Auto",
@@ -125,9 +132,48 @@ static inline const char *iw_opmode(const uint8_t mode)
 	};
 	return mode > 6 ? "Unknown/bug" : modes[mode];
 }
-double dbm2mw(float in);
-char *dbm2units(float in);
-double mw2dbm(float in);
-float freq2ghz(struct iw_freq *f);
 
-extern void dump_parameters(void);
+/* Pretty-print a mac-address. `mac' must be of length 6 or greater */
+static inline char *mac_addr(const unsigned char *mac)
+{
+	static char str[MAC_ADDR_MAX];
+
+	sprintf(str, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2],
+						      mac[3], mac[4], mac[5]);
+	return str;
+}
+
+/* Convert log dBm values to linear mW */
+static inline double dbm2mw(const double in)
+{
+	return pow(10.0, in / 10.0);
+}
+
+static inline char *dbm2units(const double in)
+{
+	static char with_units[0x100];
+	double val = dbm2mw(in);
+
+	if (val < 0.00000001) {
+		sprintf(with_units, "%.2f pW", val * 1e9);
+	} else if (val < 0.00001) {
+		sprintf(with_units, "%.2f nW", val * 1e6);
+	} else if (val < 0.01) {
+		sprintf(with_units, "%.2f uW", val * 1e3);
+	} else {
+		sprintf(with_units, "%.2f mW", val);
+	}
+	return with_units;
+}
+
+/* Convert linear mW values to log dBm */
+static inline double mw2dbm(const double in)
+{
+	return 10.0 * log10(in);
+}
+
+/* Convert frequency to GHz */
+static inline float freq2ghz(const struct iw_freq *f)
+{
+	return (f->e ? f->m * pow(10, f->e) : f->m) / 1e9;
+}
