@@ -22,11 +22,92 @@
 #include <linux/kd.h>
 
 #include "iw_if.h"
-#include "net_if.h"
 
 struct iw_stat iw_stats;
 struct iw_stat iw_stats_cache[IW_STACKSIZE];
 
+/*
+ * Obtain network device information
+ */
+
+/* Interface information */
+void if_getinf(char *ifname, struct if_info *info)
+{
+	struct ifreq ifr;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		fatal_error("cannot open socket");
+
+	memset(&ifr, 0, sizeof(struct ifreq));
+	memset(info, 0, sizeof(struct if_info));
+
+	/* Copy the 6 byte Ethernet address and the 4 byte struct in_addrs */
+	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+	if (ioctl(skfd, SIOCGIFADDR, &ifr) >= 0)
+		memcpy(&info->addr, &ifr.ifr_addr.sa_data[2], 4);
+	if (ioctl(skfd, SIOCGIFHWADDR, &ifr) >= 0)
+		memcpy(&info->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
+	if (ioctl(skfd, SIOCGIFNETMASK, &ifr) >= 0)
+		memcpy(&info->netmask, &ifr.ifr_netmask.sa_data[2], 4);
+	if (ioctl(skfd, SIOCGIFBRDADDR, &ifr) >= 0)
+		memcpy(&info->bcast, &ifr.ifr_broadaddr.sa_data[2], 4);
+
+	close(skfd);
+}
+
+/*
+ * Populate list of available wireless interfaces
+ * Return index into array-of-lists ld.
+ */
+int iw_getif(void)
+{
+	char *lp, tmp[LISTVAL_MAX];
+	int   ld = ll_create();
+	FILE *fd = fopen("/proc/net/wireless", "r");
+
+	if (fd == NULL)
+		fatal_error("no /proc/net/wireless - not compiled in?");
+
+	while (fgets(tmp, LISTVAL_MAX, fd))
+		if ((lp = strchr(tmp, ':'))) {
+			*lp = '\0';
+			ll_push(ld, "s", tmp + strspn(tmp, " "));
+		}
+	fclose(fd);
+
+	if (ll_size(ld) == 0)
+		fatal_error("no wireless interfaces found!");
+	return ld;
+}
+
+void if_getstat(char *ifname, struct if_stat *stat)
+{
+	char	line[0x100];
+	unsigned long d;
+	char	*lp;
+	FILE	*fd = fopen("/proc/net/dev", "r");
+
+	if (fd == NULL)
+		fatal_error("can not open /proc/net/");
+	/*
+	 * Inter-|   Receive                                                | Transmit
+	 *  face |bytes    packets errs drop fifo frame compressed multicast|bytes packets
+	 */
+	while (fgets(line, sizeof(line), fd)) {
+		lp = line + strspn(line, " ");
+		if (!strncmp(lp, ifname, strlen(ifname))) {
+			lp += strlen(ifname) + 1;
+			lp += strspn(lp, " ");
+
+			sscanf(lp, "%llu %llu %lu %lu %lu %lu %lu %lu %llu %llu",
+				&stat->rx_bytes, &stat->rx_packets, &d, &d, &d, &d, &d, &d,
+				&stat->tx_bytes, &stat->tx_packets);
+		}
+	}
+
+	fclose(fd);
+}
 
 /*
  * Random signal generator
@@ -137,39 +218,6 @@ static void high_signal(void)
 		if (fd > 1)
 			close(fd);
 	}
-}
-
-/*
- * get available interfaces
- */
-
-int iw_getif()
-{
-	FILE *fd;
-	int ld;
-	int interfaces = 0;
-	char tmp[LISTVAL_MAX];
-	char *lp;
-
-	ld = ll_create();
-
-	if (!(fd = fopen("/proc/net/wireless", "r")))
-		fatal_error("no wireless extensions found!");
-
-	while (fgets(tmp, LISTVAL_MAX, fd)) {
-		if (strchr(tmp, ':')) {
-			lp = tmp + strspn(tmp, " ");
-			lp[strcspn(lp, ":")] = '\0';
-			ll_push(ld, "s", lp);
-			interfaces++;
-		}
-	}
-	fclose(fd);
-
-	if (!interfaces)
-		fatal_error("no wireless interfaces found!");
-
-	return ld;
 }
 
 /*

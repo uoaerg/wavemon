@@ -30,8 +30,17 @@
 
 #define IW_STACKSIZE 1024
 
-struct iw_dyn_info {			// modified iwreq
-	char	cap_essid	: 1,	// capability flags
+/* Static network interface information - see netdevice(7) */
+struct if_info {			/* modified ifreq */
+	unsigned char	hwaddr[6];
+	struct in_addr	addr,
+			netmask,
+			bcast;
+};
+extern void if_getinf(char *ifname, struct if_info *info);
+
+struct iw_dyn_info {			/* modified iwreq */
+	char	cap_essid	: 1,
 			cap_nwid	: 1,
 			cap_nickname : 1,
 			cap_freq	: 1,
@@ -99,11 +108,18 @@ extern struct iw_stat iw_stats;
 extern struct iw_stat iw_stats_cache[IW_STACKSIZE];
 extern int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 		      int slotsize, char random);
-void (*iw_stat_redraw)(void);
 
-void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
-void iw_getinf_range(char *ifname, struct iw_range *range);
-int iw_getif();
+struct if_stat {
+	unsigned long long rx_packets, tx_packets;
+	unsigned long long rx_bytes, tx_bytes;
+};
+
+extern void if_getstat(char *ifname, struct if_stat *stat);
+extern void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
+extern void iw_getinf_range(char *ifname, struct iw_range *range);
+
+extern void (*iw_stat_redraw)(void);
+extern int iw_getif(void);
 extern void dump_parameters(void);
 
 /*

@@ -19,12 +19,12 @@
  */
 #include "wavemon.h"
 #include "iw_if.h"
-#include "net_if.h"
 
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_menu;
 
 struct iw_range range;
+void (*iw_stat_redraw)(void);
 
 /*
  * Statistics handler for period polling
@@ -307,9 +307,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 static void display_netinfo(WINDOW *w_net)
 {
 	struct if_info info;
-	char 	tmp[0x100];
-	int		ysize, xsize;
-	int		i;
+	int	ysize, xsize;
+	int	i;
 	
 	getmaxyx(w_net, ysize, xsize);
 	for (i = 1; i < ysize - 1; i++)
@@ -317,32 +316,20 @@ static void display_netinfo(WINDOW *w_net)
 
 	if_getinf(conf.ifname, &info);
 
-	wmove(w_net, 1, 1);
-
-	waddstr(w_net, "if: ");
+	mvwaddstr(w_net, 1, 1, "if: ");
 	waddstr_b(w_net, conf.ifname);
 
 	waddstr(w_net, ",  hwaddr: ");
 	waddstr_b(w_net, mac_addr(info.hwaddr));
 
-	wmove(w_net, 2, 1);
-
-	waddstr(w_net, "addr: ");
-	sprintf(tmp, "%hhu.%hhu.%hhu.%hhu", info.addr[0] & 0xFF,
-		info.addr[1] & 0xFF, info.addr[2] & 0xFF, info.addr[3] & 0xFF);
-	waddstr_b(w_net, tmp);
+	mvwaddstr(w_net, 2, 1, "addr: ");
+	waddstr_b(w_net, inet_ntoa(info.addr));
 
 	waddstr(w_net, ",  netmask: ");
-	sprintf(tmp, "%hhu.%hhu.%hhu.%hhu", info.netmask[0] & 0xFF,
-		info.netmask[1] & 0xFF, info.netmask[2] & 0xFF,
-		info.netmask[3] & 0xFF);
-	waddstr_b(w_net, tmp);
+	waddstr_b(w_net, inet_ntoa(info.netmask));
 
 	waddstr(w_net, ",  bcast: ");
-	sprintf(tmp, "%hhu.%hhu.%hhu.%hhu", info.bcast[0] & 0xFF,
-		info.bcast[1] & 0xFF, info.bcast[2] & 0xFF,
-		info.bcast[3] & 0xFF);
-	waddstr_b(w_net, tmp);
+	waddstr_b(w_net, inet_ntoa(info.bcast));
 }
 
 int scr_info(void)
