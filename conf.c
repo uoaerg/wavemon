@@ -541,9 +541,9 @@ static void set_defaults(void)
 	conf.noise_max		= 10;
 
 
-	conf.lthreshold_action	= 0;	/* Disabled, Beep, Flash, Beep+Flash */
+	conf.lthreshold_action	= TA_DISABLED;
 	conf.lthreshold		= -80;
-	conf.hthreshold_action	= 0;	/* Disabled, Beep, Flash, Beep+Flash */
+	conf.hthreshold_action	= TA_DISABLED;
 	conf.hthreshold		= -10;
 
 	conf.startup_scr	= 0;

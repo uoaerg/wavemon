@@ -17,9 +17,6 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#include <fcntl.h>
-#include <linux/kd.h>
-
 #include "iw_if.h"
 
 struct iw_stat iw_stats;
@@ -106,62 +103,6 @@ void if_getstat(char *ifname, struct if_stat *stat)
 	}
 
 	fclose(fd);
-}
-
-/*
- * Notice for crossing the low threshold
- */
-static void low_signal(void)
-{
-	int fd;
-
-	if (conf.lthreshold_action >= 2)
-		flash();
-	if (conf.lthreshold_action == 3 || conf.lthreshold_action == 1) {
-		/*
-		 * get console... no permissions? okay, take stdout
-		 * instead and pray
-		 */
-		if ((fd = open("/dev/console", O_WRONLY)) < 0)
-			fd = 1;
-
-		if (ioctl(fd, KIOCSOUND, 1491) >= 0) {
-			usleep(50000);
-			ioctl(fd, KIOCSOUND, 1193);
-			usleep(50000);
-			ioctl(fd, KIOCSOUND, 0);
-		} else
-			beep();
-		if (fd > 1)
-			close(fd);
-	}
-}
-
-/*
- * Notice for crossing the high threshold
- */
-static void high_signal(void)
-{
-	int fd;
-
-	if (conf.hthreshold_action >= 2)
-		flash();
-	if (conf.hthreshold_action == 3 || conf.hthreshold_action == 1) {
-		if ((fd = open("/dev/console", O_WRONLY)) < 0)
-			fd = 1;
-
-		if (ioctl(fd, KIOCSOUND, 4970) >= 0) {
-			usleep(50000);
-			ioctl(fd, KIOCSOUND, 0);
-			usleep(50000);
-			ioctl(fd, KIOCSOUND, 4970);
-			usleep(50000);
-			ioctl(fd, KIOCSOUND, 0);
-		} else
-			beep();
-		if (fd > 1)
-			close(fd);
-	}
 }
 
 /*
@@ -487,11 +428,11 @@ void iw_getstat(struct iw_stat *stat, struct iw_stat *stack)
 	if (conf.lthreshold_action &&
 	    ((stack + 1)->signal < conf.lthreshold &&
 		  stack->signal >= conf.lthreshold))
-		low_signal();
+		threshold_action(conf.lthreshold);
 	else if (conf.hthreshold_action &&
 		((stack + 1)->signal > conf.hthreshold &&
 		      stack->signal <= conf.hthreshold))
-		high_signal();
+		threshold_action(conf.hthreshold);
 }
 
 void dump_parameters(void)

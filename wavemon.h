@@ -38,6 +38,26 @@
 
 #define CFNAME	".wavemonrc"
 
+
+/*
+ * Symbolic names of actions to take when crossing thresholds.
+ * These actions invoke the corresponding ncurses functions.
+ */
+enum threshold_action {
+	TA_DISABLED,
+	TA_BEEP,
+	TA_FLASH,
+	TA_BEEP_FLASH
+};
+
+static inline void threshold_action(enum threshold_action action)
+{
+	if (action & TA_FLASH)
+		flash();
+	if (action & TA_BEEP)
+		beep();
+}
+
 /*
  * Global in-memory representation of current wavemon configuration state
  */
