@@ -17,7 +17,7 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
+#include "wavemon.h"
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -119,8 +119,6 @@ extern void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 extern void iw_getinf_range(char *ifname, struct iw_range *range);
 
 extern void (*iw_stat_redraw)(void);
-extern int iw_getif(void);
-extern void dump_parameters(void);
 
 /*
  *	Helper routines

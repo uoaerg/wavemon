@@ -17,7 +17,6 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software 
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#include "wavemon.h"
 #include <fcntl.h>
 #include <linux/kd.h>
 
@@ -60,7 +59,7 @@ void if_getinf(char *ifname, struct if_info *info)
  * Populate list of available wireless interfaces
  * Return index into array-of-lists ld.
  */
-int iw_getif(void)
+int iw_get_interface_list(void)
 {
 	char *lp, tmp[LISTVAL_MAX];
 	int   ld = ll_create();

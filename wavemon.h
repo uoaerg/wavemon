@@ -173,6 +173,11 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
 	return COLOR_PAIR(cp);
 }
 
+/*
+ *	Wireless interfaces
+ */
+extern int  iw_get_interface_list(void);
+extern void dump_parameters(void);
 
 /*
  *	Timers

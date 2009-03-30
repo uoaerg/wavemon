@@ -21,11 +21,10 @@
 #include <pwd.h>
 #include <sys/types.h>
 
-#include "iw_if.h"
-
 /* GLOBALS */
 struct	wavemon_conf conf;
-int	conf_items;
+int	conf_items;	/* index into array storing menu items */
+static int if_list;	/* index into array of WiFi interface names */
 
 
 static char *version_str = "wavemon wireless monitor " WAVEMON_VERSION " by Jan Morgenstern <jan@jm-music.de>",
@@ -63,8 +62,8 @@ static void getargs(int argc, char *argv[])
 				help_exit();
 				break;
 			case 'i':
-				if ((tmp = ll_scan(iw_getif(), "S", optarg)) >= 0)
-					strncpy(conf.ifname, ll_get(iw_getif(), tmp), sizeof(conf.ifname));
+				if ((tmp = ll_scan(if_list, "S", optarg)) >= 0)
+					strncpy(conf.ifname, ll_get(if_list, tmp), sizeof(conf.ifname));
 				else
 					fatal_error("no wireless extensions found on device %s", optarg);
 				break;
@@ -306,9 +305,6 @@ static void write_cf(void)
 static void init_conf_items(void)
 {
 	struct conf_item *item;
-	int	if_list = iw_getif();
-
-	if (!ll_size(if_list)) fatal_error("no wireless interfaces found!");
 
 	conf_items = ll_create();
 
@@ -535,7 +531,7 @@ void dealloc_on_exit(void)
 
 static void set_defaults(void)
 {
-	strncpy(conf.ifname, ll_get(iw_getif(), 0), sizeof(conf.ifname));
+	strncpy(conf.ifname, ll_get(if_list, 0), sizeof(conf.ifname));
 
 	conf.stat_iv		= 100;
 	conf.info_iv		= 10;
@@ -562,6 +558,7 @@ static void set_defaults(void)
 
 void getconf(int argc, char *argv[])
 {
+	if_list = iw_get_interface_list();
 	set_defaults();
 	init_conf_items();
 	read_cf();
