@@ -27,8 +27,6 @@
 #include "ui.h"
 #include "conf_scr.h"
 
-struct wavemon_conf *conf;
-
 static int first_item;
 static int list_ofs = 0;
 static int wconfx, wconfy;
@@ -207,7 +205,7 @@ int m_pref(WINDOW *w_conf, int active_item)
 	return active_line;
 }
 
-int scr_conf(struct wavemon_conf *wmconf)
+int scr_conf(void)
 {
 	WINDOW	*w_conf, *w_menu, *w_confpad;
 	int	key = 0;
@@ -217,8 +215,6 @@ int scr_conf(struct wavemon_conf *wmconf)
 	void	(*func)();
 	struct conf_item *item;
 
-	conf = wmconf;
-	
 	num_items = ll_size(conf_items);
 
 	w_conf = newwin_title(LINES - 1, COLS, 0, 0, "Preferences", 0, 0);

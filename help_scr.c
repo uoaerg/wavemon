@@ -26,13 +26,9 @@
 #include "ui.h"
 #include "help_scr.h"
 
-struct wavemon_conf *conf;
-
 int scr_help(struct wavemon_conf *wmconf) {
 	WINDOW	*w_help, *w_menu;
 	int	key = 0;
-
-	conf = wmconf;
 
 	w_help = newwin_title(LINES - 1, COLS, 0, 0, "Help", 0, 0);
 	w_menu = newwin(1, COLS, LINES - 1, 0);

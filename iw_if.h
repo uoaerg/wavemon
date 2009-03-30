@@ -108,7 +108,7 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 void iw_getinf_range(char *ifname, struct iw_range *range);
 int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack, int slotsize, char random);
 int iw_get_aplist(char *ifname, struct iw_aplist *lst);
-void init_stat_iv(struct wavemon_conf *conf);
+void init_stat_iv(void);
 int iw_getif();
 
 static inline const char *iw_opmode(const uint8_t mode)
@@ -128,4 +128,4 @@ char *dbm2units(float in);
 double mw2dbm(float in);
 float freq2ghz(struct iw_freq *f);
 
-extern void dump_parameters(struct wavemon_conf *conf);
+extern void dump_parameters(void);

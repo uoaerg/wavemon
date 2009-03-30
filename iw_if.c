@@ -39,8 +39,6 @@
 struct iw_stat iw_stats;
 struct iw_stat iw_stats_cache[IW_STACKSIZE];
 
-struct wavemon_conf *conf;
-
 /*
  * convert log dBm values to linear mW
  */
@@ -148,9 +146,9 @@ void low_signal()
 {
 	int fd;
 
-	if (conf->lthreshold_action >= 2)
+	if (conf.lthreshold_action >= 2)
 		flash();
-	if (conf->lthreshold_action == 3 || conf->lthreshold_action == 1) {
+	if (conf.lthreshold_action == 3 || conf.lthreshold_action == 1) {
 		/*
 		 * get console... no permissions? okay, take stdout
 		 * instead and pray
@@ -177,9 +175,9 @@ void high_signal()
 {
 	int fd;
 
-	if (conf->hthreshold_action >= 2)
+	if (conf.hthreshold_action >= 2)
 		flash();
-	if (conf->hthreshold_action == 3 || conf->hthreshold_action == 1) {
+	if (conf.hthreshold_action == 3 || conf.hthreshold_action == 1) {
 		if ((fd = open("/dev/console", O_WRONLY)) < 0)
 			fd = 1;
 
@@ -501,13 +499,13 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
 		stack->signal = avg_signal;
 		stack->noise = avg_noise;
 		avg_signal = avg_noise = 0;
-		if (conf->lthreshold_action
-		    && ((stack + 1)->signal < conf->lthreshold
-			&& stack->signal >= conf->lthreshold))
+		if (conf.lthreshold_action
+		    && ((stack + 1)->signal < conf.lthreshold
+			&& stack->signal >= conf.lthreshold))
 			low_signal();
-		else if (conf->hthreshold_action
-			 && ((stack + 1)->signal > conf->hthreshold
-			     && stack->signal <= conf->hthreshold))
+		else if (conf.hthreshold_action
+			 && ((stack + 1)->signal > conf.hthreshold
+			     && stack->signal <= conf.hthreshold))
 			high_signal();
 		return 1;
 	}
@@ -519,7 +517,7 @@ int iw_getstat(char *ifname, struct iw_stat *stat, struct iw_stat *stack,
  */
 void s_handler(int signum)
 {
-	iw_getstat(conf->ifname, &iw_stats, iw_stats_cache, conf->slotsize, conf->random);
+	iw_getstat(conf.ifname, &iw_stats, iw_stats_cache, conf.slotsize, conf.random);
 	if (iw_stat_redraw)
 		iw_stat_redraw();
 }
@@ -527,15 +525,13 @@ void s_handler(int signum)
 /*
  * init statistics handler
  */
-void init_stat_iv(struct wavemon_conf *wconf)
+void init_stat_iv(void)
 {
 	struct itimerval i, iold;
 
-	conf = wconf;
-
-	i.it_interval.tv_sec = i.it_value.tv_sec = (int)(conf->stat_iv / 1000);
+	i.it_interval.tv_sec = i.it_value.tv_sec = (int)(conf.stat_iv / 1000);
 	i.it_interval.tv_usec = i.it_value.tv_usec =
-	    fmod(conf->stat_iv, 1000) * 1000;
+	    fmod(conf.stat_iv, 1000) * 1000;
 
 	setitimer(ITIMER_REAL, &i, &iold);
 
@@ -590,7 +586,7 @@ int iw_get_aplist(char *ifname, struct iw_aplist *lst)
 	return rv;
 }
 
-void dump_parameters(struct wavemon_conf *conf)
+void dump_parameters(void)
 {
 	struct iw_dyn_info info;
 	struct iw_stat stat;
@@ -598,13 +594,13 @@ void dump_parameters(struct wavemon_conf *conf)
 	struct if_stat nstat;
 	int i;
 
-	iw_getinf_dyn(conf->ifname, &info);
-	iw_getinf_range(conf->ifname, &range);
-	iw_getstat(conf->ifname, &stat, NULL, 2, 0);
-	if_getstat(conf->ifname, &nstat);
+	iw_getinf_dyn(conf.ifname, &info);
+	iw_getinf_range(conf.ifname, &range);
+	iw_getstat(conf.ifname, &stat, NULL, 2, 0);
+	if_getstat(conf.ifname, &nstat);
 
 	printf("\n");
-	printf("           device: %s\n\n", conf->ifname);
+	printf("           device: %s\n\n", conf.ifname);
 	printf("            ESSID: %s %s\n", info.cap_essid ? info.essid : "n/a",
 					     info.essid_on  ? "" : "(off)");
 	printf("             nick: %s\n", info.cap_nickname ? info.nickname : "n/a");

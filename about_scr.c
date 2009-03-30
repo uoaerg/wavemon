@@ -27,8 +27,6 @@
 #include "ui.h"
 #include "about_scr.h"
 
-struct wavemon_conf *conf;
-
 #define A_LINES 11
 
 char *about_lines[A_LINES] = { "wavemon - status monitor for wireless network devices",
@@ -79,12 +77,11 @@ void draw_lines(WINDOW *w_about) {
 	}
 }	
 
-int scr_about(struct wavemon_conf *wmconf) {
+int scr_about(void)
+{
 	WINDOW	*w_about, *w_menu;
 	int	key = 0;
 	
-	conf = wmconf;
-
 	w_about = newwin_title(LINES - 1, COLS, 0, 0, "About", 0, 0);
 	w_menu = newwin(1, COLS, LINES - 1, 0);
 	

@@ -41,26 +41,25 @@ static void sig_winch(int signo)
 	errx(1, "under the pain of death, thou shaltst not resize thyne window");
 }
 
-void reinit_on_changes(struct wavemon_conf *conf)
+void reinit_on_changes(void)
 {
 	static int stat_iv = 0;
 	
-	if (conf->stat_iv != stat_iv) {
-		init_stat_iv(conf);
-		stat_iv = conf->stat_iv;
+	if (conf.stat_iv != stat_iv) {
+		init_stat_iv();
+		stat_iv = conf.stat_iv;
 	}
 }
 
 
 int main(int argc, char *argv[]) {
-	struct wavemon_conf conf;
-	int	(*current_scr)(struct wavemon_conf *conf) = NULL;
+	int	(*current_scr)() = NULL;
 	int 	nextscr;
 
-	getconf(&conf, argc, argv);
+	getconf(argc, argv);
 
 	if (conf.dump) {
-		dump_parameters(&conf);
+		dump_parameters();
 		exit(0);
 	}
 
@@ -100,7 +99,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	do {
-		reinit_on_changes(&conf);
+		reinit_on_changes();
 		switch (nextscr = current_scr(&conf)) {
 			case 0:	current_scr = scr_info;
 					break;

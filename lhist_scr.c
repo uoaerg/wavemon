@@ -30,8 +30,6 @@
 #include "iw_if.h"
 #include "lhist_scr.h"
 
-struct wavemon_conf *conf;
-
 WINDOW *w_lhist, *w_key, *w_menu;
 
 static inline int max(const int a, const int b)
@@ -39,7 +37,7 @@ static inline int max(const int a, const int b)
 	return a > b ? a : b;
 }
 
-void display_lhist(char *ifname, WINDOW *w_lhist)
+void display_lhist(WINDOW *w_lhist)
 {
 	chtype	ch;
 	double	ratio, p, p_fract;
@@ -51,17 +49,17 @@ void display_lhist(char *ifname, WINDOW *w_lhist)
 	--xsize;
 	--ysize;
 
-	ratio = (ysize - 1) / (conf->sig_max - (double)conf->sig_min);
+	ratio = (double)(ysize - 1) / (conf.sig_max - conf.sig_min);
 
 	for (x = 1; x < xsize; x++) {
 
 		for (y = 1; y <= ysize; y++)
 			mvwaddch(w_lhist, y, xsize - x, ' ');
 
-		snr = iw_stats_cache[x].signal - max(iw_stats_cache[x].noise, conf->noise_min);
+		snr = iw_stats_cache[x].signal - max(iw_stats_cache[x].noise, conf.noise_min);
 
 		if (snr > 0) {
-			if (snr < (conf->sig_max - conf->sig_min)) {
+			if (snr < (conf.sig_max - conf.sig_min)) {
 
 				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
 				for (y = 0; y < snr * ratio; y++)
@@ -86,10 +84,10 @@ void display_lhist(char *ifname, WINDOW *w_lhist)
 			wattroff(w_lhist, COLOR_PAIR(CP_STATBKG));
 		}
 
-		if (iw_stats_cache[x].noise >= conf->sig_min &&
-		    iw_stats_cache[x].noise <= conf->sig_max) {
+		if (iw_stats_cache[x].noise >= conf.sig_min &&
+		    iw_stats_cache[x].noise <= conf.sig_max) {
 
-			p_fract = modf((iw_stats_cache[x].noise - conf->noise_min) * ratio, &p);
+			p_fract = modf((iw_stats_cache[x].noise - conf.noise_min) * ratio, &p);
 			/*
 			 *      the 5 different scanline chars provide a pretty good accuracy.
 			 *      ncurses will fall back to standard ASCII chars anyway if they're
@@ -111,10 +109,10 @@ void display_lhist(char *ifname, WINDOW *w_lhist)
 			mvwaddch(w_lhist, ysize - (int)p, xsize - x, ch);
 		}
 
-		if (iw_stats_cache[x].signal >= conf->sig_min &&
-		    iw_stats_cache[x].signal <= conf->sig_max) {
+		if (iw_stats_cache[x].signal >= conf.sig_min &&
+		    iw_stats_cache[x].signal <= conf.sig_max) {
 
-			p_fract = modf((iw_stats_cache[x].signal - conf->sig_min) * ratio, &p);
+			p_fract = modf((iw_stats_cache[x].signal - conf.sig_min) * ratio, &p);
 			if (p_fract < 0.2)
 				ch = ACS_S9;
 			else if (p_fract < 0.4)
@@ -143,12 +141,12 @@ void display_key(WINDOW *w_key)
 	wattrset(w_key, COLOR_PAIR(CP_STATSIG));
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	sprintf(s, "] sig lvl (%d..%d dBm)  [", conf->sig_min, conf->sig_max);
+	sprintf(s, "] sig lvl (%d..%d dBm)  [", conf.sig_min, conf.sig_max);
 	waddstr(w_key, s);
 	wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	sprintf(s, "] ns lvl (%d..%d dBm)  [", conf->noise_min, conf->noise_max);
+	sprintf(s, "] ns lvl (%d..%d dBm)  [", conf.noise_min, conf.noise_max);
 	waddstr(w_key, s);
 	wattrset(w_key, COLOR_PAIR(CP_STATSNR));
 	waddch(w_key, ' ');
@@ -161,19 +159,17 @@ void redraw_lhist()
 	static int vcount = 1;
 
 	if (!--vcount) {
-		vcount = conf->slotsize;
-		display_lhist(conf->ifname, w_lhist);
+		vcount = conf.slotsize;
+		display_lhist(w_lhist);
 		wrefresh(w_lhist);
 		wmove(w_menu, 1, 0);
 		wrefresh(w_menu);
 	}
 }
 
-int scr_lhist(struct wavemon_conf *wmconf)
+int scr_lhist(void)
 {
 	int key = 0;
-
-	conf = wmconf;
 
 	w_lhist = newwin_title(LINES - 4, COLS, 0, 0, "Level histogram", 0, 1);
 	w_key = newwin_title(3, COLS, LINES - 4, 0, "Key", 1, 0);

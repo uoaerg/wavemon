@@ -18,4 +18,4 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-int scr_conf(struct wavemon_conf *conf);
+int scr_conf(void);

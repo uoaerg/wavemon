@@ -29,8 +29,6 @@
 #include "net_if.h"
 #include "info_scr.h"
 
-struct wavemon_conf *conf;
-
 WINDOW	*w_if, *w_levels, *w_stats, *w_info, *w_net, *w_menu;
 
 struct iw_range range;
@@ -61,7 +59,7 @@ int random_level2(int min, int max)
 	return rlvl;
 }
 
-void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
+void display_stats(WINDOW *w_levels, WINDOW *w_stats)
 {
 	struct if_stat nstat;
 	char   nscale[2],
@@ -70,7 +68,7 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 	char tmp[0x100];
 	int snr;
 	
-	if (conf->linear) {
+	if (conf.linear) {
 		lvlscale[0] = 10;
 		lvlscale[1] = 50;
 	} else {
@@ -78,7 +76,7 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 		lvlscale[1] = -20;
 	}
 
-	if_getstat(ifname, &nstat);
+	if_getstat(conf.ifname, &nstat);
 	wmove(w_levels, 1, 1);
 	waddstr(w_levels, "link quality: ");
 	sprintf(tmp, "%d/%d  ", iw_stats.link, range.max_qual.qual);
@@ -90,27 +88,27 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 	sprintf(tmp, "%d dBm (%s)", iw_stats.signal, dbm2units(iw_stats.signal));
 	waddstr_b(w_levels, tmp);
 
-	if (conf->linear) {
-		waddbar(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->sig_min),
-			dbm2mw(conf->sig_max), 4, 1, COLS - 1, lvlscale, true);
-		if (conf->lthreshold_action)
-			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->lthreshold), 
-				dbm2mw(conf->sig_min), dbm2mw(conf->sig_max), 4, 1, COLS - 1, lvlscale, '>');
-		if (conf->hthreshold_action)
-			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf->hthreshold), 
-				dbm2mw(conf->sig_min), dbm2mw(conf->sig_max), 4, 1, COLS - 1, lvlscale, '<');
+	if (conf.linear) {
+		waddbar(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf.sig_min),
+			dbm2mw(conf.sig_max), 4, 1, COLS - 1, lvlscale, true);
+		if (conf.lthreshold_action)
+			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf.lthreshold),
+				dbm2mw(conf.sig_min), dbm2mw(conf.sig_max), 4, 1, COLS - 1, lvlscale, '>');
+		if (conf.hthreshold_action)
+			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf.hthreshold),
+				dbm2mw(conf.sig_min), dbm2mw(conf.sig_max), 4, 1, COLS - 1, lvlscale, '<');
 	} else {
-		waddbar(w_levels, iw_stats.signal, conf->sig_min, conf->sig_max, 4, 1, COLS - 1, lvlscale, true);
-		if (conf->lthreshold_action)
-			waddthreshold(w_levels, iw_stats.signal, conf->lthreshold, conf->sig_min, conf->sig_max, 4, 1,
+		waddbar(w_levels, iw_stats.signal, conf.sig_min, conf.sig_max, 4, 1, COLS - 1, lvlscale, true);
+		if (conf.lthreshold_action)
+			waddthreshold(w_levels, iw_stats.signal, conf.lthreshold, conf.sig_min, conf.sig_max, 4, 1,
 				COLS - 1, lvlscale, '>');
-		if (conf->hthreshold_action)
-			waddthreshold(w_levels, iw_stats.signal, conf->hthreshold, conf->sig_min, conf->sig_max, 4, 1,
+		if (conf.hthreshold_action)
+			waddthreshold(w_levels, iw_stats.signal, conf.hthreshold, conf.sig_min, conf.sig_max, 4, 1,
 				COLS - 1, lvlscale, '<');
 	}
 
 
-	if (conf->linear) {
+	if (conf.linear) {
 		nscale[0] = dbm2mw(iw_stats.signal) - 10;
 		nscale[1] = dbm2mw(iw_stats.signal);
 	} else {
@@ -121,11 +119,11 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 	waddstr(w_levels, "noise level: ");
 	sprintf(tmp, "%4d dBm (%s)", iw_stats.noise, dbm2units(iw_stats.noise));
 	waddstr_b(w_levels, tmp);
-	if (conf->linear)
-		waddbar(w_levels, dbm2mw(iw_stats.noise), dbm2mw(conf->noise_min),
-			dbm2mw(conf->noise_max), 6, 1, COLS - 1, nscale, false);
+	if (conf.linear)
+		waddbar(w_levels, dbm2mw(iw_stats.noise), dbm2mw(conf.noise_min),
+			dbm2mw(conf.noise_max), 6, 1, COLS - 1, nscale, false);
 	else
-		waddbar(w_levels, iw_stats.noise, conf->noise_min, conf->noise_max, 6, 1, COLS - 1, nscale, false);
+		waddbar(w_levels, iw_stats.noise, conf.noise_min, conf.noise_max, 6, 1, COLS - 1, nscale, false);
 	
 	snr = iw_stats.signal - iw_stats.noise;
 	wmove(w_levels, 7, 1);
@@ -160,14 +158,14 @@ void display_stats(char *ifname, WINDOW *w_levels, WINDOW *w_stats)
 
 void redraw_stats()
 {
-	display_stats(conf->ifname, w_levels, w_stats);
+	display_stats(w_levels, w_stats);
 	wrefresh(w_levels);
 	wrefresh(w_stats);
 	wmove(w_menu, 1, 0);
 	wrefresh(w_menu);
 }
 
-void display_info(char *ifname, WINDOW *w_if, WINDOW *w_info)
+void display_info(WINDOW *w_if, WINDOW *w_info)
 {
 	struct iw_dyn_info info;
 	char 	tmp[0x100];
@@ -181,10 +179,10 @@ void display_info(char *ifname, WINDOW *w_if, WINDOW *w_info)
 	for (i = 1; i < ysize - 1; i++)
 		mvwhline(w_info, i, 1, ' ', xsize - 2);
 	
-	iw_getinf_dyn(ifname, &info);
+	iw_getinf_dyn(conf.ifname, &info);
 
 	wmove(w_if, 1, 1);
-	sprintf(tmp, "%s (%s)", ifname, info.name);
+	sprintf(tmp, "%s (%s)", conf.ifname, info.name);
 	waddstr_b(w_if, tmp);
 	
 	waddstr(w_if, ",  ESSID: ");
@@ -306,7 +304,7 @@ void display_info(char *ifname, WINDOW *w_if, WINDOW *w_info)
 	} else waddstr(w_info, "n/a");
 }
 
-void display_netinfo(char *ifname, WINDOW *w_net)
+void display_netinfo(WINDOW *w_net)
 {
 	struct if_info info;
 	char 	tmp[0x100];
@@ -317,12 +315,12 @@ void display_netinfo(char *ifname, WINDOW *w_net)
 	for (i = 1; i < ysize - 1; i++)
 		mvwhline(w_net, i, 1, ' ', xsize - 2);
 
-	if_getinf(ifname, &info);
+	if_getinf(conf.ifname, &info);
 
 	wmove(w_net, 1, 1);
 
 	waddstr(w_net, "if: ");
-	waddstr_b(w_net, ifname);
+	waddstr_b(w_net, conf.ifname);
 
 	waddstr(w_net, ",  hwaddr: ");
 	sprintf(tmp, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
@@ -351,12 +349,11 @@ void display_netinfo(char *ifname, WINDOW *w_net)
 	waddstr_b(w_net, tmp);
 }
 
-int scr_info(struct wavemon_conf *wmconf) {
+int scr_info(void)
+{
 	struct timer	t1;
 	int		key = 0;
 	
-	conf = wmconf;
-
 	w_if = newwin_title(2, COLS, 0, 0, "Interface", 0, 1);
 	w_levels = newwin_title(9, COLS, 2, 0, "Levels", 1, 1);
 	w_stats = newwin_title(2, COLS, 11, 0, "Statistics", 1, 1);
@@ -364,10 +361,10 @@ int scr_info(struct wavemon_conf *wmconf) {
 	w_net = newwin_title(4, COLS, 19, 0, "Network", 1, 0);
 	w_menu = newwin(1, COLS, LINES - 1, 0);
 	
-	display_info(conf->ifname, w_if, w_info);
+	display_info(w_if, w_info);
 	wrefresh(w_if);
 	wrefresh(w_info);
-	display_netinfo(conf->ifname, w_net);
+	display_netinfo(w_net);
 	wrefresh(w_net);
 	wmenubar(w_menu, 0);
 	wrefresh(w_menu);
@@ -376,15 +373,15 @@ int scr_info(struct wavemon_conf *wmconf) {
 	
 	iw_stat_redraw = redraw_stats;
 
-	iw_getinf_range(conf->ifname, &range);
+	iw_getinf_range(conf.ifname, &range);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
-		display_info(conf->ifname, w_if, w_info);
-		display_netinfo(conf->ifname, w_net);
+		display_info(w_if, w_info);
+		display_netinfo(w_net);
 		wrefresh(w_if);
 		wrefresh(w_info);
 		wrefresh(w_net);
-		start_timer(&t1, conf->info_iv * 1000000);
+		start_timer(&t1, conf.info_iv * 1000000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
 			sleep(1);
 

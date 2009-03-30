@@ -24,7 +24,7 @@
 #define CFNAME ".wavemonrc"
 
 
-struct wavemon_conf {
+extern struct wavemon_conf {
 	char	ifname[LISTVAL_MAX];
 	int	stat_iv,
 		info_iv,
@@ -46,7 +46,7 @@ struct wavemon_conf {
 		hthreshold_action;
 
 	char	startup_scr;		/* info|histogram|aplist */
-};
+} conf;
 
 struct conf_item {
 	char	*name,		/* name for preferences screen */
@@ -86,7 +86,7 @@ struct conf_item {
 
 extern int conf_items;
 
-void getconf(struct wavemon_conf *conf, int argc, char *argv[]);
+void getconf(int argc, char *argv[]);
 void write_cf();
 void dealloc_on_exit();
 

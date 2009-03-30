@@ -28,9 +28,7 @@
 #include "aplst_scr.h"
 #include "iw_if.h"
 
-struct wavemon_conf *conf;
-
-void display_aplist(char *ifname, WINDOW *w_aplst)
+void display_aplist(WINDOW *w_aplst)
 {
 	struct iw_aplist axp;
 	char	s[0x100];
@@ -41,7 +39,7 @@ void display_aplist(char *ifname, WINDOW *w_aplst)
 	for (i = 1; i < ysize - 1; i++)
 		mvwhline(w_aplst, i, 1, ' ', xsize - 2);
 
-	if (iw_get_aplist(ifname, &axp)) {
+	if (iw_get_aplist(conf.ifname, &axp)) {
 		if (axp.num) {
 			sprintf(s, "%d access point(s) in range.", axp.num);
 			mvwaddstr(w_aplst, 1, 1, s);
@@ -81,12 +79,11 @@ void display_aplist(char *ifname, WINDOW *w_aplst)
 	} else waddstr_center(w_aplst, (LINES >> 1) - 1, "Access point list not available.");
 }
 
-int scr_aplst(struct wavemon_conf *wmconf) {
+int scr_aplst(void)
+{
 	WINDOW		*w_aplst, *w_menu;
 	struct timer	t1;
 	int		key = 0;
-
-	conf = wmconf;
 
 	w_aplst = newwin_title(LINES - 1, COLS, 0, 0, "Access point list", 0, 0);
 	w_menu = newwin(1, COLS, LINES - 1, 0);
@@ -99,7 +96,7 @@ int scr_aplst(struct wavemon_conf *wmconf) {
 	wrefresh(w_menu);
 	
 	while (key < KEY_F(1) || key > KEY_F(10)) {
-		display_aplist(conf->ifname, w_aplst);
+		display_aplist(w_aplst);
 		wrefresh(w_aplst);
 		wmove(w_menu, 1, 0);
 		wrefresh(w_menu);
