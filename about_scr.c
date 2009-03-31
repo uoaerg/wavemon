@@ -21,7 +21,7 @@
 
 /* GLOBALS */
 static char *about_lines[] = {	"wavemon - status monitor for wireless network devices",
-				"version " WAVEMON_VERSION " (" WAVEMON_RELEASE_DATE ") ",
+				"version " PACKAGE_VERSION " (built " BUILD_DATE ")",
 				"",
 				"original by jan morgenstern <jan@jm-music.de>",
 				"distributed under the terms of GNU general public license >=v2",
@@ -31,7 +31,7 @@ static char *about_lines[] = {	"wavemon - status monitor for wireless network de
 				"",
 				"http://www.jm-music.de/projects.html",
 				"",
-				"please contact me of you have any bug reports or suggestions!"
+				"please send suggestions and bug reports to " PACKAGE_BUGREPORT
 };
 
 static int *linecd[ARRAY_SIZE(about_lines)];
