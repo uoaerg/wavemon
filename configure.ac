@@ -4,6 +4,7 @@ AC_INIT([wavemon], [0.5], [gerrit@erg.abdn.ac.uk], [wavemon-current])
 
 
 # Variables
+AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_FILES([Makefile])
 AC_DEFINE_UNQUOTED([BUILD_DATE], ["`/bin/date`"],
 		   [date wavemon was last configured and built])

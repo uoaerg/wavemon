@@ -24,7 +24,7 @@ static char *about_lines[] = {	"wavemon - status monitor for wireless network de
 				"version " PACKAGE_VERSION " (built " BUILD_DATE ")",
 				"",
 				"original by jan morgenstern <jan@jm-music.de>",
-				"distributed under the terms of GNU general public license >=v2",
+				"distributed under the GNU general public license v3",
 				"",
 				"wavemon uses the wireless extensions by",
 				"jean tourrilhes <jt@hpl.hp.com>",

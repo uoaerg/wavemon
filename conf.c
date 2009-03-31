@@ -29,7 +29,7 @@ static int if_list;	/* index into array of WiFi interface names */
 static void version(void)
 {
 	printf("wavemon wireless monitor %s\n", PACKAGE_VERSION);
-	printf("Distributed under the terms of the GPL >=v2.\n");
+	printf("Distributed under the terms of the GPLv3.\n");
 }
 
 static void usage(void)
