@@ -26,12 +26,15 @@ static void display_aplist(WINDOW *w_aplst)
 	char	s[0x100];
 	int	ysize, xsize, i, line = 2;
 	struct iw_quality *qual;
+	struct iw_range range;
+	struct iw_levelstat dbm;
 	struct iwreq iwr;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
 		fatal_error("could not open socket");
 
+	iw_getinf_range(conf.ifname, &range);
 	getmaxyx(w_aplst, ysize, xsize);
 	for (i = 1; i < ysize - 1; i++)
 		mvwhline(w_aplst, i, 1, ' ', xsize - 2);
@@ -64,8 +67,13 @@ static void display_aplist(WINDOW *w_aplst)
 		waddstr_b(w_aplst, mac_addr(buf + i * sizeof(struct sockaddr)));
 
 		if (iwr.u.data.flags) {
-			sprintf(s, "Link quality: %2d, signal level: %d, noise level: %d",
-				qual[i].qual, qual[i].level, qual[i].noise);
+			iw_sanitize(&range, &qual[i], &dbm);
+			sprintf(s, "Quality%c %2d/%d, Signal%c %.0f dBm (%s), Noise%c %.0f dBm",
+				qual[i].updated & IW_QUAL_QUAL_UPDATED  ? ':' : '=',
+				qual[i].qual, range.max_qual.qual,
+				qual[i].updated & IW_QUAL_LEVEL_UPDATED ? ':' : '=',
+				dbm.signal,  dbm2units(dbm.signal),
+				qual[i].updated & IW_QUAL_NOISE_UPDATED ? ':' : '=', dbm.noise);
 			mvwaddstr(w_aplst, line++, 5, s);
 		}
 	}

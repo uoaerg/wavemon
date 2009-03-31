@@ -66,8 +66,8 @@ void iw_cache_update(struct iw_stat *iw)
 	static struct iw_levelstat avg, prev;
 	static int slot;
 
-	avg.signal += (float)iw->signal / conf.slotsize;
-	avg.noise  += (float)iw->noise  / conf.slotsize;
+	avg.signal += iw->dbm.signal / conf.slotsize;
+	avg.noise  += iw->dbm.noise  / conf.slotsize;
 
 	if (++slot >= conf.slotsize) {
 		iw_cache_insert(avg);
@@ -91,9 +91,8 @@ static void display_lhist(void)
 {
 	struct iw_levelstat iwl;
 	chtype	ch;
-	double	ratio, p, p_fract;
-	int	snr,
-		y, ysize,
+	double	ratio, p, p_fract, snr;
+	int	y, ysize,
 		x, xsize;
 
 	getmaxyx(w_lhist, ysize, xsize);

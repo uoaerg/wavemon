@@ -28,6 +28,16 @@
 /* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
 #define MAC_ADDR_MAX	18
 
+/*
+ * Threshold for 'sane' noise levels.
+ *
+ * Some drivers simply set an arbitrary minimum noise level to mean 'invalid',
+ * but do not set IW_QUAL_NOISE_INVALID so that the display gets stuck at a
+ * "house number". The value below is suggested by and taken from the iwl3945
+ * driver (constant IWL_NOISE_MEAS_NOT_AVAILABLE in iwl-3945.h).
+ */
+#define NOISE_DBM_SANE_MIN	-127
+
 /* Static network interface information - see netdevice(7) */
 struct if_info {			/* modified ifreq */
 	unsigned char	hwaddr[6];
@@ -111,11 +121,21 @@ struct iw_levelstat {
 	float	noise;		/* noise  level in dBm */
 };
 
+/**
+ * struct iw_stat - record current WiFi state
+ * @range:	current range information
+ * @stats:	current signal level statistics
+ * @dbm:	the noise/signal of @stats in dBm
+ */
 struct iw_stat {
-	int		link;
-	int		signal, noise;
-	unsigned long dsc_nwid, dsc_enc, dsc_misc;
+	struct iw_range		range;
+	struct iw_statistics	stat;
+	struct iw_levelstat	dbm;
 };
+
+extern void iw_sanitize(struct iw_range *range,
+			struct iw_quality *qual,
+			struct iw_levelstat *dbm);
 extern void iw_getstat(struct iw_stat *stat);
 extern void iw_cache_update(struct iw_stat *stat);
 

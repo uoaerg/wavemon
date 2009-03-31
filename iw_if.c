@@ -108,9 +108,9 @@ void if_getstat(char *ifname, struct if_stat *stat)
 void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 {
 	struct iwreq iwr;
-	int skfd;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-	if ((skfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	if (skfd < 0)
 		fatal_error("cannot open socket");
 
 	memset(info, 0, sizeof(struct iw_dyn_info));
@@ -323,74 +323,68 @@ static int rnd_noise(int min, int max)
 
 
 /* Random signal/noise */
-static void iw_getstat_random(struct iw_stat *stat)
+static void iw_getstat_random(struct iw_statistics *stat)
 {
-	stat->signal = rnd_signal(-102, 10);
-	stat->noise  = rnd_noise(-102, -30);
+	stat->qual.level = rnd_signal(-102, 10);
+	stat->qual.noise = rnd_noise(-102, -30);
 }
 
 
-/* For systems using old wireless extensions */
-static void iw_getstat_old_style(struct iw_stat *stat)
+/* Code in part taken from wireless extensions #30 */
+static void iw_getstat_old_style(struct iw_statistics *stat)
 {
-	char tmp[0x100], buf[0x100], *lp;
+	char line[0x100], *lp;
+	int  tmp;
 	FILE *fd =fopen("/proc/net/wireless", "r");
 
 	if (fd < 0)
 		fatal_error("cannot open /proc/net/wireless");
 
-	while (fgets(tmp, sizeof(tmp), fd)) {
-		lp = tmp + strspn(tmp, " ");
-		if (!strncmp(lp, conf.ifname, strlen(conf.ifname))) {
+	while (fgets(line, sizeof(line), fd)) {
+		for (lp = line; *lp && isspace(*lp); lp++)
+			;
+		if (strncmp(lp, conf.ifname, strlen(conf.ifname)) == 0 &&
+		    lp[strlen(conf.ifname)] == ':') {
 			lp += strlen(conf.ifname) + 1;
-			lp += strspn(lp, " ");
 
 			/* status */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, " "));
-			/* insert your favourite status handler here. */
-			lp += strlen(buf);
-			lp += strspn(lp, " ");
+			lp = strtok(lp, " ");
+			sscanf(lp, "%X", &tmp);
+			stat->status = (unsigned short)tmp;
 
 			/* link quality */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, ". "));
-			sscanf(buf, "%d", &stat->link);
-			lp += strlen(buf);
-			lp += strspn(lp, ". ");
+			lp = strtok(NULL, " ");
+			if (strchr(lp,'.') != NULL)
+				stat->qual.updated |= IW_QUAL_QUAL_UPDATED;
+			sscanf(lp, "%d", &tmp);
+			stat->qual.qual = (unsigned char)tmp;
 
 			/* signal level */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, ". "));
-			sscanf(buf, "%d", &stat->signal);
-			lp += strlen(buf);
-			lp += strspn(lp, ". ");
+			lp = strtok(NULL, " ");
+			if (strchr(lp,'.') != NULL)
+				stat->qual.updated |= IW_QUAL_LEVEL_UPDATED;
+			sscanf(lp, "%d", &tmp);
+			stat->qual.level = (unsigned char)tmp;
 
 			/* noise level */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, ". "));
-			sscanf(buf, "%d", &stat->noise);
-			lp += strlen(buf);
-			lp += strspn(lp, ". ");
+			lp = strtok(NULL, " ");
+			if (strchr(lp,'.') != NULL)
+				stat->qual.updated |= IW_QUAL_NOISE_UPDATED;
+			sscanf(lp, "%d", &tmp);
+			stat->qual.noise = (unsigned char)tmp;
 
 			/* # of packets w/ invalid nwid */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, ". "));
-			sscanf(buf, "%lu", &stat->dsc_nwid);
-			lp += strlen(buf);
-			lp += strspn(lp, ". ");
+			lp = strtok(NULL, " ");
+			sscanf(lp, "%u", &stat->discard.nwid);
 
 			/* # of packets w/ invalid key */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, ". "));
-			sscanf(buf, "%lu", &stat->dsc_enc);
-			lp += strlen(buf);
-			lp += strspn(lp, ". ");
+			lp = strtok(NULL, " ");
+			sscanf(lp, "%u", &stat->discard.code);
 
 			/* # of packets w/ bad attitude */
-			memset(buf, 0, sizeof(buf));
-			strncpy(buf, lp, strcspn(lp, ". "));
-			sscanf(buf, "%lu", &stat->dsc_misc);
+			lp = strtok(NULL, " ");
+			sscanf(lp, "%u", &stat->discard.misc);
+
 			/* each interface appears just once */
 			break;
 		}
@@ -398,31 +392,126 @@ static void iw_getstat_old_style(struct iw_stat *stat)
 	fclose(fd);
 }
 
-void iw_getstat(struct iw_stat *stat)
+static void iw_getstat_new_style(struct iw_statistics *stat)
 {
-	memset(stat, 0, sizeof(*stat));
+	struct iwreq		wrq;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		fatal_error("cannot open socket");
+
+	wrq.u.data.pointer = (caddr_t) stat;
+	wrq.u.data.length  = sizeof(*stat);
+	wrq.u.data.flags   = 0;
+	strncpy(wrq.ifr_name, conf.ifname, IFNAMSIZ);
+
+	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0)
+		fatal_error("cannot obtain iw statistics");
+	close(skfd);
+}
+
+/*
+ * Generate dBm values and perform sanity checks on values.
+ * Code in part taken from wireless extensions #30
+ * @range: range information, read-only
+ * @qual:  wireless statistics, read-write
+ * @dbm:   dBm level information, write-only
+ */
+void iw_sanitize(struct iw_range *range, struct iw_quality *qual, struct iw_levelstat *dbm)
+{
+	memset(dbm, 0, sizeof(*dbm));
+
+	if (qual->level != 0 || (qual->updated & (IW_QUAL_DBM | IW_QUAL_RCPI))) {
+		/*
+		 * RCPI (IEEE 802.11k) statistics:
+		 *    RCPI = int{(Power in dBm +110)*2}
+		 *    for 0 dBm > Power > -110 dBm
+		 */
+		if (qual->updated & IW_QUAL_RCPI) {
+			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
+				dbm->signal = (double)(qual->level / 2.0) - 110.0;
+			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
+				dbm->noise  = (double)(qual->noise / 2.0) - 110.0;
+		/*
+		 * Statistics in dBm (absolute power measurement)
+		 * These are encoded in the range -192 .. 63
+		 */
+		} else	if ((qual->updated & IW_QUAL_DBM) ||
+			     qual->level > range->max_qual.level) {
+
+			if (!(qual->updated & IW_QUAL_LEVEL_INVALID)) {
+				dbm->signal = qual->level;
+				if (qual->level >= 64)
+					dbm->signal -= 0x100;
+			}
+			if (!(qual->updated & IW_QUAL_NOISE_INVALID)) {
+				dbm->noise = qual->noise;
+				if (qual->noise >= 64)
+					dbm->noise -= 0x100;
+			}
+		/*
+		 * Relative values (0 -> max)
+		 */
+		} else {
+			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
+				dbm->signal = mw2dbm(qual->level);
+			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
+				dbm->noise = mw2dbm(qual->noise);
+		}
+	} else {
+		qual->updated |= IW_QUAL_ALL_INVALID;
+	}
+
+	/*
+	 * Value sanity checks
+	 *
+	 * These rules serve to avoid "insensible" level displays. Please do send
+	 * comments and/or bug reports if you encounter room for improvement.
+	 *
+	 *  1) if noise level is valid, but signal level is not, displaying just
+	 *     the noise level does not reveal very much - can be omitted;
+	 *  2) if the noise level is below an "invalid" magic value (see iw_if.h),
+	 *     declare the noise value to be invalid;
+	 *  3) SNR is only displayed if both signal and noise values are valid.
+	 */
+	if (qual->updated & IW_QUAL_LEVEL_INVALID)
+		qual->updated |= IW_QUAL_NOISE_INVALID;
+	if (dbm->noise <= NOISE_DBM_SANE_MIN)
+		qual->updated |= IW_QUAL_NOISE_INVALID;
+}
+
+void iw_getstat(struct iw_stat *iw)
+{
+	memset(&iw->stat, 0, sizeof(iw->stat));
+
 	if (conf.random)
-		iw_getstat_random(stat);
+		iw_getstat_random(&iw->stat);
+	else if (iw->range.we_version_compiled > 11)
+		iw_getstat_new_style(&iw->stat);
 	else
-		iw_getstat_old_style(stat);
+		iw_getstat_old_style(&iw->stat);
+
+	iw_sanitize(&iw->range, &iw->stat.qual, &iw->dbm);
 }
 
 void dump_parameters(void)
 {
 	struct iw_dyn_info info;
-	struct iw_stat stat;
-	struct iw_range range;
+	struct iw_stat iw;
 	struct if_stat nstat;
 	int i;
 
 	iw_getinf_dyn(conf.ifname, &info);
-	iw_getinf_range(conf.ifname, &range);
-	iw_getstat(&stat);
+	iw_getinf_range(conf.ifname, &iw.range);
+	iw_getstat(&iw);
 	if_getstat(conf.ifname, &nstat);
 
 	printf("\n");
-	printf("           device: %s\n\n", conf.ifname);
-	printf("            ESSID: %s %s\n", info.cap_essid ? info.essid : "n/a",
+	printf("Configured device: %s\n", conf.ifname);
+	printf("       WE version: %d (source version %d)\n\n",
+				iw.range.we_version_compiled, iw.range.we_version_source);
+
+	printf("            essid: %s %s\n", info.cap_essid ? info.essid : "n/a",
 					     info.essid_on  ? "" : "(off)");
 	printf("             nick: %s\n", info.cap_nickname ? info.nickname : "n/a");
 
@@ -433,7 +522,7 @@ void dump_parameters(void)
 
 	if (info.cap_sens)
 		printf("      sensitivity: %ld/%d\n",	info.sens,
-							range.sensitivity);
+							iw.range.sensitivity);
 	else
 		printf("      sensitivity: n/a\n");
 
@@ -536,20 +625,30 @@ void dump_parameters(void)
 	}
 
 	printf("\n\n");
-	printf("     link quality: %d/%d\n",		 stat.link,
-							 range.max_qual.qual);
-	printf("     signal level: %d dBm (%s)\n",	 stat.signal,
-	       dbm2units(stat.signal));
-	printf("      noise level: %d dBm (%s)\n",	 stat.noise,
-	       dbm2units(stat.noise));
-	printf("              SNR: %d dB\n",		 stat.signal - stat.noise);
-	printf("         total TX: %llu packets (%s)\n", nstat.tx_packets,
-							 byte_units(nstat.tx_bytes));
-	printf("         total RX: %llu packets (%s)\n", nstat.rx_packets,
+	printf("     link quality: %d/%d\n",		 iw.stat.qual.qual,
+							 iw.range.max_qual.qual);
+	printf("     signal level: %.0f dBm (%s)\n",	 iw.dbm.signal,
+	       dbm2units(iw.dbm.signal));
+	printf("      noise level: %.0f dBm (%s)\n",	 iw.dbm.noise,
+	       dbm2units(iw.dbm.noise));
+	printf("              SNR: %.0f dB\n",		 iw.dbm.signal - iw.dbm.noise);
+
+	/* RX stats */
+	printf("         RX total: %llu packets (%s)\n", nstat.rx_packets,
 							 byte_units(nstat.rx_bytes));
-	printf("     invalid NWID: %lu packets\n", stat.dsc_nwid);
-	printf("      invalid key: %lu packets\n", stat.dsc_enc);
-	printf("      misc errors: %lu packets\n", stat.dsc_misc);
+	printf("     invalid nwid: %u\n", iw.stat.discard.nwid);
+	printf("      invalid key: %u\n", iw.stat.discard.code);
+	if (iw.range.we_version_compiled > 11)	{
+		printf("   invalid fragm.: %u\n", iw.stat.discard.fragment);
+		printf("   missed beacons: %u\n", iw.stat.miss.beacon);
+	}
+	printf("      misc errors: %u\n", iw.stat.discard.misc);
+
+	/* TX stats */
+	printf("         TX total: %llu packets (%s)\n", nstat.tx_packets,
+							 byte_units(nstat.tx_bytes));
+	if (iw.range.we_version_compiled > 11)
+		printf(" exc. MAC retries: %u\n", iw.stat.discard.retries);
 
 	printf("\n");
 }

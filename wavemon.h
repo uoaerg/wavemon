@@ -224,6 +224,12 @@ static inline void str_tolower(char *s)
 		*s++ = tolower(*s);
 }
 
+/* number of digits needed to display integer part of @val */
+static inline int num_int_digits(const double val)
+{
+	return 1 + (val > 1.0 ? log10(val) : val < -1.0 ? log10(-val) : 0);
+}
+
 static inline int max(const int a, const int b)
 {
 	return a > b ? a : b;
