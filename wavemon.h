@@ -71,7 +71,8 @@ extern struct wavemon_conf {
 	int	lthreshold,
 		hthreshold;
 
-	int	slotsize;
+	int	slotsize,
+		meter_decay;
 
 	/* Boolean values which are 'char' for consistency with item->dep */
 	char	random,
@@ -250,4 +251,15 @@ static inline char *byte_units(const unsigned long long bytes)
 		sprintf(result, "%llu B", bytes);
 
 	return result;
+}
+
+/**
+ * Compute exponentially weighted moving average
+ * @mavg:	old value of the moving average
+ * @sample:	new sample to update @mavg
+ * @weight:	decay factor for new samples, 0 < weight <= 1
+ */
+static inline double ewma(double mavg, double sample, double weight)
+{
+	return mavg == 0 ? sample : weight * mavg + (1.0 - weight) * sample;
 }

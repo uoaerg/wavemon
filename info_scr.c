@@ -66,7 +66,7 @@ static void display_levels(void)
 		lvlscale[2] = { -40, -20 },
 		snrscale[2] = { 6, 12 };
 	char	tmp[0x100];
-	float	snr = cur.dbm.signal - cur.dbm.noise;
+	static float qual, noise, signal, ssnr;
 	/* Spread out 'quality' and 'signal' if 'noise' is undefined */
 	const bool offset = (cur.stat.qual.updated & IW_QUAL_NOISE_INVALID) != 0;
 	int line = 1;
@@ -76,47 +76,54 @@ static void display_levels(void)
 
 		mvwaddstr(w_levels, line++, 1, "link quality: ");
 
-		sprintf(tmp, "%d/%d  ", cur.stat.qual.qual, cur.range.max_qual.qual);
+		qual = ewma(qual, cur.stat.qual.qual, conf.meter_decay/100.0);
+		sprintf(tmp, "%0.f/%d  ", qual, cur.range.max_qual.qual);
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, cur.stat.qual.qual, 0, cur.range.max_qual.qual,
+		waddbar(w_levels, qual, 0, cur.range.max_qual.qual,
 			line++, 1, COLS - 1, lvlscale, true);
 	}
 
 	if (!(cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
-		line += offset;
+		signal = ewma(signal, cur.dbm.signal, conf.meter_decay/100.0);
 
+		line += offset;
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
 
-		sprintf(tmp, "%.0f dBm (%s)      ", cur.dbm.signal, dbm2units(cur.dbm.signal));
+		sprintf(tmp, "%.0f dBm (%s)      ", signal, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, cur.dbm.signal, conf.sig_min,
+		waddbar(w_levels, signal, conf.sig_min,
 			conf.sig_max, line, 1, COLS - 1, lvlscale, true);
 
 		if (conf.lthreshold_action)
-			waddthreshold(w_levels, cur.dbm.signal, conf.lthreshold, conf.sig_min,
+			waddthreshold(w_levels, signal, conf.lthreshold, conf.sig_min,
 				      conf.sig_max, line, 1, COLS - 1, lvlscale, '>');
 		if (conf.hthreshold_action)
-			waddthreshold(w_levels, cur.dbm.signal, conf.hthreshold, conf.sig_min,
+			waddthreshold(w_levels, signal, conf.hthreshold, conf.sig_min,
 				      conf.sig_max, line, 1, COLS - 1, lvlscale, '<');
 	}
 
 	if (!offset) {
+		noise = ewma(noise, cur.dbm.noise, conf.meter_decay/100.0);
+
 		line += 1;
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");
-		sprintf(tmp, "%.0f dBm (%s)    ", cur.dbm.noise, dbm2units(cur.dbm.noise));
+
+		sprintf(tmp, "%.0f dBm (%s)    ", noise, dbm2units(noise));
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, cur.dbm.noise, conf.noise_min, conf.noise_max,
+		waddbar(w_levels, noise, conf.noise_min, conf.noise_max,
 			line++, 1, COLS - 1, nscale, false);
 		/*
 		 * Since we make sure (in iw_if.c) that invalid noise levels always imply
 		 * invalid noise levels, we can display a valid SNR here.
 		 */
 		mvwaddstr(w_levels, line++, 1, "signal-to-noise ratio: ");
-		if (snr > 0)
+
+		ssnr = ewma(ssnr, cur.dbm.signal - cur.dbm.noise, conf.meter_decay/100.0);
+		if (ssnr > 0)
 			waddstr_b(w_levels, "+");
-		sprintf(tmp, "%.0f dB   ", snr);
+		sprintf(tmp, "%.0f dB   ", ssnr);
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, snr, 0, 110, line, 1, COLS - 1, snrscale, true);
+		waddbar(w_levels, ssnr, 0, 110, 8, 1, COLS - 1, snrscale, true);
 	}
 }
 

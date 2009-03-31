@@ -33,6 +33,14 @@ This controls the intervals between updates of the statistics data. Range: 10..4
 This determines how many obtained statistics values are averaged into one level histogram slot. So, if your statistics update interval is 50ms and your histogram slot size is 4, the histogram is moved one slot further every 2 seconds. Range: 1..64.
 .P
 .RE
+.B meter_smoothness = <n>
+.RS
+.RE
+.B (Level meter smoothness)
+.RS
+Determines the responsiveness of level meters, tracking the moving average rather than following each new sample. The given value specifies the percentage of the history (the 'inertia') of preceding samples. A value of 0 disables this option. Range: 0..99%.
+.P
+.RE
 .B info_updates = <n>
 .RS
 .RE

@@ -334,6 +334,17 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Level meter smoothness");
+	item->cfname	= strdup("meter_smoothness");
+	item->type	= t_int;
+	item->v.i	= &conf.meter_decay;
+	item->min	= 0;
+	item->max	= 99;
+	item->inc	= 1;
+	item->unit	= strdup("%");
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Dynamic info updates");
 	item->cfname	= strdup("info_updates");
 	item->type	= t_int;
@@ -519,6 +530,7 @@ static void set_defaults(void)
 	conf.stat_iv		= 100;
 	conf.info_iv		= 10;
 	conf.slotsize		= 4;
+	conf.meter_decay	= 0;
 
 	conf.override_bounds	= false;
 	conf.random		= false;
