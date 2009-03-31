@@ -75,7 +75,6 @@ extern struct wavemon_conf {
 
 	/* Boolean values which are 'char' for consistency with item->dep */
 	char	random,
-		linear,
 		override_bounds;
 
 	char	lthreshold_action,	/* disabled|beep|flash|beep+flash */

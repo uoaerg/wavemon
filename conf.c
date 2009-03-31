@@ -38,7 +38,6 @@ static void usage(void)
 	printf("  -d            Dump the current device status to stdout and exit\n");
 	printf("  -h            This help screen\n");
 	printf("  -i <ifname>   Use specified network interface (default: auto)\n");
-	printf("  -l            Use linear scales in favour of logarithmic ones\n");
 	printf("  -r            Generate random levels (for testing purposes)\n");
 	printf("  -v            Print version number and exit\n\n");
 }
@@ -47,7 +46,7 @@ static void getargs(int argc, char *argv[])
 {
 	int arg, tmp;
 
-	while ((arg = getopt(argc, argv, "dhi:lrv")) >= 0)
+	while ((arg = getopt(argc, argv, "dhi:rv")) >= 0)
 		switch (arg) {
 			case 'd':
 				dump_parameters();
@@ -60,9 +59,6 @@ static void getargs(int argc, char *argv[])
 					strncpy(conf.ifname, ll_get(if_list, tmp), sizeof(conf.ifname));
 				else
 					fatal_error("no wireless extensions found on device %s", optarg);
-				break;
-			case 'l':
-				conf.linear = true;
 				break;
 			case 'r':
 				conf.random = true;
@@ -414,13 +410,6 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Linear level scales");
-	item->cfname	= strdup("linear_scale");
-	item->type	= t_switch;
-	item->v.b	= &conf.linear;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Random signals");
 	item->cfname	= strdup("random");
 	item->type	= t_switch;
@@ -533,7 +522,6 @@ static void set_defaults(void)
 
 	conf.override_bounds	= false;
 	conf.random		= false;
-	conf.linear		= false;
 
 	conf.sig_min		= -102;
 	conf.sig_max		= 10;

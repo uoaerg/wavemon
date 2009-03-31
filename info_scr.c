@@ -63,20 +63,12 @@ void reinit_on_changes(void)
 
 static void display_levels(void)
 {
-	char   nscale[2],
-	     lvlscale[2],
-	     snrscale[2] = { 6, 12 };
-	char tmp[0x100];
+	char	nscale[2]   = { iw_stats.signal - 20, iw_stats.signal },
+		lvlscale[2] = { -40, -20 },
+		snrscale[2] = { 6, 12 };
+	char	tmp[0x100];
 	int snr;
 	
-	if (conf.linear) {
-		lvlscale[0] = 10;
-		lvlscale[1] = 50;
-	} else {
-		lvlscale[0] = -40;
-		lvlscale[1] = -20;
-	}
-
 	wmove(w_levels, 1, 1);
 	waddstr(w_levels, "link quality: ");
 	sprintf(tmp, "%d/%d  ", iw_stats.link, range.max_qual.qual);
@@ -88,42 +80,20 @@ static void display_levels(void)
 	sprintf(tmp, "%d dBm (%s)", iw_stats.signal, dbm2units(iw_stats.signal));
 	waddstr_b(w_levels, tmp);
 
-	if (conf.linear) {
-		waddbar(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf.sig_min),
-			dbm2mw(conf.sig_max), 4, 1, COLS - 1, lvlscale, true);
-		if (conf.lthreshold_action)
-			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf.lthreshold),
-				dbm2mw(conf.sig_min), dbm2mw(conf.sig_max), 4, 1, COLS - 1, lvlscale, '>');
-		if (conf.hthreshold_action)
-			waddthreshold(w_levels, dbm2mw(iw_stats.signal), dbm2mw(conf.hthreshold),
-				dbm2mw(conf.sig_min), dbm2mw(conf.sig_max), 4, 1, COLS - 1, lvlscale, '<');
-	} else {
-		waddbar(w_levels, iw_stats.signal, conf.sig_min, conf.sig_max, 4, 1, COLS - 1, lvlscale, true);
-		if (conf.lthreshold_action)
-			waddthreshold(w_levels, iw_stats.signal, conf.lthreshold, conf.sig_min, conf.sig_max, 4, 1,
-				COLS - 1, lvlscale, '>');
-		if (conf.hthreshold_action)
-			waddthreshold(w_levels, iw_stats.signal, conf.hthreshold, conf.sig_min, conf.sig_max, 4, 1,
-				COLS - 1, lvlscale, '<');
-	}
+	waddbar(w_levels, iw_stats.signal, conf.sig_min, conf.sig_max, 4, 1, COLS - 1, lvlscale, true);
+	if (conf.lthreshold_action)
+		waddthreshold(w_levels, iw_stats.signal, conf.lthreshold,
+			      conf.sig_min, conf.sig_max, 4, 1, COLS - 1, lvlscale, '>');
+	if (conf.hthreshold_action)
+		waddthreshold(w_levels, iw_stats.signal, conf.hthreshold,
+			      conf.sig_min, conf.sig_max, 4, 1, COLS - 1, lvlscale, '<');
 
 
-	if (conf.linear) {
-		nscale[0] = dbm2mw(iw_stats.signal) - 10;
-		nscale[1] = dbm2mw(iw_stats.signal);
-	} else {
-		nscale[0] = iw_stats.signal - 20;
-		nscale[1] = iw_stats.signal;
-	}
 	wmove(w_levels, 5, 1);
 	waddstr(w_levels, "noise level: ");
 	sprintf(tmp, "%4d dBm (%s)", iw_stats.noise, dbm2units(iw_stats.noise));
 	waddstr_b(w_levels, tmp);
-	if (conf.linear)
-		waddbar(w_levels, dbm2mw(iw_stats.noise), dbm2mw(conf.noise_min),
-			dbm2mw(conf.noise_max), 6, 1, COLS - 1, nscale, false);
-	else
-		waddbar(w_levels, iw_stats.noise, conf.noise_min, conf.noise_max, 6, 1, COLS - 1, nscale, false);
+	waddbar(w_levels, iw_stats.noise, conf.noise_min, conf.noise_max, 6, 1, COLS - 1, nscale, false);
 	
 	snr = iw_stats.signal - iw_stats.noise;
 	wmove(w_levels, 7, 1);
