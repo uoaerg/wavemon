@@ -1,0 +1,67 @@
+NEWS
+====
+
+--------------------
+0.6 (2009-04-01)
+--------------------
+ * Update to the latest wireless extension API (number 22),
+   As a consequence of updating the wireless extensions, more
+   information is now displayed, including
+   - excessive TX MAC reassembly retries,
+   - missed beacon count
+   - display of wireless extension version used by the driver
+   - the driver's internal WE version
+
+ * wavemon now uses ioctl to obtain IW statistics and falls back
+   to /proc/net/wireless only as a last resort. (It is planned
+   to add netlink support in a later release.)
+
+ * Linear scales (-l option) no longer supported, since levels
+   are always reported both in log (dBm) and lin (mW).
+   (NB: in case of using an old version of ~/.wavemonrc, it is
+        necessary to remove the line containing 'linear_scale',
+	which is the option that has been removed.)
+
+ * Added sanity checks to the display of level information:
+   - noise level is only displayed if valid signal levels exist;
+   - some cards set a magic number to mean an invalid noise level - a
+     constant has been added to catch such cases;
+   - if the noise level (and hence the SNR value) is undefined, spread
+     out the  display of quality/signal levels over the info window.
+
+ * Added gui option for smoothing level meters (better readability).
+
+ * Much better and more accurate information in the Access Point List.
+
+ * Bug Fixes:
+   - it is finally possible to use the Access Point List as start screen,
+   - updated and fixed display of operation modes,
+   - selecting the wireless interface now works with multiple interfaces,
+   - header inclusion bug fix for Puppy Linux (thanks to Tom Gordon).
+
+ * Updated all components of the autoconf build system:
+   - DESTDIR is now supported for building packages
+     (thanks to Christoph J. Thompson),
+   - now using autoconf to set package version and build date.
+
+ * Reorganised source tree organisation:
+   - merged many small (one-line) header files into one,
+   - created a 'contrib' directory for contributed scripts,
+   - added 'config' directory for autoconf auxiliary scripts
+   - reinstated standard GNU autoconf listing of files
+
+--------------------
+0.5 (2009-01-17)
+--------------------
+Update on the build process, new maintainer, git tree
+to keep the changes. Fixes in this release include
+ * minor bug fixes
+ * build fixups and fixes for the build process
+ * a stub handler for SIGWINCH (still not fully supported)
+ * adding units to the levels (lin/log)
+ * tidied up code
+
+--------------------
+0.4.0b (2002-12-21)
+--------------------
+Last release by the original author, Jan Morgenstern.

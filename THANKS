@@ -1,0 +1,13 @@
+Many people contribute to wavemon by reporting problems, suggesting various
+improvements, or submitting actual code. Here is a list of these people. Help
+me (gerrit@erg.abdn.ac.uk) keep it complete and exempt of errors.
+
+Christoph J. Thompson (cjsthompson@gmail.com) provided DESTDIR support for
+the installation process and contributed a Slackware build script, found in
+the contrib folder (2009-03-03).
+
+Tom Gordon to help fix a build error occurring under Puppy Linux, in wavemon
+version 0.5 (2009-02-06).
+
+Dave W. Capella (dave.capella@cornell.edu) provided modifications to build
+ipkg packages for mobile devices in 2002 (now in contrib).

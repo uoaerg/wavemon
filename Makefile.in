@@ -3,6 +3,7 @@ exec_prefix = @exec_prefix@
 
 bindir	    = @bindir@
 mandir	    = @mandir@
+datadir     = @datarootdir@/@PACKAGE_NAME@
 
 CC	= @CC@
 CFLAGS	= @CFLAGS@
@@ -15,10 +16,12 @@ RM	= rm -vf
 MAIN	= wavemon.c
 PURESRC	= $(filter-out $(MAIN),$(wildcard *.c))
 OBJS	= $(PURESRC:.c=.o)
+DOCS	= README NEWS THANKS AUTHORS COPYING ChangeLog
 
 %.o: %.c wavemon.h llist.h iw_if.h
 	$(CC) $(CFLAGS) $(DEFS) -c -o $@ $<
 
+all: wavemon
 wavemon: $(MAIN) $(OBJS)
 	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
 
@@ -35,18 +38,21 @@ tags: $(wildcard *[ch])
 
 .PHONY: install uninstall clean distclean
 
-install: wavemon wavemon.1 wavemonrc.5
+install: wavemon wavemon.1 wavemonrc.5 $(DOCS)
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 wavemon $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man1
 	$(INSTALL) -m 0644 wavemon.1 $(DESTDIR)$(mandir)/man1
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man5
 	$(INSTALL) -m 0644 wavemonrc.5 $(DESTDIR)$(mandir)/man5
+	$(INSTALL) -m 0755 -d $(DESTDIR)$(datadir)
+	$(INSTALL) -m 0644 $(DOCS) $(DESTDIR)$(datadir)
 
 uninstall:
 	@$(RM) $(bindir)/wavemon
 	@$(RM) $(mandir)/man1/wavemon.1
 	@$(RM) $(mandir)/man5/wavemonrc.5
+	@$(RM) -r $(datadir)
 
 clean:
 	@$(RM) *.o *.doc wavemon tags

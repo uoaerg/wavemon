@@ -1,5 +1,5 @@
-wavemon README
---------------
+1) Synopsis
+-----------
 
 wavemon is a wireless device monitoring application that allows you to watch
 signal and noise levels, packet statistics, device configuration and network
@@ -7,30 +7,35 @@ parameters of your wireless network hardware. It *should* work (though with
 varying features) with all devices supported by the Linux wireless kernel
 extensions by Jean Tourrilhes.
 
-While most of the planned features are more or less implemented, plase keep 
-in mind that this is an beta release, and as such, it is likely not to work 
-as you may expect sometimes.
+See the man page for an in-depth description of operation and configuration.
 
-The access point list is still broken on most cards; please don't report this
-as a bug. I'm planning to incorporate the much-enhanced scanning feature of
-recent wireless extension versions in the near future.
 
-See the man page for an in-depth description of program operation and
-configuration.
-
-wavemon is free software; it is distributed under the terms of the GNU General
-Public License. Please refer to the file COPYING within the archive for 
-details. Last but by no means least, wavemon is a fun project and the result
-of the urge to play a little around with my new wavelan card, so while I
-definitely hope that some people may find it useful, you should not expect too
-much of this. Also, although it shouldn't do any damage to you system when
-using it, you'll understand that I won't take any responsibility for this. In
-other words: YOU USE THIS ON YOUR OWN RISK.
-
-Please send any bug reports or suggestions to <gerrit@erg.abdn.ac.uk>
-
-You can always find the latest version of this software at the wavemon page:
+2) Where to obtain
+------------------
+You can always find the latest version at:
 
 	http://eden-feed.erg.abdn.ac.uk/wavemon
 
-which also keeps a git tree with a detailed changelog.
+Please check this page for updates and for further information.
+wavemon is distributed under the GPLv3, refer to the file COPYING.
+
+
+3) How to build
+---------------
+wavemon uses autoconf, so that in most cases you can simply run
+
+	./configure
+	make
+	sudo make install
+
+to build and install the package. Type 'make uninstall' if not happy.
+Refer to the file INSTALL for generic installation instructions.
+
+If you have changed some of the autoconf files or use a git version, run
+	./config/bootstrap
+(requires a recent installation of 'autotools').
+
+
+3) Bugs?
+--------
+Send bug reports, comments, and suggestions to <gerrit@erg.abdn.ac.uk>.

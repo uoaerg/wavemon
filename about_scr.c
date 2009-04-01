@@ -29,9 +29,10 @@ static char *about_lines[] = {	"wavemon - status monitor for wireless network de
 				"wavemon uses the wireless extensions by",
 				"jean tourrilhes <jt@hpl.hp.com>",
 				"",
-				"http://www.jm-music.de/projects.html",
+				"please send suggestions and bug reports to ",
+				PACKAGE_BUGREPORT,
 				"",
-				"please send suggestions and bug reports to " PACKAGE_BUGREPORT
+				"http://eden-feed.erg.abdn.ac.uk/wavemon",
 };
 
 static int *linecd[ARRAY_SIZE(about_lines)];
