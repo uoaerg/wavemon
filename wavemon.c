@@ -27,7 +27,7 @@ static void sig_winch(int signo)
 }
 
 int main(int argc, char *argv[]) {
-	int	(*current_scr)() = NULL;
+	int	(*current_scr)(void) = NULL;
 	int 	nextscr;
 
 	getconf(argc, argv);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 
 	do {
 		reinit_on_changes();
-		switch (nextscr = current_scr(&conf)) {
+		switch (nextscr = current_scr()) {
 			case 0:	current_scr = scr_info;
 					break;
 			case 1: current_scr = scr_lhist;
