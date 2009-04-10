@@ -24,9 +24,9 @@ static void display_aplist(WINDOW *w_aplst)
 	uint8_t buf[(sizeof(struct iw_quality) +
 		     sizeof(struct sockaddr)) * IW_MAX_AP];
 	char	s[0x100];
-	int	ysize, xsize, i, line = 2;
-	struct iw_quality *qual;
-	struct sockaddr   *hwa;
+	int	ysize, xsize, i,j, line = 2;
+	struct iw_quality *qual, qual_pivot;
+	struct sockaddr *hwa, hwa_pivot;
 	struct iw_range range;
 	struct iw_levelstat dbm;
 	struct iwreq iwr;
@@ -62,6 +62,24 @@ static void display_aplist(WINDOW *w_aplst)
 
 	hwa  = (struct sockaddr *)   buf;
 	qual = (struct iw_quality *) (hwa + iwr.u.data.length);
+
+	/*
+	 * Show access points in descending order of signal quality by
+	 * sorting both lists in parallel, using simple insertion sort.
+	 */
+	for (i = 0; i < iwr.u.data.length; i++) {
+
+		qual_pivot = qual[i];
+		hwa_pivot  = hwa[i];
+
+		for (j = i; j > 0 && qual[j-1].qual < qual_pivot.qual; j--) {
+			qual[j] = qual[j-1];
+			hwa[j]  = hwa[j-1];
+		}
+
+		qual[j] = qual_pivot;
+		hwa[j]  = hwa_pivot;
+	}
 
 	for (i = 0, line += 2; i < iwr.u.data.length; i++, line++) {
 
