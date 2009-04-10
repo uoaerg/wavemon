@@ -250,7 +250,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	if (info.mode != 1) {
 		waddstr(w_info, ",  access point: ");
 		if (info.cap_ap)
-			waddstr_b(w_info, mac_addr((unsigned char *)info.ap_addr.sa_data));
+			waddstr_b(w_info, mac_addr(&info.ap_addr));
 		else waddstr(w_info, "n/a");
 	}
 	
@@ -341,7 +341,7 @@ static void display_netinfo(WINDOW *w_net)
 	waddstr_b(w_net, conf.ifname);
 
 	waddstr(w_net, ",  hwaddr: ");
-	waddstr_b(w_net, mac_addr(info.hwaddr));
+	waddstr_b(w_net, ether_addr(&info.hwaddr));
 
 	mvwaddstr(w_net, 2, 1, "addr: ");
 	waddstr_b(w_net, inet_ntoa(info.addr));

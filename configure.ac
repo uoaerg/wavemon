@@ -26,7 +26,8 @@ AC_PROG_INSTALL
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_TIME
-AC_CHECK_HEADERS([ncurses.h fcntl.h netdb.h sys/ioctl.h sys/time.h unistd.h],
+AC_CHECK_HEADERS([ncurses.h fcntl.h netdb.h sys/ioctl.h sys/time.h unistd.h\
+		  net/if_arp.h netinet/ether.h net/ethernet.h],
 		 [], [AC_MSG_ERROR($ac_header not found)])
 
 # linux/if.h needs 'struct sockaddr'
@@ -52,7 +53,8 @@ AC_CHECK_FUNCS([modf log10 gettimeofday	\
 		memmove memset strdup	\
 		strchr strspn strcspn	\
 		strcasecmp strncasecmp	\
-		strtol], [],
+		strtol			\
+		ether_ntohost], [],
 	       [AC_MSG_ERROR(function '$ac_func' not supported)])
 
 # Checks for typedefs, structures, and compiler characteristics.

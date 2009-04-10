@@ -26,6 +26,7 @@ static void display_aplist(WINDOW *w_aplst)
 	char	s[0x100];
 	int	ysize, xsize, i, line = 2;
 	struct iw_quality *qual;
+	struct sockaddr   *hwa;
 	struct iw_range range;
 	struct iw_levelstat dbm;
 	struct iwreq iwr;
@@ -59,12 +60,13 @@ static void display_aplist(WINDOW *w_aplst)
 		mvwaddstr(w_aplst, line, 1, s);
 	}
 
-	qual = (struct iw_quality *)(buf + sizeof(struct sockaddr) * iwr.u.data.length);
+	hwa  = (struct sockaddr *)   buf;
+	qual = (struct iw_quality *) (hwa + iwr.u.data.length);
 
 	for (i = 0, line += 2; i < iwr.u.data.length; i++, line++) {
 
 		mvwaddstr(w_aplst, line++, 1, "  ");
-		waddstr_b(w_aplst, mac_addr(buf + i * sizeof(struct sockaddr)));
+		waddstr_b(w_aplst, mac_addr(&hwa[i]));
 
 		if (iwr.u.data.flags) {
 			iw_sanitize(&range, &qual[i], &dbm);

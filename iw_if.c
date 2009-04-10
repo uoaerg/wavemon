@@ -535,8 +535,7 @@ void dump_parameters(void)
 	printf("             mode: %s\n", iw_opmode(info.mode));
 
 	if (info.mode != 1 && info.cap_ap)
-		printf("     access point: %s\n",
-			mac_addr((unsigned char *)info.ap_addr.sa_data));
+		printf("     access point: %s\n", mac_addr(&info.ap_addr));
 
 	if (info.cap_bitrate)
 		printf("          bitrate: %g Mbit/s\n",

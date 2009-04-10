@@ -21,6 +21,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netinet/ether.h>
+#include <net/if_arp.h>
+#include <net/ethernet.h>
 #include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/wireless.h>
@@ -40,10 +43,10 @@
 
 /* Static network interface information - see netdevice(7) */
 struct if_info {			/* modified ifreq */
-	unsigned char	hwaddr[6];
-	struct in_addr	addr,
-			netmask,
-			bcast;
+	struct ether_addr	hwaddr;
+	struct in_addr		addr,
+				netmask,
+				bcast;
 };
 extern void if_getinf(char *ifname, struct if_info *info);
 
@@ -160,14 +163,35 @@ static inline const char *iw_opmode(const uint8_t mode)
 	return mode > 6 ? "Unknown/bug" : modes[mode];
 }
 
-/* Pretty-print a mac-address. `mac' must be of length 6 or greater */
-static inline char *mac_addr(const unsigned char *mac)
+/* Print a mac-address, include leading zeroes (unlike ether_ntoa(3)) */
+static inline char *ether_addr(const struct ether_addr *ea)
 {
 	static char str[MAC_ADDR_MAX];
 
-	sprintf(str, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2],
-						      mac[3], mac[4], mac[5]);
+	sprintf(str, "%02X:%02X:%02X:%02X:%02X:%02X",
+		ea->ether_addr_octet[0], ea->ether_addr_octet[1],
+		ea->ether_addr_octet[2], ea->ether_addr_octet[3],
+		ea->ether_addr_octet[4], ea->ether_addr_octet[5]);
 	return str;
+}
+
+/* Print mac-address translation from /etc/ethers if available */
+static inline char *ether_lookup(const struct ether_addr *ea)
+{
+	static char hostname[BUFSIZ];
+
+	if (ether_ntohost(hostname, ea) == 0)
+		return hostname;
+	return ether_addr(ea);
+}
+
+static inline char *mac_addr(const struct sockaddr *sa)
+{
+	struct ether_addr zero = { {0} };
+
+	if (sa->sa_family != ARPHRD_ETHER)
+		return ether_addr(&zero);
+	return ether_lookup((struct ether_addr *)sa->sa_data);
 }
 
 /* Convert log dBm values to linear mW */
