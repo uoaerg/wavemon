@@ -32,6 +32,9 @@
 #ifndef IW_POWER_SAVING
 #define IW_POWER_SAVING	0x4000		/* version 20 -> 21 */
 #endif
+#ifndef IW_MODE_MESH
+#define IW_MODE_MESH	7		/* introduced in 2.6.26-rc1 */
+#endif
 
 /* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
 #define MAC_ADDR_MAX	18
@@ -175,10 +178,11 @@ static inline const char *iw_opmode(const uint8_t mode)
 				 "Master",
 				 "Repeater",
 				 "Secondary",
-				 "Monitor"
+				 "Monitor",
+				 "Mesh"
 	};
 
-	return mode > 6 ? "Unknown/bug" : modes[mode];
+	return mode < ARRAY_SIZE(modes) ? modes[mode] : "Unknown/bug";
 }
 
 static inline bool is_zero_ether_addr(const uint8_t *mac)

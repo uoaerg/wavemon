@@ -251,7 +251,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	else
 		waddstr(w_info, "n/a");
 
-	if (info.mode <= IW_MODE_INFRA || info.mode == IW_MODE_REPEAT) {
+	if (info.mode != IW_MODE_MASTER &&
+	    info.mode != IW_MODE_SECOND && info.mode != IW_MODE_MONITOR) {
 		if (info.mode == IW_MODE_ADHOC)
 			waddstr(w_info, ",  cell: ");
 		else
