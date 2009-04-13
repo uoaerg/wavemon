@@ -235,6 +235,23 @@ static inline char *format_bssid(const struct sockaddr *ap)
 	return mac_addr(ap);
 }
 
+/* count bits set in @mask the Brian Kernighan way */
+static inline uint8_t bit_count(uint32_t mask)
+{
+	uint8_t bits_set;
+
+	for (bits_set = 0; mask; bits_set++)
+		mask &= mask - 1;
+
+	return bits_set;
+}
+
+/* netmask = contiguous 1's followed by contiguous 0's */
+static inline uint8_t prefix_len(const struct in_addr *netmask)
+{
+	return bit_count(netmask->s_addr);
+}
+
 /* Convert log dBm values to linear mW */
 static inline double dbm2mw(const double in)
 {

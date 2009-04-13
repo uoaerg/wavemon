@@ -386,6 +386,7 @@ static void display_netinfo(WINDOW *w_net)
 	struct if_info info;
 	int ysize, xsize;
 	int i;
+	char tmp[0x40];
 
 	getmaxyx(w_net, ysize, xsize);
 	for (i = 1; i < ysize - 1; i++)
@@ -396,14 +397,13 @@ static void display_netinfo(WINDOW *w_net)
 	mvwaddstr(w_net, 1, 1, "if: ");
 	waddstr_b(w_net, conf.ifname);
 
-	waddstr(w_net, ",  hwaddr: ");
+	waddstr(w_net, ",  mac: ");
 	waddstr_b(w_net, ether_addr(&info.hwaddr));
 
-	mvwaddstr(w_net, 2, 1, "addr: ");
-	waddstr_b(w_net, inet_ntoa(info.addr));
-
-	waddstr(w_net, ",  netmask: ");
-	waddstr_b(w_net, inet_ntoa(info.netmask));
+	mvwaddstr(w_net, 2, 1, "ip: ");
+	sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
+			      prefix_len(&info.netmask));
+	waddstr_b(w_net, tmp);
 
 	waddstr(w_net, ",  bcast: ");
 	waddstr_b(w_net, inet_ntoa(info.bcast));
