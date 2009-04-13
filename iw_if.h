@@ -28,6 +28,11 @@
 #include <linux/if.h>
 #include <linux/wireless.h>
 
+/* Definitions that appeared in more recent versions of wireless.h */
+#ifndef IW_POWER_SAVING
+#define IW_POWER_SAVING	0x4000		/* version 20 -> 21 */
+#endif
+
 /* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
 #define MAC_ADDR_MAX	18
 
@@ -50,7 +55,37 @@ struct if_info {		/* modified ifreq */
 };
 extern void if_getinf(char *ifname, struct if_info *info);
 
-struct iw_dyn_info {		/* modified iwreq */
+/**
+ * struct iw_dyn_info  -  modified iw_req
+ * @name:	interface name
+ * @mode:	current operation mode (IW_MODE_xxx)
+ *
+ * @cap_*:	indicating capability/presence
+ *
+ * @essid:	Extended Service Set ID (network name)
+ * @essid_ct:	index number of the @essid (starts at 1, 0 = off)
+ * @nickname:	optional station nickname
+ * @nwid:	Network ID (pre-802.11 hardware only)
+ * @ap_addr:	BSSID or IBSSID
+ *
+ * @rts:	minimum packet size for which to perform RTS/CTS handshake
+ * @frag:	802.11 frame fragmentation threshold size
+ * @txpower:	TX power information
+ * @power	power management information
+ *
+ * @freq:	frequency in Hz
+ * @sens:	sensitivity threshold of the card
+ * @bitrate:	bitrate (client mode)
+ *
+ * @key:	encryption key
+ * @key_size:	length of @key in bytes
+ * @key_flags:	bitmask with information about @key
+ *
+ */
+struct iw_dyn_info {
+	char		name[IFNAMSIZ];
+	uint8_t		mode;
+
 	bool		cap_essid:1,
 			cap_nwid:1,
 			cap_nickname:1,
@@ -62,57 +97,28 @@ struct iw_dyn_info {		/* modified iwreq */
 			cap_frag:1,
 			cap_mode:1,
 			cap_ap:1,
-			cap_encode:1,
+			cap_key:1,
 			cap_power:1,
 			cap_aplist:1;
 
-	char		name[IFNAMSIZ];
-	char		essid[IW_ESSID_MAX_SIZE];
-	char		essid_on:1;
-	char		nickname[IW_ESSID_MAX_SIZE];
+	char		essid[IW_ESSID_MAX_SIZE+2];
+	uint8_t		essid_ct;
+	char		nickname[IW_ESSID_MAX_SIZE+2];
+	struct iw_param nwid;
+	struct sockaddr ap_addr;
 
-	int		mode;
-
-	unsigned long	nwid;
-	char		nwid_on:1;
-
-	unsigned short	rts;
-	char		rts_on:1;
-
-	unsigned short	frag;
-	char		frag_on:1;
+	struct iw_param rts;
+	struct iw_param frag;
+	struct iw_param txpower;
+	struct iw_param power;
 
 	float		freq;
-	signed long	sens;
+	int32_t		sens;
 	unsigned long	bitrate;
 
-	signed short	txpower_dbm;
-	float		txpower_mw;
-
-	char		keysize;
-	int		key_index;
 	char		key[IW_ENCODING_TOKEN_MAX];
-	struct crypt_flags {
-		char	disabled:1,
-			index:1,
-			restricted:1,
-			open:1,
-			nokey:1;
-	} eflags;
-
-	unsigned long	pmvalue;
-	struct pm_flags {
-		char	disabled:1,
-			timeout:1,
-			unicast:1,
-			multicast:1,
-			forceuc:1,
-			repbc:1,
-			min:1,
-			rel:1;
-	} pflags;
-
-	struct sockaddr ap_addr;
+	uint16_t	key_size;
+	uint16_t	key_flags;
 };
 
 struct if_stat {
@@ -172,6 +178,16 @@ static inline const char *iw_opmode(const uint8_t mode)
 	return mode > 6 ? "Unknown/bug" : modes[mode];
 }
 
+static inline bool is_zero_ether_addr(const uint8_t *mac)
+{
+	return ! (mac[0] | mac[1] | mac[2] | mac[3] | mac[4] | mac[5]);
+}
+
+static inline bool is_broadcast_ether_addr(const uint8_t *mac)
+{
+	return (mac[0] & mac[1] & mac[2] & mac[3] & mac[4] & mac[5]) == 0xff;
+}
+
 /* Print a mac-address, include leading zeroes (unlike ether_ntoa(3)) */
 static inline char *ether_addr(const struct ether_addr *ea)
 {
@@ -194,6 +210,7 @@ static inline char *ether_lookup(const struct ether_addr *ea)
 	return ether_addr(ea);
 }
 
+/* Format an Ethernet mac address */
 static inline char *mac_addr(const struct sockaddr *sa)
 {
 	struct ether_addr zero = { {0} };
@@ -201,6 +218,18 @@ static inline char *mac_addr(const struct sockaddr *sa)
 	if (sa->sa_family != ARPHRD_ETHER)
 		return ether_addr(&zero);
 	return ether_lookup((struct ether_addr *)sa->sa_data);
+}
+
+/* Format a (I)BSSID */
+static inline char *format_bssid(const struct sockaddr *ap)
+{
+	const struct ether_addr *bssid = (struct ether_addr *)ap->sa_data;
+
+	if (is_zero_ether_addr(bssid->ether_addr_octet))
+		return "Not-Associated";
+	if (is_broadcast_ether_addr(bssid->ether_addr_octet))
+		return "Invalid";
+	return mac_addr(ap);
 }
 
 /* Convert log dBm values to linear mW */
@@ -232,8 +261,94 @@ static inline double mw2dbm(const double in)
 	return 10.0 * log10(in);
 }
 
-/* Convert frequency to GHz */
-static inline float freq2ghz(const struct iw_freq *f)
+/* Format driver TX power information */
+static inline char *format_txpower(const struct iw_param *txpwr)
 {
-	return (f->e ? f->m * pow(10, f->e) : f->m) / 1e9;
+	static char txline[0x40];
+
+	if (txpwr->flags & IW_TXPOW_RELATIVE)
+		snprintf(txline, sizeof(txline), "%d (no units)", txpwr->value);
+	else if (txpwr->flags & IW_TXPOW_MWATT)
+		snprintf(txline, sizeof(txline), "%.0f dBm (%d mW)",
+				mw2dbm(txpwr->value), txpwr->value);
+	else
+		snprintf(txline, sizeof(txline), "%d dBm (%.2f mW)",
+				txpwr->value, dbm2mw(txpwr->value));
+	return txline;
+}
+
+/* Format driver Power Management information */
+static inline char *format_power(const struct iw_param *pwr,
+				 const struct iw_range *range)
+{
+	static char buf[0x80];
+	double val = pwr->value;
+	int len = 0;
+
+	if (pwr->disabled)
+		return "off";
+	else if (pwr->flags == IW_POWER_ON)
+		return "on";
+
+	if (pwr->flags & IW_POWER_MIN)
+		len += snprintf(buf + len, sizeof(buf) - len, "min ");
+	if (pwr->flags & IW_POWER_MAX)
+		len += snprintf(buf + len, sizeof(buf) - len, "max ");
+
+	if (pwr->flags & IW_POWER_TIMEOUT)
+		len += snprintf(buf + len, sizeof(buf) - len, "timeout ");
+	else if (pwr->flags & IW_POWER_SAVING)
+		len += snprintf(buf + len, sizeof(buf) - len, "saving ");
+	else
+		len += snprintf(buf + len, sizeof(buf) - len, "period ");
+
+	if (pwr->flags & IW_POWER_RELATIVE && range->we_version_compiled < 21)
+		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val/1e6);
+	else if (pwr->flags & IW_POWER_RELATIVE)
+		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val);
+	else if (val > 1e6)
+		len += snprintf(buf + len, sizeof(buf) - len, "%g s", val/1e6);
+	else if (val > 1e3)
+		len += snprintf(buf + len, sizeof(buf) - len, "%g ms", val/1e3);
+	else
+		len += snprintf(buf + len, sizeof(buf) - len, "%g us", val);
+
+	switch (pwr->flags & IW_POWER_MODE) {
+	case IW_POWER_UNICAST_R:
+		len += snprintf(buf + len, sizeof(buf) - len, ", rcv unicast");
+		break;
+	case IW_POWER_MULTICAST_R:
+		len += snprintf(buf + len, sizeof(buf) - len, ", rcv mcast");
+		break;
+	case IW_POWER_ALL_R:
+		len += snprintf(buf + len, sizeof(buf) - len, ", rcv all");
+		break;
+	case IW_POWER_FORCE_S:
+		len += snprintf(buf + len, sizeof(buf) - len, ", force send");
+		break;
+	case IW_POWER_REPEATER:
+		len += snprintf(buf + len, sizeof(buf) - len, ", repeat mcast");
+	}
+
+	return buf;
+}
+
+/* See comments on 'struct iw_freq' in wireless.h */
+static inline float freq_to_hz(const struct iw_freq *freq)
+{
+	return freq->m * pow(10, freq->e);
+}
+
+/* Return channel number or -1 on error. Based on iw_freq_to_channel() */
+static inline int freq_to_channel(double freq, const struct iw_range *range)
+{
+	int i;
+
+	if (freq < 1.0e3)
+		return -1;
+
+	for (i = 0; i < range->num_frequency; i++)
+		if (freq_to_hz(&range->freq[i]) == freq)
+			return range->freq[i].i;
+	return -1;
 }

@@ -120,23 +120,23 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		fatal_error("cannot open device '%s'", iwr.u.name);
 	strncpy(info->name, iwr.u.name, IFNAMSIZ);
 
-	iwr.u.essid.pointer = (caddr_t) & (info->essid);
-	iwr.u.essid.length  = IW_ESSID_MAX_SIZE + 1;
+	iwr.u.essid.pointer = (caddr_t) info->essid;
+	iwr.u.essid.length  = sizeof(info->essid);
 	iwr.u.essid.flags   = 0;
 	if (ioctl(skfd, SIOCGIWESSID, &iwr) >= 0) {
 		info->cap_essid = 1;
-		info->essid_on  = iwr.u.essid.flags;
+		/* Convert potential ESSID index to count > 0 */
+		info->essid_ct  = iwr.u.essid.flags & IW_ENCODE_INDEX ?  : 1;
 		strncpy(info->essid, iwr.u.essid.pointer, IW_ESSID_MAX_SIZE);
 	}
 
 	if (ioctl(skfd, SIOCGIWNWID, &iwr) >= 0) {
 		info->cap_nwid = 1;
-		info->nwid     = iwr.u.nwid.value;
-		info->nwid_on  = iwr.u.nwid.flags;
+		memcpy(&info->nwid, &iwr.u.nwid, sizeof(info->nwid));
 	}
 
-	iwr.u.essid.pointer = (caddr_t) & (info->nickname);
-	iwr.u.essid.length  = IW_ESSID_MAX_SIZE + 1;
+	iwr.u.essid.pointer = (caddr_t) info->nickname;
+	iwr.u.essid.length  = sizeof(info->nickname);
 	iwr.u.essid.flags   = 0;
 	if (ioctl(skfd, SIOCGIWNICKN, &iwr) >= 0 &&
 	    iwr.u.data.length > 1)
@@ -144,10 +144,7 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 
 	if (ioctl(skfd, SIOCGIWFREQ, &iwr) >= 0) {
 		info->cap_freq = 1;
-		if (iwr.u.freq.e)
-			info->freq = (iwr.u.freq.m * pow(10, iwr.u.freq.e)) / 1.0e9;
-		else
-			info->freq = iwr.u.freq.m;
+		info->freq     = freq_to_hz(&iwr.u.freq);
 	}
 
 	if (ioctl(skfd, SIOCGIWSENS, &iwr) >= 0) {
@@ -159,27 +156,25 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		info->cap_bitrate = 1;
 		info->bitrate     = iwr.u.bitrate.value;
 	}
-#ifdef SIOCGIWTXPOW
+
 	if (ioctl(skfd, SIOCGIWTXPOW, &iwr) >= 0) {
 		info->cap_txpower = 1;
-		if (iwr.u.txpower.flags == IW_TXPOW_DBM) {
-			info->txpower_dbm = iwr.u.txpower.value;
-			info->txpower_mw  = dbm2mw(iwr.u.txpower.value);
-		} else {
-			info->txpower_mw  = iwr.u.txpower.value;
-			info->txpower_dbm = mw2dbm(iwr.u.txpower.value);
-		}
+		memcpy(&info->txpower, &iwr.u.txpower, sizeof(info->txpower));
 	}
-#endif
+
+	if (ioctl(skfd, SIOCGIWPOWER, &iwr) >= 0) {
+		info->cap_power = 1;
+		memcpy(&info->power, &iwr.u.power, sizeof(info->power));
+	}
 
 	if (ioctl(skfd, SIOCGIWRTS, &iwr) >= 0) {
 		info->cap_rts = 1;
-		info->rts     = iwr.u.rts.value;
+		memcpy(&info->rts, &iwr.u.rts, sizeof(info->rts));
 	}
 
 	if (ioctl(skfd, SIOCGIWFRAG, &iwr) >= 0) {
 		info->cap_frag = 1;
-		info->frag     = iwr.u.frag.value;
+		memcpy(&info->frag, &iwr.u.frag, sizeof(info->frag));
 	}
 
 	if (ioctl(skfd, SIOCGIWMODE, &iwr) >= 0) {
@@ -187,51 +182,13 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		info->mode     = iwr.u.mode;
 	}
 
-	iwr.u.data.pointer = (caddr_t) & info->key;
-	iwr.u.data.length  = IW_ENCODING_TOKEN_MAX;
+	iwr.u.data.pointer = (caddr_t) info->key;
+	iwr.u.data.length  = sizeof(info->key);
 	iwr.u.data.flags   = 0;
 	if (ioctl(skfd, SIOCGIWENCODE, &iwr) >= 0) {
-		info->cap_encode = 1;
-		info->keysize    = iwr.u.data.length;
-		if (iwr.u.data.flags & IW_ENCODE_DISABLED)
-			info->eflags.disabled = 1;
-		if (iwr.u.data.flags & IW_ENCODE_INDEX)
-			info->eflags.index = 1;
-		if (iwr.u.data.flags & IW_ENCODE_RESTRICTED)
-			info->eflags.restricted = 1;
-		if (iwr.u.data.flags & IW_ENCODE_OPEN)
-			info->eflags.open = 1;
-#ifdef IW_ENCODE_NOKEY
-		if (iwr.u.data.flags & IW_ENCODE_NOKEY)
-			info->eflags.nokey = 1;
-#endif
-	}
-
-	if (ioctl(skfd, SIOCGIWPOWER, &iwr) >= 0) {
-		info->cap_power = 1;
-		if (iwr.u.power.disabled)
-			info->pflags.disabled = 1;
-		info->pmvalue = iwr.u.power.value;
-		if (iwr.u.power.flags & IW_POWER_TIMEOUT)
-			info->pflags.timeout = 1;
-		if (iwr.u.power.flags & IW_POWER_UNICAST_R)
-			info->pflags.unicast = 1;
-		if (iwr.u.power.flags & IW_POWER_MULTICAST_R)
-			info->pflags.multicast = 1;
-		if (iwr.u.power.flags & IW_POWER_FORCE_S)
-			info->pflags.forceuc = 1;
-		if (iwr.u.power.flags & IW_POWER_REPEATER)
-			info->pflags.repbc = 1;
-
-#ifdef IW_POWER_MIN
-		if (iwr.u.power.flags & IW_POWER_MIN)
-			info->pflags.min = 1;
-#endif
-
-#ifdef IW_POWER_RELATIVE
-		if (iwr.u.power.flags & IW_POWER_RELATIVE)
-			info->pflags.rel = 1;
-#endif
+		info->cap_key	= 1;
+		info->key_flags	= iwr.u.data.flags;
+		info->key_size	= iwr.u.data.length;
 	}
 
 	if (ioctl(skfd, SIOCGIWAP, &iwr) >= 0) {
@@ -509,71 +466,96 @@ void dump_parameters(void)
 	printf("       WE version: %d (source version %d)\n\n",
 	       iw.range.we_version_compiled, iw.range.we_version_source);
 
-	printf("            essid: %s %s\n",
-	       info.cap_essid ? info.essid : "n/a",
-	       info.essid_on ? "" : "(off)");
+	if (info.cap_essid) {
+		if (info.essid_ct > 1)
+			printf("            essid: \"%s\" [%d]\n",
+						info.essid, info.essid_ct);
+		else if (info.essid_ct)
+			printf("            essid: \"%s\"\n", info.essid);
+		else
+			printf("            essid: off/any\n");
+	}
 
-	printf("             nick: %s\n",
-	       info.cap_nickname ? info.nickname : "n/a");
+	if (info.cap_nickname)
+		printf("             nick: \"%s\"\n", info.nickname);
 
-	if (info.cap_freq)
-		printf("        frequency: %.4f GHz\n", info.freq);
-	else
+	if (info.cap_nwid) {
+		if (info.nwid.disabled)
+			printf("             nwid: off/any\n");
+		else
+			printf("             nwid: %X\n", info.nwid.value);
+	}
+
+	if (info.cap_freq) {
+		i = freq_to_channel(info.freq, &iw.range);
+		if (i >= 0)
+			printf("          channel: %d\n", i);
+		printf("        frequency: %g GHz\n", info.freq / 1.0e9);
+	} else
 		printf("        frequency: n/a\n");
 
-	if (info.cap_sens)
-		printf("      sensitivity: %ld/%d\n", info.sens,
-		       iw.range.sensitivity);
-	else
-		printf("      sensitivity: n/a\n");
+	if (info.cap_sens) {
+		if (info.sens < 0)
+			printf("      sensitivity: %d dBm\n", info.sens);
+		else
+			printf("      sensitivity: %d/%d\n", info.sens,
+						   iw.range.sensitivity);
+	}
 
-	if (info.cap_txpower)
-		printf("         TX power: %d dBm (%.2f mW)\n",
-		       info.txpower_dbm, info.txpower_mw);
-	else
-		printf("         TX power: n/a\n");
+	if (info.cap_txpower && info.txpower.disabled)
+		printf("         tx-power: off\n");
+	else if (info.cap_txpower && info.txpower.fixed)
+		printf("         tx-power: %s\n", format_txpower(&info.txpower));
+	else if (info.cap_txpower)
+		printf("         TX-power: %s\n", format_txpower(&info.txpower));
 
 	printf("             mode: %s\n", iw_opmode(info.mode));
 
 	if (info.mode != 1 && info.cap_ap)
-		printf("     access point: %s\n", mac_addr(&info.ap_addr));
+		printf("     access point: %s\n", format_bssid(&info.ap_addr));
 
 	if (info.cap_bitrate)
 		printf("          bitrate: %g Mbit/s\n", info.bitrate / 1.0e6);
 	else
 		printf("          bitrate: n/a\n");
 
-	printf("          RTS thr: ");
-	if (info.cap_rts && (!info.rts_on || info.rts)) {
-		if (info.rts_on)
-			printf("%d bytes\n", info.rts);
-		else
+	printf("          rts thr: ");
+	if (info.cap_rts) {
+		if (info.rts.disabled)
 			printf("off\n");
+		else
+			printf("%d B %s\n", info.rts.value,
+			       info.rts.fixed ? "" : "(auto-select)");
 	} else
 		printf("n/a\n");
 
 	printf("         frag thr: ");
-	if (info.cap_frag && (!info.frag_on || info.frag)) {
-		if (info.frag_on)
-			printf("%d bytes\n", info.frag);
-		else
+	if (info.cap_frag) {
+		if (info.frag.disabled)
 			printf("off\n");
+		else
+			printf("%d B %s\n", info.frag.value,
+			       info.frag.fixed ? "" : "(auto-select)");
 	} else {
 		printf("n/a\n");
 	}
 
 	printf("       encryption: ");
-	if (info.cap_encode) {
-		if (info.eflags.disabled || info.keysize == 0) {
+	if (info.cap_key) {
+		if (info.key_flags & IW_ENCODE_DISABLED || info.key_size == 0) {
 			printf("off");
 		} else {
-			for (i = 0; i < info.keysize; i++)
+			for (i = 0; i < info.key_size; i++) {
+				if (i > 0 && !(i & 0x1))
+					printf("-");
 				printf("%2X", info.key[i]);
-			if (info.eflags.index)
-				printf(" [%d]", info.key_index);
-			if (info.eflags.restricted)
+			}
+			i = info.key_flags & IW_ENCODE_INDEX;
+			if (i > 1)
+				printf(" [%d]", i);
+			if (info.key_flags & IW_ENCODE_RESTRICTED)
 				printf(", restricted");
-			if (info.eflags.open)
+			if (info.key_flags & IW_ENCODE_OPEN)
 				printf(", open");
 		}
 	} else {
@@ -581,49 +563,13 @@ void dump_parameters(void)
 	}
 
 	printf("\n");
-	printf(" power management:");
-	if (info.cap_power) {
-		if (info.pflags.disabled) {
-			printf(" off");
-		} else {
-			if (info.pflags.min)
-				printf(" min");
-			else
-				printf(" max");
-			if (info.pflags.timeout)
-				printf(" timeout");
-			else
-				printf(" period");
-			if (info.pflags.rel) {
-				if (info.pmvalue > 0)
-					printf(" +%ld", info.pmvalue);
-				else
-					printf(" %ld", info.pmvalue);
-			} else {
-				if (info.pmvalue > 1000000)
-					printf(" %ld s",
-					       info.pmvalue / 1000000);
-				else if (info.pmvalue > 1000)
-					printf(" %ld ms", info.pmvalue / 1000);
-				else
-					printf(" %ld us", info.pmvalue);
-			}
-			if (info.pflags.unicast && info.pflags.multicast)
-				printf(", rcv all");
-			else if (info.pflags.multicast)
-				printf(", rcv multicast");
-			else
-				printf(", rcv unicast");
-			if (info.pflags.forceuc)
-				printf(", force unicast");
-			if (info.pflags.repbc)
-				printf(", repeat broadcast");
-		}
-	} else {
-		printf("n/a");
-	}
+	printf(" power management: ");
+	if (info.cap_power)
+		printf("%s\n", format_power(&info.power, &iw.range));
+	else
+		printf("n/a\n");
 
-	printf("\n\n");
+	printf("\n");
 	printf("     link quality: %d/%d\n", iw.stat.qual.qual,
 	       iw.range.max_qual.qual);
 	printf("     signal level: %.0f dBm (%s)\n", iw.dbm.signal,

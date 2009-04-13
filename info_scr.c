@@ -164,6 +164,7 @@ static void display_stats(void)
 	sprintf(tmp, "%u", cur.stat.discard.misc);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " misc");
+	wclrtoeol(w_stats);
 
 	/*
 	 * Interface TX stats
@@ -183,6 +184,7 @@ static void display_stats(void)
 		sprintf(tmp, "%u", cur.stat.miss.beacon);
 		waddstr_b(w_stats, tmp);
 	}
+	wclrtoeol(w_stats);
 }
 
 static void redraw_stats(void)
@@ -215,12 +217,17 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	sprintf(tmp, "%s (%s)", conf.ifname, info.name);
 	waddstr_b(w_if, tmp);
 
-	waddstr(w_if, ",  ESSID: ");
 	if (info.cap_essid) {
-		sprintf(tmp, "\"%s\"", info.essid);
+		waddstr(w_if, ",  ESSID: ");
+		if (info.essid_ct > 1)
+			sprintf(tmp, "\"%s\" [%d]", info.essid,
+						    info.essid_ct);
+		else if (info.essid_ct)
+			sprintf(tmp, "\"%s\"", info.essid);
+		else
+			sprintf(tmp, "off/any");
 		waddstr_b(w_if, tmp);
-	} else
-		waddstr(w_if, "n/a");
+	}
 
 	if (info.cap_nickname) {
 		waddstr(w_if, ",  nick: ");
@@ -228,29 +235,17 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		waddstr_b(w_if, tmp);
 	}
 
-	mvwaddstr(w_info, 1, 1, "frequency: ");
-	if (info.cap_freq) {
-		sprintf(tmp, "%.4f GHz", info.freq);
-		waddstr_b(w_info, tmp);
-	} else
-		waddstr(w_if, "n/a");
+	if (info.cap_nwid) {
+		waddstr(w_if, ",  nwid: ");
+		if (info.nwid.disabled)
+			sprintf(tmp, "off/any");
+		else
+			sprintf(tmp, "%X", info.nwid.value);
+		waddstr_b(w_if, tmp);
+	}
 
-	waddstr(w_info, ",  sensitivity: ");
-	if (info.cap_sens) {
-		sprintf(tmp, "%ld/%d", info.sens, cur.range.sensitivity);
-		waddstr_b(w_info, tmp);
-	} else
-		waddstr(w_info, "n/a");
-
-	waddstr(w_info, ",  TX power: ");
-	if (info.cap_txpower) {
-		sprintf(tmp, "%d dBm (%.2f mW)", info.txpower_dbm,
-						 info.txpower_mw);
-		waddstr_b(w_info, tmp);
-	} else
-		waddstr(w_info, "n/a");
-
-	mvwaddstr(w_info, 2, 1, "mode: ");
+	wmove(w_info, 1, 1);
+	waddstr(w_info, "mode: ");
 	if (info.cap_mode)
 		waddstr_b(w_info, iw_opmode(info.mode));
 	else
@@ -258,103 +253,115 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	if (info.mode != 1) {
 		waddstr(w_info, ",  access point: ");
+
 		if (info.cap_ap)
-			waddstr_b(w_info, mac_addr(&info.ap_addr));
+			waddstr_b(w_info, format_bssid(&info.ap_addr));
 		else
 			waddstr(w_info, "n/a");
 	}
 
-	mvwaddstr(w_info, 3, 1, "bitrate: ");
+	if (info.cap_sens) {
+		waddstr(w_info, ",  sensitivity: ");
+		if (info.sens < 0)
+			sprintf(tmp, "%d dBm", info.sens);
+		else
+			sprintf(tmp, "%d/%d", info.sens,
+				cur.range.sensitivity);
+		waddstr_b(w_info, tmp);
+	}
+
+
+	wmove(w_info, 2, 1);
+	if (info.cap_freq) {
+		waddstr(w_info, "freq: ");
+		sprintf(tmp, "%g GHz", info.freq / 1.0e9);
+		waddstr_b(w_info, tmp);
+		i = freq_to_channel(info.freq, &cur.range);
+		if (i >= 0) {
+			waddstr(w_info, ", channel: ");
+			sprintf(tmp, "%d", i);
+			waddstr_b(w_info, tmp);
+		}
+	} else {
+		waddstr(w_info, "frequency/channel: n/a");
+	}
+
+	waddstr(w_info, ",  bitrate: ");
 	if (info.cap_bitrate) {
-		sprintf(tmp, "%g Mbit/s", (double)info.bitrate / 1000000);
+		sprintf(tmp, "%g Mbit/s", info.bitrate / 1.0e6);
 		waddstr_b(w_info, tmp);
-	} else
+	} else {
+		waddstr(w_info, "n/a");
+	}
+
+	wmove(w_info, 3, 1);
+	waddstr(w_info, "power mgt: ");
+	if (info.cap_power)
+		waddstr_b(w_info, format_power(&info.power, &cur.range));
+	else
 		waddstr(w_info, "n/a");
 
-	waddstr(w_info, ",  RTS thr: ");
+	if (info.cap_txpower && info.txpower.disabled) {
+		waddstr(w_info, ",  tx-power: off");
+	} else if (info.cap_txpower) {
+		/*
+		 * Convention: auto-selected values start with a capital
+		 *             letter, otherwise with a small letter.
+		 */
+		if (info.txpower.fixed)
+			waddstr(w_info, ",  tx-power: ");
+		else
+			waddstr(w_info, ",  TX-power: ");
+		waddstr_b(w_info, format_txpower(&info.txpower));
+	}
+
+	wmove(w_info, 4, 1);
 	if (info.cap_rts) {
-		if (info.rts_on)
-			sprintf(tmp, "%d bytes", info.rts);
-		else
+		waddstr(w_info, info.rts.fixed ? "rts/cts: " : "RTS/cts: ");
+		if (info.rts.disabled)
 			sprintf(tmp, "off");
+		else
+			sprintf(tmp, "%d B", info.rts.value);
 		waddstr_b(w_info, tmp);
 	} else
-		waddstr(w_info, "n/a");
+		waddstr(w_info, "rts/cts: n/a");
 
-	waddstr(w_info, ",  frag thr: ");
+	waddstr(w_info, ",  ");
 	if (info.cap_frag) {
-		if (info.frag_on)
-			sprintf(tmp, "%d bytes", info.frag);
-		else
+		waddstr(w_info, info.frag.fixed ? "frag: " : "Frag: ");
+		if (info.frag.disabled)
 			sprintf(tmp, "off");
+		else
+			sprintf(tmp, "%d B", info.frag.value);
 		waddstr_b(w_info, tmp);
 	} else
-		waddstr(w_info, "n/a");
+		waddstr(w_info, "frag: n/a");
 
-	mvwaddstr(w_info, 4, 1, "encryption: ");
-	if (info.cap_encode) {
-		if (info.eflags.disabled || info.keysize == 0) {
+	wmove(w_info, 5, 1);
+	waddstr(w_info, "encryption: ");
+	if (info.cap_key) {
+		if (info.key_flags & IW_ENCODE_DISABLED || info.key_size == 0) {
 			waddstr_b(w_info, "off");
 		} else {
-			for (i = 0; i < info.keysize; i++) {
+			for (i = 0; i < info.key_size; i++) {
+				if (i > 0 && !(i & 0x1))
+					waddstr_b(w_info, "-");
 				sprintf(tmp, "%2X", info.key[i]);
 				waddstr_b(w_info, tmp);
 			}
-			if (info.eflags.index) {
-				sprintf(tmp, " [%d]", info.key_index);
+			i = info.key_flags & IW_ENCODE_INDEX;
+			if (i > 1) {
+				sprintf(tmp, " [%d]", i);
 				waddstr_b(w_info, tmp);
 			}
-			if (info.eflags.restricted)
+			if (info.key_flags & IW_ENCODE_RESTRICTED)
 				waddstr(w_info, ", restricted");
-			if (info.eflags.open)
+			if (info.key_flags & IW_ENCODE_OPEN)
 				waddstr(w_info, ", open");
 		}
 	} else
 		waddstr(w_info, "n/a");
 
-	mvwaddstr(w_info, 5, 1, "power management:");
-	if (info.cap_power) {
-		if (info.pflags.disabled) {
-			waddstr_b(w_info, " off");
-		} else {
-			if (info.pflags.min)
-				waddstr_b(w_info, " min");
-			else
-				waddstr_b(w_info, " max");
-			if (info.pflags.timeout)
-				waddstr_b(w_info, " timeout");
-			else
-				waddstr_b(w_info, " period");
-			if (info.pflags.rel) {
-				if (info.pmvalue > 0)
-					sprintf(tmp, " +%ld", info.pmvalue);
-				else
-					sprintf(tmp, " %ld", info.pmvalue);
-				waddstr_b(w_info, tmp);
-			} else {
-				if (info.pmvalue > 1000000)
-					sprintf(tmp, " %ld s",
-						info.pmvalue / 1000000);
-				else if (info.pmvalue > 1000)
-					sprintf(tmp, " %ld ms",
-						info.pmvalue / 1000);
-				else
-					sprintf(tmp, " %ld us", info.pmvalue);
-				waddstr_b(w_info, tmp);
-			}
-			if (info.pflags.unicast && info.pflags.multicast)
-				waddstr_b(w_info, ", rcv all");
-			else if (info.pflags.multicast)
-				waddstr_b(w_info, ", rcv multicast");
-			else
-				waddstr_b(w_info, ", rcv unicast");
-			if (info.pflags.forceuc)
-				waddstr_b(w_info, ", force unicast");
-			if (info.pflags.repbc)
-				waddstr_b(w_info, ", repeat broadcast");
-		}
-	} else
-		waddstr(w_info, "n/a");
 
 	mvwaddstr(w_info, 6, 1, "wireless extensions: ");
 	sprintf(tmp, "%d", cur.range.we_version_compiled);
