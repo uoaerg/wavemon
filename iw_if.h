@@ -68,6 +68,7 @@ extern void if_getinf(char *ifname, struct if_info *info);
  * @nwid:	Network ID (pre-802.11 hardware only)
  * @ap_addr:	BSSID or IBSSID
  *
+ * @retry:	MAC-retransmission retry behaviour
  * @rts:	minimum packet size for which to perform RTS/CTS handshake
  * @frag:	802.11 frame fragmentation threshold size
  * @txpower:	TX power information
@@ -93,6 +94,7 @@ struct iw_dyn_info {
 			cap_sens:1,
 			cap_bitrate:1,
 			cap_txpower:1,
+			cap_retry:1,
 			cap_rts:1,
 			cap_frag:1,
 			cap_mode:1,
@@ -107,6 +109,7 @@ struct iw_dyn_info {
 	struct iw_param nwid;
 	struct sockaddr ap_addr;
 
+	struct iw_param retry;
 	struct iw_param rts;
 	struct iw_param frag;
 	struct iw_param txpower;
@@ -352,3 +355,46 @@ static inline int freq_to_channel(double freq, const struct iw_range *range)
 			return range->freq[i].i;
 	return -1;
 }
+
+static inline char *format_retry(const struct iw_param *retry,
+				 const struct iw_range *range)
+{
+	static char buf[0x80];
+	double val = retry->value;
+	int len = 0;
+
+	if (retry->disabled)
+		return "off";
+	else if (retry->flags == IW_RETRY_ON)
+		return "on";
+
+	if (retry->flags & IW_RETRY_MIN)
+		len += snprintf(buf + len, sizeof(buf) - len, "min ");
+	if (retry->flags & IW_RETRY_MAX)
+		len += snprintf(buf + len, sizeof(buf) - len, "max ");
+	if (retry->flags & IW_RETRY_SHORT)
+		len += snprintf(buf + len, sizeof(buf) - len, "short ");
+	if (retry->flags & IW_RETRY_LONG)
+		len += snprintf(buf + len, sizeof(buf) - len, "long ");
+
+	if (retry->flags & IW_RETRY_LIFETIME)
+		len += snprintf(buf + len, sizeof(buf) - len, "lifetime ");
+	else {
+		snprintf(buf + len, sizeof(buf) - len, "limit %d", retry->value);
+		return buf;
+	}
+
+	if (retry->flags & IW_RETRY_RELATIVE && range->we_version_compiled < 21)
+		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val/1e6);
+	else if (retry->flags & IW_RETRY_RELATIVE)
+		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val);
+	else if (val > 1e6)
+		len += snprintf(buf + len, sizeof(buf) - len, "%g s", val/1e6);
+	else if (val > 1e3)
+		len += snprintf(buf + len, sizeof(buf) - len, "%g ms", val/1e3);
+	else
+		len += snprintf(buf + len, sizeof(buf) - len, "%g us", val);
+
+	return buf;
+}
+

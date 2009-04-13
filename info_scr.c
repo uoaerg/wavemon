@@ -320,6 +320,13 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 
 	wmove(w_info, 4, 1);
+	waddstr(w_info, "retry: ");
+	if (info.cap_retry)
+		waddstr_b(w_info, format_retry(&info.retry, &cur.range));
+	else
+		waddstr(w_info, "n/a");
+
+	waddstr(w_info, ",  ");
 	if (info.cap_rts) {
 		waddstr(w_info, info.rts.fixed ? "rts/cts: " : "RTS/cts: ");
 		if (info.rts.disabled)

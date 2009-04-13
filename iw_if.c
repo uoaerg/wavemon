@@ -167,6 +167,11 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		memcpy(&info->power, &iwr.u.power, sizeof(info->power));
 	}
 
+	if (ioctl(skfd, SIOCGIWRETRY, &iwr) >= 0) {
+		info->cap_retry = 1;
+		memcpy(&info->retry, &iwr.u.retry, sizeof(info->retry));
+	}
+
 	if (ioctl(skfd, SIOCGIWRTS, &iwr) >= 0) {
 		info->cap_rts = 1;
 		memcpy(&info->rts, &iwr.u.rts, sizeof(info->rts));
@@ -518,6 +523,12 @@ void dump_parameters(void)
 		printf("          bitrate: %g Mbit/s\n", info.bitrate / 1.0e6);
 	else
 		printf("          bitrate: n/a\n");
+
+	printf("            retry: ");
+	if (info.cap_retry)
+		printf("%s\n", format_retry(&info.retry, &iw.range));
+	else
+		printf("n/a\n");
 
 	printf("          rts thr: ");
 	if (info.cap_rts) {
