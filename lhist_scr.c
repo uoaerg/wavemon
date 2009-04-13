@@ -54,7 +54,7 @@ static void iw_cache_insert(const struct iw_levelstat new)
 
 static struct iw_levelstat iw_cache_get(const uint32_t index)
 {
-	struct iw_levelstat zero = {0, 0};
+	struct iw_levelstat zero = { 0, 0 };
 
 	if (index > IW_STACKSIZE || index > count)
 		return zero;
@@ -86,14 +86,12 @@ void iw_cache_update(struct iw_stat *iw)
 	}
 }
 
-
 static void display_lhist(void)
 {
 	struct iw_levelstat iwl;
-	chtype	ch;
-	double	ratio, p, p_fract, snr;
-	int	y, ysize,
-		x, xsize;
+	chtype ch;
+	double ratio, p, p_fract, snr;
+	int y, ysize, x, xsize;
 
 	getmaxyx(w_lhist, ysize, xsize);
 	--xsize;
@@ -119,7 +117,8 @@ static void display_lhist(void)
 
 				wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
 				for (; y < ysize; y++)
-					mvwaddch(w_lhist, ysize - y, xsize - x, y % 5 ? ' ' : '-');
+					mvwaddch(w_lhist, ysize - y, xsize - x,
+						 y % 5 ? ' ' : '-');
 				wattroff(w_lhist, COLOR_PAIR(CP_STATBKG));
 
 			} else {
@@ -131,7 +130,8 @@ static void display_lhist(void)
 		} else {
 			wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
 			for (y = 1; y < ysize; y++)
-				mvwaddch(w_lhist, ysize - y, xsize - x, y % 5 ? ' ' : '-');
+				mvwaddch(w_lhist, ysize - y, xsize - x,
+					 y % 5 ? ' ' : '-');
 			wattroff(w_lhist, COLOR_PAIR(CP_STATBKG));
 		}
 
@@ -222,8 +222,8 @@ int scr_lhist(void)
 	int key = 0;
 
 	w_lhist = newwin_title(LINES - 4, COLS, 0, 0, "Level histogram", 0, 1);
-	w_key = newwin_title(3, COLS, LINES - 4, 0, "Key", 1, 0);
-	w_menu = newwin(1, COLS, LINES - 1, 0);
+	w_key   = newwin_title(3, COLS, LINES - 4, 0, "Key", 1, 0);
+	w_menu  = newwin(1, COLS, LINES - 1, 0);
 
 	display_key(w_key);
 	wrefresh(w_key);
@@ -249,9 +249,11 @@ int scr_lhist(void)
 	werase(w_lhist);
 	wrefresh(w_lhist);
 	delwin(w_lhist);
+
 	werase(w_key);
 	wrefresh(w_key);
 	delwin(w_key);
+
 	werase(w_menu);
 	wrefresh(w_menu);
 	delwin(w_menu);

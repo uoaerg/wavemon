@@ -38,7 +38,6 @@
 
 #define CFNAME	".wavemonrc"
 
-
 /*
  * Symbolic names of actions to take when crossing thresholds.
  * These actions invoke the corresponding ncurses functions.
@@ -63,9 +62,11 @@ static inline void threshold_action(enum threshold_action action)
  */
 extern struct wavemon_conf {
 	char	ifname[LISTVAL_MAX];
+
 	int	stat_iv,
-		info_iv,
-		sig_min, sig_max,
+		info_iv;
+
+	int	sig_min, sig_max,
 		noise_min, noise_max;
 
 	int	lthreshold,
@@ -85,14 +86,13 @@ extern struct wavemon_conf {
 } conf;
 
 /*
- *	Initialisation & Configuration functions
+ * Initialisation & Configuration functions
  */
 extern void getconf(int argc, char *argv[]);
 extern void reinit_on_changes(void);
 
-
 /*
- * Configuration Items to manipulate the current configuration
+ * Configuration items to manipulate the current configuration
  */
 struct conf_item {
 	char	*name,		/* name for preferences screen */
@@ -151,14 +151,15 @@ extern int scr_lhist(void);
  */
 extern WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b);
 
-extern void waddstr_b(WINDOW *win, const char *s);
-extern void waddstr_center(WINDOW *win, int y, const char *s);
+extern void waddstr_b(WINDOW * win, const char *s);
+extern void waddstr_center(WINDOW * win, int y, const char *s);
 
-extern void wmenubar(WINDOW *win, int active);
-extern void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x,
+extern void wmenubar(WINDOW * win, int active);
+extern void waddbar(WINDOW * win, float v, float minv, float maxv, int y, int x,
 		    int maxx, char *cscale, bool rev);
-extern void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv,
-			  int y, int x, int maxx, char *cscale, chtype tch);
+extern void waddthreshold(WINDOW * win, float v, float tv, float minv,
+			  float maxv, int y, int x, int maxx, char *cscale,
+			  chtype tch);
 enum colour_pair {
 	CP_STANDARD = 1,
 	CP_SCALEHI,
@@ -195,7 +196,7 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
 /*
  *	Wireless interfaces
  */
-extern int  iw_get_interface_list(void);
+extern int iw_get_interface_list(void);
 extern void dump_parameters(void);
 
 /*
@@ -207,7 +208,7 @@ struct timer {
 };
 
 extern void start_timer(struct timer *t, unsigned long d);
-extern int  end_timer(struct timer *t);
+extern int end_timer(struct timer *t);
 
 /*
  *	Error handling
@@ -237,18 +238,18 @@ static inline int max(const int a, const int b)
 }
 
 /* SI units -- see units(7) */
-static inline char *byte_units(const unsigned long long bytes)
+static inline char *byte_units(const double bytes)
 {
 	static char result[0x100];
 
 	if (bytes >= 1 << 30)
-		sprintf(result, "%0.2lf GiB", (double)bytes / (double)(1 << 30));
+		sprintf(result, "%0.2lf GiB", bytes / (1 << 30));
 	else if (bytes >= 1 << 20)
-		sprintf(result, "%0.2lf MiB", (double)bytes / (double)(1 << 20));
+		sprintf(result, "%0.2lf MiB", bytes / (1 << 20));
 	else if (bytes >= 1 << 10)
-		sprintf(result, "%0.2lf KiB", (double)bytes / (double)(1 << 10));
+		sprintf(result, "%0.2lf KiB", bytes / (1 << 10));
 	else
-		sprintf(result, "%llu B", bytes);
+		sprintf(result, "%.0lf B", bytes);
 
 	return result;
 }

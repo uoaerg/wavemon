@@ -3,18 +3,18 @@
  *
  * Copyright (c) 2001-2002 Jan Morgenstern <jan@jm-music.de>
  *
- * wavemon is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation; either version 2, or (at your option) any later 
+ * wavemon is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2, or (at your option) any later
  * version.
- * 
- * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+ *
+ * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
- * 
- * You should have received a copy of the GNU General Public License along 
- * with wavemon; see the file COPYING.  If not, write to the Free Software 
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "wavemon.h"
@@ -26,9 +26,10 @@ static void sig_winch(int signo)
 	errx(1, "under the pain of death, thou shaltst not resize thyne window");
 }
 
-int main(int argc, char *argv[]) {
-	int	(*current_scr)(void) = NULL;
-	int 	nextscr;
+int main(int argc, char *argv[])
+{
+	int (*current_scr) (void) = NULL;
+	int nextscr;
 
 	getconf(argc, argv);
 
@@ -36,8 +37,11 @@ int main(int argc, char *argv[]) {
 		err(1, "cannot install handler for window changes");
 
 	/* initialize the ncurses interface */
-	initscr(); cbreak(); noecho();
-	nonl(); clear();
+	initscr();
+	cbreak();
+	noecho();
+	nonl();
+	clear();
 	curs_set(0);
 
 	start_color();
@@ -59,34 +63,43 @@ int main(int argc, char *argv[]) {
 	init_pair(CP_PREF_ARROW, COLOR_RED, COLOR_BLACK);
 
 	switch (conf.startup_scr) {
-		case 0:	current_scr = scr_info;
-			break;
-		case 1:	current_scr = scr_lhist;
-			break;
-		case 2:	current_scr = scr_aplst;
-			break;
+	case 0:
+		current_scr = scr_info;
+		break;
+	case 1:
+		current_scr = scr_lhist;
+		break;
+	case 2:
+		current_scr = scr_aplst;
+		break;
 	}
 
 	do {
 		reinit_on_changes();
 		switch (nextscr = current_scr()) {
-			case 0:	current_scr = scr_info;
-					break;
-			case 1: current_scr = scr_lhist;
-					break;
-			case 2: current_scr = scr_aplst;
-					break;
-			case 6: current_scr = scr_conf;
-					break;
-			case 7: current_scr = scr_help;
-					break;
-			case 8: current_scr = scr_about;
-					break;
+		case 0:
+			current_scr = scr_info;
+			break;
+		case 1:
+			current_scr = scr_lhist;
+			break;
+		case 2:
+			current_scr = scr_aplst;
+			break;
+		case 6:
+			current_scr = scr_conf;
+			break;
+		case 7:
+			current_scr = scr_help;
+			break;
+		case 8:
+			current_scr = scr_about;
+			break;
 		}
 	} while (nextscr != 9);
 
 	endwin();
 	dealloc_on_exit();
-	
+
 	return 0;
 }

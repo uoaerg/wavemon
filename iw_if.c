@@ -3,18 +3,18 @@
  *
  * Copyright (c) 2001-2002 Jan Morgenstern <jan@jm-music.de>
  *
- * wavemon is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation; either version 2, or (at your option) any later 
+ * wavemon is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2, or (at your option) any later
  * version.
- * 
- * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+ *
+ * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
- * 
- * You should have received a copy of the GNU General Public License along 
- * with wavemon; see the file COPYING.  If not, write to the Free Software 
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "iw_if.h"
@@ -56,7 +56,7 @@ void if_getinf(char *ifname, struct if_info *info)
 int iw_get_interface_list(void)
 {
 	char *lp, tmp[LISTVAL_MAX];
-	int   ld = ll_create();
+	int ld = ll_create();
 	FILE *fd = fopen("/proc/net/wireless", "r");
 
 	if (fd == NULL)
@@ -76,10 +76,10 @@ int iw_get_interface_list(void)
 
 void if_getstat(char *ifname, struct if_stat *stat)
 {
-	char	line[0x100];
+	char line[0x100];
 	unsigned long d;
-	char	*lp;
-	FILE	*fd = fopen("/proc/net/dev", "r");
+	char *lp;
+	FILE *fd = fopen("/proc/net/dev", "r");
 
 	if (fd == NULL)
 		fatal_error("can not open /proc/net/");
@@ -121,53 +121,52 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 	strncpy(info->name, iwr.u.name, IFNAMSIZ);
 
 	iwr.u.essid.pointer = (caddr_t) & (info->essid);
-	iwr.u.essid.length = IW_ESSID_MAX_SIZE + 1;
-	iwr.u.essid.flags = 0;
+	iwr.u.essid.length  = IW_ESSID_MAX_SIZE + 1;
+	iwr.u.essid.flags   = 0;
 	if (ioctl(skfd, SIOCGIWESSID, &iwr) >= 0) {
 		info->cap_essid = 1;
-		info->essid_on = iwr.u.essid.flags;
+		info->essid_on  = iwr.u.essid.flags;
 		strncpy(info->essid, iwr.u.essid.pointer, IW_ESSID_MAX_SIZE);
 	}
 
 	if (ioctl(skfd, SIOCGIWNWID, &iwr) >= 0) {
 		info->cap_nwid = 1;
-		info->nwid = iwr.u.nwid.value;
-		info->nwid_on = iwr.u.nwid.flags;
+		info->nwid     = iwr.u.nwid.value;
+		info->nwid_on  = iwr.u.nwid.flags;
 	}
 
 	iwr.u.essid.pointer = (caddr_t) & (info->nickname);
-	iwr.u.essid.length = IW_ESSID_MAX_SIZE + 1;
-	iwr.u.essid.flags = 0;
-	if (ioctl(skfd, SIOCGIWNICKN, &iwr) >= 0)
-		if (iwr.u.data.length > 1)
-			info->cap_nickname = 1;
+	iwr.u.essid.length  = IW_ESSID_MAX_SIZE + 1;
+	iwr.u.essid.flags   = 0;
+	if (ioctl(skfd, SIOCGIWNICKN, &iwr) >= 0 &&
+	    iwr.u.data.length > 1)
+		info->cap_nickname = 1;
 
 	if (ioctl(skfd, SIOCGIWFREQ, &iwr) >= 0) {
 		info->cap_freq = 1;
 		if (iwr.u.freq.e)
-			info->freq =
-			    (iwr.u.freq.m * pow(10, iwr.u.freq.e)) / 1000000000;
+			info->freq = (iwr.u.freq.m * pow(10, iwr.u.freq.e)) / 1.0e9;
 		else
 			info->freq = iwr.u.freq.m;
 	}
 
 	if (ioctl(skfd, SIOCGIWSENS, &iwr) >= 0) {
 		info->cap_sens = 1;
-		info->sens = iwr.u.sens.value;
+		info->sens     = iwr.u.sens.value;
 	}
 
 	if (ioctl(skfd, SIOCGIWRATE, &iwr) >= 0) {
 		info->cap_bitrate = 1;
-		info->bitrate = iwr.u.bitrate.value;
+		info->bitrate     = iwr.u.bitrate.value;
 	}
 #ifdef SIOCGIWTXPOW
 	if (ioctl(skfd, SIOCGIWTXPOW, &iwr) >= 0) {
 		info->cap_txpower = 1;
 		if (iwr.u.txpower.flags == IW_TXPOW_DBM) {
 			info->txpower_dbm = iwr.u.txpower.value;
-			info->txpower_mw = dbm2mw(iwr.u.txpower.value);
+			info->txpower_mw  = dbm2mw(iwr.u.txpower.value);
 		} else {
-			info->txpower_mw = iwr.u.txpower.value;
+			info->txpower_mw  = iwr.u.txpower.value;
 			info->txpower_dbm = mw2dbm(iwr.u.txpower.value);
 		}
 	}
@@ -175,25 +174,25 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 
 	if (ioctl(skfd, SIOCGIWRTS, &iwr) >= 0) {
 		info->cap_rts = 1;
-		info->rts = iwr.u.rts.value;
+		info->rts     = iwr.u.rts.value;
 	}
 
 	if (ioctl(skfd, SIOCGIWFRAG, &iwr) >= 0) {
 		info->cap_frag = 1;
-		info->frag = iwr.u.frag.value;
+		info->frag     = iwr.u.frag.value;
 	}
 
 	if (ioctl(skfd, SIOCGIWMODE, &iwr) >= 0) {
 		info->cap_mode = 1;
-		info->mode = iwr.u.mode;
+		info->mode     = iwr.u.mode;
 	}
 
 	iwr.u.data.pointer = (caddr_t) & info->key;
-	iwr.u.data.length = IW_ENCODING_TOKEN_MAX;
-	iwr.u.data.flags = 0;
+	iwr.u.data.length  = IW_ENCODING_TOKEN_MAX;
+	iwr.u.data.flags   = 0;
 	if (ioctl(skfd, SIOCGIWENCODE, &iwr) >= 0) {
 		info->cap_encode = 1;
-		info->keysize = iwr.u.data.length;
+		info->keysize    = iwr.u.data.length;
 		if (iwr.u.data.flags & IW_ENCODE_DISABLED)
 			info->eflags.disabled = 1;
 		if (iwr.u.data.flags & IW_ENCODE_INDEX)
@@ -233,7 +232,6 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		if (iwr.u.power.flags & IW_POWER_RELATIVE)
 			info->pflags.rel = 1;
 #endif
-
 	}
 
 	if (ioctl(skfd, SIOCGIWAP, &iwr) >= 0) {
@@ -262,8 +260,8 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
 		fatal_error("cannot open device '%s'", iwr.u.name);
 
 	iwr.u.data.pointer = (caddr_t) range;
-	iwr.u.data.length = sizeof(struct iw_range);
-	iwr.u.data.flags = 0;
+	iwr.u.data.length  = sizeof(struct iw_range);
+	iwr.u.data.flags   = 0;
 	if (ioctl(skfd, SIOCGIWRANGE, &iwr) < 0)
 		fatal_error("could not get range information");
 
@@ -321,7 +319,6 @@ static int rnd_noise(int min, int max)
 	return rlvl;
 }
 
-
 /* Random signal/noise */
 static void iw_getstat_random(struct iw_statistics *stat)
 {
@@ -329,13 +326,12 @@ static void iw_getstat_random(struct iw_statistics *stat)
 	stat->qual.noise = rnd_noise(-102, -30);
 }
 
-
 /* Code in part taken from wireless extensions #30 */
 static void iw_getstat_old_style(struct iw_statistics *stat)
 {
 	char line[0x100], *lp;
-	int  tmp;
-	FILE *fd =fopen("/proc/net/wireless", "r");
+	int tmp;
+	FILE *fd = fopen("/proc/net/wireless", "r");
 
 	if (fd < 0)
 		fatal_error("cannot open /proc/net/wireless");
@@ -354,21 +350,21 @@ static void iw_getstat_old_style(struct iw_statistics *stat)
 
 			/* link quality */
 			lp = strtok(NULL, " ");
-			if (strchr(lp,'.') != NULL)
+			if (strchr(lp, '.') != NULL)
 				stat->qual.updated |= IW_QUAL_QUAL_UPDATED;
 			sscanf(lp, "%d", &tmp);
 			stat->qual.qual = (unsigned char)tmp;
 
 			/* signal level */
 			lp = strtok(NULL, " ");
-			if (strchr(lp,'.') != NULL)
+			if (strchr(lp, '.') != NULL)
 				stat->qual.updated |= IW_QUAL_LEVEL_UPDATED;
 			sscanf(lp, "%d", &tmp);
 			stat->qual.level = (unsigned char)tmp;
 
 			/* noise level */
 			lp = strtok(NULL, " ");
-			if (strchr(lp,'.') != NULL)
+			if (strchr(lp, '.') != NULL)
 				stat->qual.updated |= IW_QUAL_NOISE_UPDATED;
 			sscanf(lp, "%d", &tmp);
 			stat->qual.noise = (unsigned char)tmp;
@@ -394,7 +390,7 @@ static void iw_getstat_old_style(struct iw_statistics *stat)
 
 static void iw_getstat_new_style(struct iw_statistics *stat)
 {
-	struct iwreq		wrq;
+	struct iwreq wrq;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
@@ -417,7 +413,8 @@ static void iw_getstat_new_style(struct iw_statistics *stat)
  * @qual:  wireless statistics, read-write
  * @dbm:   dBm level information, write-only
  */
-void iw_sanitize(struct iw_range *range, struct iw_quality *qual, struct iw_levelstat *dbm)
+void iw_sanitize(struct iw_range *range, struct iw_quality *qual,
+		 struct iw_levelstat *dbm)
 {
 	memset(dbm, 0, sizeof(*dbm));
 
@@ -432,12 +429,13 @@ void iw_sanitize(struct iw_range *range, struct iw_quality *qual, struct iw_leve
 				dbm->signal = (double)(qual->level / 2.0) - 110.0;
 			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
 				dbm->noise  = (double)(qual->noise / 2.0) - 110.0;
-		/*
-		 * Statistics in dBm (absolute power measurement)
-		 * These are encoded in the range -192 .. 63
-		 */
-		} else	if ((qual->updated & IW_QUAL_DBM) ||
-			     qual->level > range->max_qual.level) {
+
+		} else if ((qual->updated & IW_QUAL_DBM) ||
+			/*
+			 * Statistics in dBm (absolute power measurement)
+			 * These are encoded in the range -192 .. 63
+			 */
+			   qual->level > range->max_qual.level) {
 
 			if (!(qual->updated & IW_QUAL_LEVEL_INVALID)) {
 				dbm->signal = qual->level;
@@ -449,14 +447,14 @@ void iw_sanitize(struct iw_range *range, struct iw_quality *qual, struct iw_leve
 				if (qual->noise >= 64)
 					dbm->noise -= 0x100;
 			}
-		/*
-		 * Relative values (0 -> max)
-		 */
 		} else {
+			/*
+			 * Relative values (0 -> max)
+			 */
 			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
 				dbm->signal = mw2dbm(qual->level);
 			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
-				dbm->noise = mw2dbm(qual->noise);
+				dbm->noise  = mw2dbm(qual->noise);
 		}
 	} else {
 		qual->updated |= IW_QUAL_ALL_INVALID;
@@ -509,26 +507,29 @@ void dump_parameters(void)
 	printf("\n");
 	printf("Configured device: %s\n", conf.ifname);
 	printf("       WE version: %d (source version %d)\n\n",
-				iw.range.we_version_compiled, iw.range.we_version_source);
+	       iw.range.we_version_compiled, iw.range.we_version_source);
 
-	printf("            essid: %s %s\n", info.cap_essid ? info.essid : "n/a",
-					     info.essid_on  ? "" : "(off)");
-	printf("             nick: %s\n", info.cap_nickname ? info.nickname : "n/a");
+	printf("            essid: %s %s\n",
+	       info.cap_essid ? info.essid : "n/a",
+	       info.essid_on ? "" : "(off)");
+
+	printf("             nick: %s\n",
+	       info.cap_nickname ? info.nickname : "n/a");
 
 	if (info.cap_freq)
-		printf("        frequency: %.4f GHz\n",	info.freq);
+		printf("        frequency: %.4f GHz\n", info.freq);
 	else
 		printf("        frequency: n/a\n");
 
 	if (info.cap_sens)
-		printf("      sensitivity: %ld/%d\n",	info.sens,
-							iw.range.sensitivity);
+		printf("      sensitivity: %ld/%d\n", info.sens,
+		       iw.range.sensitivity);
 	else
 		printf("      sensitivity: n/a\n");
 
 	if (info.cap_txpower)
 		printf("         TX power: %d dBm (%.2f mW)\n",
-					info.txpower_dbm, info.txpower_mw);
+		       info.txpower_dbm, info.txpower_mw);
 	else
 		printf("         TX power: n/a\n");
 
@@ -538,8 +539,7 @@ void dump_parameters(void)
 		printf("     access point: %s\n", mac_addr(&info.ap_addr));
 
 	if (info.cap_bitrate)
-		printf("          bitrate: %g Mbit/s\n",
-					(double)info.bitrate / 1.0e6);
+		printf("          bitrate: %g Mbit/s\n", info.bitrate / 1.0e6);
 	else
 		printf("          bitrate: n/a\n");
 
@@ -624,20 +624,20 @@ void dump_parameters(void)
 	}
 
 	printf("\n\n");
-	printf("     link quality: %d/%d\n",		 iw.stat.qual.qual,
-							 iw.range.max_qual.qual);
-	printf("     signal level: %.0f dBm (%s)\n",	 iw.dbm.signal,
+	printf("     link quality: %d/%d\n", iw.stat.qual.qual,
+	       iw.range.max_qual.qual);
+	printf("     signal level: %.0f dBm (%s)\n", iw.dbm.signal,
 	       dbm2units(iw.dbm.signal));
-	printf("      noise level: %.0f dBm (%s)\n",	 iw.dbm.noise,
+	printf("      noise level: %.0f dBm (%s)\n", iw.dbm.noise,
 	       dbm2units(iw.dbm.noise));
-	printf("              SNR: %.0f dB\n",		 iw.dbm.signal - iw.dbm.noise);
+	printf("              SNR: %.0f dB\n", iw.dbm.signal - iw.dbm.noise);
 
 	/* RX stats */
 	printf("         RX total: %llu packets (%s)\n", nstat.rx_packets,
-							 byte_units(nstat.rx_bytes));
+	       byte_units(nstat.rx_bytes));
 	printf("     invalid nwid: %u\n", iw.stat.discard.nwid);
 	printf("      invalid key: %u\n", iw.stat.discard.code);
-	if (iw.range.we_version_compiled > 11)	{
+	if (iw.range.we_version_compiled > 11) {
 		printf("   invalid fragm.: %u\n", iw.stat.discard.fragment);
 		printf("   missed beacons: %u\n", iw.stat.miss.beacon);
 	}
@@ -645,7 +645,7 @@ void dump_parameters(void)
 
 	/* TX stats */
 	printf("         TX total: %llu packets (%s)\n", nstat.tx_packets,
-							 byte_units(nstat.tx_bytes));
+	       byte_units(nstat.tx_bytes));
 	if (iw.range.we_version_compiled > 11)
 		printf(" exc. MAC retries: %u\n", iw.stat.discard.retries);
 

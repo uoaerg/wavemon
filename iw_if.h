@@ -3,18 +3,18 @@
  *
  * Copyright (c) 2001-2002 Jan Morgenstern <jan@jm-music.de>
  *
- * wavemon is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation; either version 2, or (at your option) any later 
+ * wavemon is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2, or (at your option) any later
  * version.
- * 
- * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+ *
+ * wavemon is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
- * 
- * You should have received a copy of the GNU General Public License along 
- * with wavemon; see the file COPYING.  If not, write to the Free Software 
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "wavemon.h"
@@ -42,7 +42,7 @@
 #define NOISE_DBM_SANE_MIN	-127
 
 /* Static network interface information - see netdevice(7) */
-struct if_info {			/* modified ifreq */
+struct if_info {		/* modified ifreq */
 	struct ether_addr	hwaddr;
 	struct in_addr		addr,
 				netmask,
@@ -50,68 +50,76 @@ struct if_info {			/* modified ifreq */
 };
 extern void if_getinf(char *ifname, struct if_info *info);
 
-struct iw_dyn_info {			/* modified iwreq */
-	char	cap_essid	: 1,
-			cap_nwid	: 1,
-			cap_nickname : 1,
-			cap_freq	: 1,
-			cap_sens	: 1,
-			cap_bitrate	: 1,
-			cap_txpower	: 1,
-			cap_rts		: 1,
-			cap_frag	: 1,
-			cap_mode	: 1,
-			cap_ap		: 1,
-			cap_encode	: 1,
-			cap_power	: 1,
-			cap_aplist	: 1;
-	char	name[IFNAMSIZ];
-	char	essid[IW_ESSID_MAX_SIZE];
-	char	essid_on : 1;
-	char	nickname[IW_ESSID_MAX_SIZE];
-	unsigned long nwid;
-	char	nwid_on : 1;
-	unsigned short rts;
-	char	rts_on	: 1;
-	unsigned short frag;
-	char	frag_on	: 1;
-	float 	freq;
-	signed long sens;
-	unsigned long bitrate;
-	signed short txpower_dbm;
-	float	txpower_mw;
-	int		mode;
-	char 	keysize;
-	int		key_index;
-	char	key[IW_ENCODING_TOKEN_MAX];
+struct iw_dyn_info {		/* modified iwreq */
+	bool		cap_essid:1,
+			cap_nwid:1,
+			cap_nickname:1,
+			cap_freq:1,
+			cap_sens:1,
+			cap_bitrate:1,
+			cap_txpower:1,
+			cap_rts:1,
+			cap_frag:1,
+			cap_mode:1,
+			cap_ap:1,
+			cap_encode:1,
+			cap_power:1,
+			cap_aplist:1;
 
+	char		name[IFNAMSIZ];
+	char		essid[IW_ESSID_MAX_SIZE];
+	char		essid_on:1;
+	char		nickname[IW_ESSID_MAX_SIZE];
+
+	int		mode;
+
+	unsigned long	nwid;
+	char		nwid_on:1;
+
+	unsigned short	rts;
+	char		rts_on:1;
+
+	unsigned short	frag;
+	char		frag_on:1;
+
+	float		freq;
+	signed long	sens;
+	unsigned long	bitrate;
+
+	signed short	txpower_dbm;
+	float		txpower_mw;
+
+	char		keysize;
+	int		key_index;
+	char		key[IW_ENCODING_TOKEN_MAX];
 	struct crypt_flags {
-		char	disabled 	: 1,
-				index		: 1,
-				restricted 	: 1,
-				open		: 1,
-				nokey		: 1;
+		char	disabled:1,
+			index:1,
+			restricted:1,
+			open:1,
+			nokey:1;
 	} eflags;
 
-	unsigned long pmvalue;
-
+	unsigned long	pmvalue;
 	struct pm_flags {
-		char	disabled	: 1,
-				timeout		: 1,
-				unicast		: 1,
-				multicast	: 1,
-				forceuc		: 1,
-				repbc		: 1,
-				min			: 1,
-				rel			: 1;
+		char	disabled:1,
+			timeout:1,
+			unicast:1,
+			multicast:1,
+			forceuc:1,
+			repbc:1,
+			min:1,
+			rel:1;
 	} pflags;
 
 	struct sockaddr ap_addr;
 };
 
 struct if_stat {
-	unsigned long long rx_packets, tx_packets;
-	unsigned long long rx_bytes, tx_bytes;
+	unsigned long long	rx_packets,
+				tx_packets;
+	unsigned long long	rx_bytes,
+				tx_bytes;
 };
 
 extern void if_getstat(char *ifname, struct if_stat *stat);
@@ -120,9 +128,12 @@ extern void if_getstat(char *ifname, struct if_stat *stat);
  *	 Structs to communicate WiFi statistics
  */
 struct iw_levelstat {
-	float	signal;		/* signal level in dBm */
-	float	noise;		/* noise  level in dBm */
+	float signal;		/* signal level in dBm */
+	float noise;		/* noise  level in dBm */
 };
+extern void iw_sanitize(struct iw_range *range,
+			struct iw_quality *qual,
+			struct iw_levelstat *dbm);
 
 /**
  * struct iw_stat - record current WiFi state
@@ -136,30 +147,28 @@ struct iw_stat {
 	struct iw_levelstat	dbm;
 };
 
-extern void iw_sanitize(struct iw_range *range,
-			struct iw_quality *qual,
-			struct iw_levelstat *dbm);
 extern void iw_getstat(struct iw_stat *stat);
 extern void iw_cache_update(struct iw_stat *stat);
 
 extern void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 extern void iw_getinf_range(char *ifname, struct iw_range *range);
 
-extern void (*iw_stat_redraw)(void);
+extern void (*iw_stat_redraw) (void);
 
 /*
  *	Helper routines
  */
 static inline const char *iw_opmode(const uint8_t mode)
 {
-	static char *modes[] = {"Auto",
-				"Ad-Hoc",
-				"Managed",
-				"Master",
-				"Repeater",
-				"Secondary",
-				"Monitor"
+	static char *modes[] = { "Auto",
+				 "Ad-Hoc",
+				 "Managed",
+				 "Master",
+				 "Repeater",
+				 "Secondary",
+				 "Monitor"
 	};
+
 	return mode > 6 ? "Unknown/bug" : modes[mode];
 }
 

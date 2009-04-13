@@ -46,13 +46,11 @@ typedef struct chain {
 } llist;
 static llist *lists[NUM_LISTS];
 
-
 /* position pointer for ll_getall() */
 static struct {
 	unsigned long n;
 	char eol;
 } lp[NUM_LISTS];
-
 
 /*
  * helper function for generating an element from an argument
@@ -205,12 +203,11 @@ void ll_replace(int ld, unsigned long n, const char *format, ...)
  */
 signed long ll_scan(int ld, const char *format, ...)
 {
-	llist	*l = lists[ld];
+	llist *l = lists[ld];
 	va_list ap;
-	int	len, i, rv = -1,
-		int_v;
-	double	double_v;
-	char	*string_v;
+	int len, i, rv = -1, int_v;
+	double double_v;
+	char *string_v;
 
 	va_start(ap, format);
 	switch (*format) {
