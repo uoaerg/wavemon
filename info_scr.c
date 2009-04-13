@@ -251,8 +251,11 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	else
 		waddstr(w_info, "n/a");
 
-	if (info.mode != 1) {
-		waddstr(w_info, ",  access point: ");
+	if (info.mode <= IW_MODE_INFRA || info.mode == IW_MODE_REPEAT) {
+		if (info.mode == IW_MODE_ADHOC)
+			waddstr(w_info, ",  cell: ");
+		else
+			waddstr(w_info, ",  access point: ");
 
 		if (info.cap_ap)
 			waddstr_b(w_info, format_bssid(&info.ap_addr));
@@ -286,12 +289,13 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		waddstr(w_info, "frequency/channel: n/a");
 	}
 
-	waddstr(w_info, ",  bitrate: ");
-	if (info.cap_bitrate) {
-		sprintf(tmp, "%g Mbit/s", info.bitrate / 1.0e6);
-		waddstr_b(w_info, tmp);
-	} else {
-		waddstr(w_info, "n/a");
+	if (! (info.mode >= IW_MODE_MASTER && info.mode <= IW_MODE_MONITOR)) {
+		waddstr(w_info, ",  bitrate: ");
+		if (info.cap_bitrate) {
+			sprintf(tmp, "%g Mbit/s", info.bitrate / 1.0e6);
+			waddstr_b(w_info, tmp);
+		} else
+			waddstr(w_info, "n/a");
 	}
 
 	wmove(w_info, 3, 1);
