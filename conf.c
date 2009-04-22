@@ -526,20 +526,6 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 }
 
-void dealloc_on_exit(void)
-{
-	struct conf_item *ci;
-
-	if (!conf_items)
-		return;
-
-	while ((ci = ll_getall(conf_items))) {
-		if (ci->type == t_list)
-			ll_destroy(ci->list);
-	}
-	ll_destroy(conf_items);
-}
-
 static void set_defaults(void)
 {
 	strncpy(conf.ifname, ll_get(if_list, 0), sizeof(conf.ifname));

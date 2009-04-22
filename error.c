@@ -32,6 +32,5 @@ void fatal_error(char *format, ...)
 	va_end(argp);
 
 	fprintf(stderr, "\n");
-	dealloc_on_exit();
 	exit(-1);
 }

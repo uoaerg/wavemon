@@ -22,7 +22,6 @@
 static void sig_winch(int signo)
 {
 	endwin();
-	dealloc_on_exit();
 	errx(1, "under the pain of death, thou shaltst not resize thyne window");
 }
 
@@ -99,7 +98,6 @@ int main(int argc, char *argv[])
 	} while (nextscr != 9);
 
 	endwin();
-	dealloc_on_exit();
 
 	return 0;
 }

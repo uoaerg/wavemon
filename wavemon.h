@@ -134,7 +134,6 @@ struct conf_item {
  * Handling of Configuration Items
  */
 extern int  conf_items;
-extern void dealloc_on_exit(void);
 
 /*
  *	Screen functions
