@@ -19,6 +19,49 @@
  */
 #include "wavemon.h"
 
+/* GLOBALS */
+static const struct {
+	char key_name[6];
+	int (*screen_func)(void);
+} screens[] = {
+	[SCR_INFO]	= { "info",	scr_info  },
+	[SCR_LHIST]	= { "lhist",	scr_lhist },
+	[SCR_APLIST]	= { "aplst",	scr_aplst },
+	[SCR_EMPTY_F4]	= { "",		NULL	  },
+	[SCR_EMPTY_F5]	= { "",		NULL	  },
+	[SCR_EMPTY_F6]	= { "",		NULL	  },
+	[SCR_CONF]	= { "prefs",	scr_conf  },
+	[SCR_HELP]	= { "help",	scr_help  },
+	[SCR_ABOUT]	= { "about",	scr_about },
+	[SCR_QUIT]	= { "quit",	NULL	  }
+};
+
+static void update_menubar(WINDOW *menu, const enum wavemon_screen active)
+{
+	enum wavemon_screen cur;
+
+	for (cur = SCR_INFO, wmove(menu, 0, 0); cur <= SCR_QUIT; cur++) {
+		wattrset(menu, A_REVERSE | A_BOLD);
+		wprintw(menu, "F%d", cur + 1);
+
+		wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
+					     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);
+		wprintw(menu, "%-6s", screens[cur].key_name);
+	}
+	wrefresh(menu);
+}
+
+WINDOW *wmenubar(const enum wavemon_screen active)
+{
+	WINDOW *menu = newwin(1, COLS, LINES - 1, 0);
+
+	nodelay(menu, TRUE);
+	keypad(menu, TRUE);
+	update_menubar(menu, active);
+
+	return menu;
+}
+
 static void sig_winch(int signo)
 {
 	endwin();

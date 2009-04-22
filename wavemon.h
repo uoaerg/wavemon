@@ -138,6 +138,19 @@ extern int  conf_items;
 /*
  *	Screen functions
  */
+enum wavemon_screen {
+	SCR_INFO,	/* F1 */
+	SCR_LHIST,	/* F2 */
+	SCR_APLIST,	/* F3 */
+	SCR_EMPTY_F4,	/* placeholder */
+	SCR_EMPTY_F5,	/* placeholder */
+	SCR_EMPTY_F6,	/* placeholder */
+	SCR_CONF,	/* F7 */
+	SCR_HELP,	/* F8 */
+	SCR_ABOUT,	/* F9 */
+	SCR_QUIT	/* F10 */
+};
+
 extern int scr_about(void);
 extern int scr_aplst(void);
 extern int scr_conf(void);
@@ -149,11 +162,11 @@ extern int scr_lhist(void);
  *	Ncurses definitions and functions
  */
 extern WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b);
+extern WINDOW *wmenubar(const enum wavemon_screen active);
 
 extern void waddstr_b(WINDOW * win, const char *s);
 extern void waddstr_center(WINDOW * win, int y, const char *s);
 
-extern void wmenubar(WINDOW * win, int active);
 extern void waddbar(WINDOW * win, float v, float minv, float maxv, int y, int x,
 		    int maxx, char *cscale, bool rev);
 extern void waddthreshold(WINDOW * win, float v, float tv, float minv,

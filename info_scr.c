@@ -20,7 +20,7 @@
 #include "iw_if.h"
 
 /* GLOBALS */
-static WINDOW *w_levels, *w_stats, *w_menu;
+static WINDOW *w_levels, *w_stats;
 
 static struct iw_stat cur;
 void (*iw_stat_redraw) (void);
@@ -193,8 +193,6 @@ static void redraw_stats(void)
 	display_stats();
 	wrefresh(w_levels);
 	wrefresh(w_stats);
-	wmove(w_menu, 1, 0);
-	wrefresh(w_menu);
 }
 
 static void display_info(WINDOW *w_if, WINDOW *w_info)
@@ -412,7 +410,7 @@ static void display_netinfo(WINDOW *w_net)
 
 int scr_info(void)
 {
-	WINDOW *w_if, *w_info, *w_net;
+	WINDOW *w_if, *w_info, *w_net, *w_menu;
 	struct timer t1;
 	int key = 0;
 
@@ -423,7 +421,7 @@ int scr_info(void)
 	w_stats	 = newwin_title(3, COLS, 11, 0, "Statistics", 1, 1);
 	w_info	 = newwin_title(7, COLS, 14, 0, "Info", 1, 1);
 	w_net	 = newwin_title(4, COLS, 21, 0, "Network", 1, 0);
-	w_menu	 = newwin(1, COLS, LINES - 1, 0);
+	w_menu	 = wmenubar(SCR_INFO);
 
 	display_info(w_if, w_info);
 	wrefresh(w_if);
@@ -431,11 +429,6 @@ int scr_info(void)
 
 	display_netinfo(w_net);
 	wrefresh(w_net);
-	wmenubar(w_menu, 0);
-	wrefresh(w_menu);
-
-	nodelay(w_menu, TRUE);
-	keypad(w_menu, TRUE);
 
 	iw_stat_redraw = redraw_stats;
 

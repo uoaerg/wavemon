@@ -85,11 +85,7 @@ int scr_about(void)
 	int key = 0;
 
 	w_about = newwin_title(LINES - 1, COLS, 0, 0, "About", 0, 0);
-	w_menu = newwin(1, COLS, LINES - 1, 0);
-
-	wmenubar(w_menu, 8);
-	nodelay(w_menu, TRUE);
-	keypad(w_menu, TRUE);
+	w_menu  = wmenubar(SCR_ABOUT);
 
 	init_scramble();
 
@@ -97,8 +93,6 @@ int scr_about(void)
 		do {
 			draw_lines(w_about);
 			wrefresh(w_about);
-			wmove(w_menu, 1, 0);
-			wrefresh(w_menu);
 			key = wgetch(w_menu);
 			usleep(5000);
 		} while (key <= 0);

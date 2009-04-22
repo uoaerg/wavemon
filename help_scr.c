@@ -25,17 +25,11 @@ int scr_help(void)
 	int key = 0;
 
 	w_help = newwin_title(LINES - 1, COLS, 0, 0, "Help", 0, 0);
-	w_menu = newwin(1, COLS, LINES - 1, 0);
-
-	wmenubar(w_menu, 7);
-	wmove(w_menu, 1, 0);
-	nodelay(w_menu, TRUE);
-	keypad(w_menu, TRUE);
+	w_menu = wmenubar(SCR_HELP);
 
 	waddstr_center(w_help, (LINES >> 1) - 1, "don't panic.");
 
 	wrefresh(w_help);
-	wrefresh(w_menu);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		while ((key = wgetch(w_menu)) <= 0)

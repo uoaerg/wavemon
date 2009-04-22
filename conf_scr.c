@@ -210,7 +210,7 @@ int scr_conf(void)
 
 	w_conf    = newwin_title(LINES - 1, COLS, 0, 0, "Preferences", 0, 0);
 	w_confpad = newpad(ll_size(conf_items) + 1, 40);
-	w_menu    = newwin(1, COLS, LINES - 1, 0);
+	w_menu    = wmenubar(SCR_CONF);
 
 	getmaxyx(w_conf, wconfy, wconfx);
 	subw = wconfy - 3;
@@ -218,16 +218,6 @@ int scr_conf(void)
 	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep)
 		active_item++;
 	first_item = active_item;
-
-	wmenubar(w_menu, 6);
-	wmove(w_menu, 1, 0);
-	nodelay(w_menu, FALSE);
-	keypad(w_menu, TRUE);
-
-	wrefresh(w_conf);
-	wrefresh(w_menu);
-
-	active_line = m_pref(w_confpad, active_item);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		active_line = m_pref(w_confpad, active_item);
@@ -239,8 +229,8 @@ int scr_conf(void)
 
 		prefresh(w_confpad, list_ofs, 0, 1, COLS/2 - 20,
 				    wconfy - 2, wconfx - 1);
-		wmove(w_menu, 1, 0);
-		wrefresh(w_menu);
+		wrefresh(w_conf);
+
 		key = wgetch(w_menu);
 		switch (key) {
 		case KEY_DOWN:

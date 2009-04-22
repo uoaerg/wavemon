@@ -19,38 +19,6 @@
  */
 #include "wavemon.h"
 
-static char *screens[] = {
-	"info",			/* F1           */
-	"lhist",		/* F2           */
-	"aplst",		/* F3           */
-	"", "", "",		/* F4 - F6      */
-	"prefs",		/* F7           */
-	"help",			/* F8           */
-	"about",		/* F9           */
-	"quit"			/* F10          */
-};
-
-void wmenubar(WINDOW *win, int active)
-{
-	char tmp[12];
-	int i, j, n = 0;
-
-	wmove(win, 0, 0);
-	for (i = 0; i < 10; i++) {
-		sprintf(tmp, "F%d", i + 1);
-		wattrset(win, A_REVERSE | A_BOLD);
-		waddstr(win, tmp);
-		wattroff(win, A_REVERSE | A_BOLD);
-		sprintf(tmp, "%s%n", screens[i], &n);
-		wattrset(win, (i == active ? COLOR_PAIR(CP_ACTIVE) | A_BOLD
-					   : COLOR_PAIR(CP_INACTIVE)));
-		waddstr(win, tmp);
-		for (j = 0; j < 6 - n; j++)
-			waddstr(win, " ");
-		wattroff(win, COLOR_PAIR(6));
-	}
-}
-
 void waddstr_center(WINDOW *win, int y, const char *s)
 {
 	mvwaddstr(win, y, (COLS >> 1) - (strlen(s) >> 1), s);

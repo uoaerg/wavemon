@@ -20,7 +20,7 @@
 #include "iw_if.h"
 
 /* GLOBALS */
-static WINDOW *w_lhist, *w_menu;
+static WINDOW *w_lhist;
 
 /*
  * Simple array-based circular FIFO buffer
@@ -211,27 +211,20 @@ static void redraw_lhist(void)
 		vcount = conf.slotsize;
 		display_lhist();
 		wrefresh(w_lhist);
-		wmove(w_menu, 1, 0);
-		wrefresh(w_menu);
 	}
 }
 
 int scr_lhist(void)
 {
-	WINDOW *w_key;
+	WINDOW *w_key, *w_menu;
 	int key = 0;
 
 	w_lhist = newwin_title(LINES - 4, COLS, 0, 0, "Level histogram", 0, 1);
 	w_key   = newwin_title(3, COLS, LINES - 4, 0, "Key", 1, 0);
-	w_menu  = newwin(1, COLS, LINES - 1, 0);
+	w_menu  = wmenubar(SCR_LHIST);
 
 	display_key(w_key);
 	wrefresh(w_key);
-
-	wmenubar(w_menu, 1);
-	wmove(w_menu, 1, 0);
-	nodelay(w_menu, FALSE);
-	keypad(w_menu, TRUE);
 
 	iw_stat_redraw = redraw_lhist;
 	while (key < KEY_F(1) || key > KEY_F(10)) {

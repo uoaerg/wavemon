@@ -111,22 +111,11 @@ int scr_aplst(void)
 	int key = 0;
 
 	w_aplst = newwin_title(LINES - 1, COLS, 0, 0, "Access point list", 0, 0);
-	w_menu  = newwin(1, COLS, LINES - 1, 0);
-
-	wmenubar(w_menu, 2);
-	wmove(w_menu, 1, 0);
-
-	nodelay(w_menu, TRUE);
-	keypad(w_menu, TRUE);
-
-	wrefresh(w_aplst);
-	wrefresh(w_menu);
+	w_menu  = wmenubar(SCR_APLIST);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);
 		wrefresh(w_aplst);
-		wmove(w_menu, 1, 0);
-		wrefresh(w_menu);
 		start_timer(&t1, 50000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
 			usleep(5000);
