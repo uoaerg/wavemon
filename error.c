@@ -25,12 +25,10 @@ void fatal_error(char *format, ...)
 	va_list argp;
 
 	endwin();
-	fprintf(stderr, "fatal error: ");
 
 	va_start(argp, format);
-	vfprintf(stderr, format, argp);
+	if (errno == 0)
+		verrx(EXIT_FAILURE, format, argp);
+	verr(EXIT_FAILURE, format, argp);
 	va_end(argp);
-
-	fprintf(stderr, "\n");
-	exit(-1);
 }

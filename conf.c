@@ -50,10 +50,10 @@ static void getargs(int argc, char *argv[])
 		switch (arg) {
 		case 'd':
 			dump_parameters();
-			exit(0);
+			exit(EXIT_SUCCESS);
 		case 'h':
 			usage();
-			exit(0);
+			exit(EXIT_SUCCESS);
 		case 'i':
 			if ((tmp = ll_scan(if_list, "S", optarg)) >= 0) {
 				strncpy(conf.ifname, ll_get(if_list, tmp),
@@ -66,10 +66,10 @@ static void getargs(int argc, char *argv[])
 			break;
 		case 'v':
 			version();
-			exit(0);
+			exit(EXIT_SUCCESS);
 		default:
 			/* bad argument. bad bad */
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 }
 

@@ -73,9 +73,9 @@ WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b)
 			ACS_LRCORNER);
 
 	wmove(win, 0, 2);
-	wattrset(win, COLOR_PAIR(5));
+	wattrset(win, COLOR_PAIR(CP_WTITLE));
 	waddstr(win, title);
-	wattroff(win, COLOR_PAIR(5));
+	wattroff(win, COLOR_PAIR(CP_WTITLE));
 
 	return win;
 }
