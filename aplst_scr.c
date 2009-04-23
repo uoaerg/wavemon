@@ -102,6 +102,7 @@ static void display_aplist(WINDOW *w_aplst)
 	}
 done:
 	close(skfd);
+	wrefresh(w_aplst);
 }
 
 int scr_aplst(void)
@@ -115,7 +116,6 @@ int scr_aplst(void)
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);
-		wrefresh(w_aplst);
 		start_timer(&t1, 50000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
 			usleep(5000);

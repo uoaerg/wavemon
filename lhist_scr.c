@@ -178,6 +178,7 @@ static void display_lhist(void)
 			wattroff(w_lhist, COLOR_PAIR(CP_STATSIG));
 		}
 	}
+	wrefresh(w_lhist);
 }
 
 static void display_key(WINDOW *w_key)
@@ -201,6 +202,8 @@ static void display_key(WINDOW *w_key)
 	waddch(w_key, ' ');
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 	waddstr(w_key, "] S-N ratio (dB)");
+
+	wrefresh(w_key);
 }
 
 static void redraw_lhist(void)
@@ -210,7 +213,6 @@ static void redraw_lhist(void)
 	if (!--vcount) {
 		vcount = conf.slotsize;
 		display_lhist();
-		wrefresh(w_lhist);
 	}
 }
 
@@ -224,7 +226,6 @@ int scr_lhist(void)
 	w_menu  = wmenubar(SCR_LHIST);
 
 	display_key(w_key);
-	wrefresh(w_key);
 
 	iw_stat_redraw = redraw_lhist;
 	while (key < KEY_F(1) || key > KEY_F(10)) {

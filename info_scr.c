@@ -126,6 +126,7 @@ static void display_levels(void)
 		waddstr_b(w_levels, tmp);
 		waddbar(w_levels, ssnr, 0, 110, 8, 1, COLS - 1, snrscale, true);
 	}
+	wrefresh(w_levels);
 }
 
 static void display_stats(void)
@@ -185,14 +186,13 @@ static void display_stats(void)
 		waddstr_b(w_stats, tmp);
 	}
 	wclrtoeol(w_stats);
+	wrefresh(w_stats);
 }
 
 static void redraw_stats(void)
 {
 	display_levels();
 	display_stats();
-	wrefresh(w_levels);
-	wrefresh(w_stats);
 }
 
 static void display_info(WINDOW *w_if, WINDOW *w_info)
@@ -241,6 +241,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			sprintf(tmp, "%X", info.nwid.value);
 		waddstr_b(w_if, tmp);
 	}
+	wrefresh(w_if);
 
 	wmove(w_info, 1, 1);
 	waddstr(w_info, "mode: ");
@@ -378,6 +379,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	waddstr_b(w_info, tmp);
 	sprintf(tmp, " (source version %d)", cur.range.we_version_source);
 	waddstr(w_info, tmp);
+
+	wrefresh(w_info);
 }
 
 static void display_netinfo(WINDOW *w_net)
@@ -406,6 +409,7 @@ static void display_netinfo(WINDOW *w_net)
 
 	waddstr(w_net, ",  bcast: ");
 	waddstr_b(w_net, inet_ntoa(info.bcast));
+	wrefresh(w_net);
 }
 
 int scr_info(void)
@@ -424,20 +428,14 @@ int scr_info(void)
 	w_menu	 = wmenubar(SCR_INFO);
 
 	display_info(w_if, w_info);
-	wrefresh(w_if);
-	wrefresh(w_info);
-
 	display_netinfo(w_net);
-	wrefresh(w_net);
 
 	iw_stat_redraw = redraw_stats;
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_info(w_if, w_info);
 		display_netinfo(w_net);
-		wrefresh(w_if);
-		wrefresh(w_info);
-		wrefresh(w_net);
+
 		start_timer(&t1, conf.info_iv * 1000000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
 			sleep(1);

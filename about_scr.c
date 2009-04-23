@@ -77,6 +77,7 @@ static void draw_lines(WINDOW *w_about)
 		buf[j] = '\0';
 		waddstr_center(w_about, (LINES - ARRAY_SIZE(about_lines)) / 2 + i, buf);
 	}
+	wrefresh(w_about);
 }
 
 int scr_about(void)
@@ -92,7 +93,6 @@ int scr_about(void)
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		do {
 			draw_lines(w_about);
-			wrefresh(w_about);
 			key = wgetch(w_menu);
 			usleep(5000);
 		} while (key <= 0);
