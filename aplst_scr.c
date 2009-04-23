@@ -105,14 +105,13 @@ done:
 	wrefresh(w_aplst);
 }
 
-int scr_aplst(void)
+enum wavemon_screen scr_aplst(WINDOW *w_menu)
 {
-	WINDOW *w_aplst, *w_menu;
+	WINDOW *w_aplst;
 	struct timer t1;
 	int key = 0;
 
 	w_aplst = newwin_title(LINES - 1, COLS, 0, 0, "Access point list", 0, 0);
-	w_menu  = wmenubar(SCR_APLIST);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);
@@ -128,7 +127,6 @@ int scr_aplst(void)
 	}
 
 	delwin(w_aplst);
-	delwin(w_menu);
 
 	return key - KEY_F(1);
 }

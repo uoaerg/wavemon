@@ -412,9 +412,9 @@ static void display_netinfo(WINDOW *w_net)
 	wrefresh(w_net);
 }
 
-int scr_info(void)
+enum wavemon_screen scr_info(WINDOW *w_menu)
 {
-	WINDOW *w_if, *w_info, *w_net, *w_menu;
+	WINDOW *w_if, *w_info, *w_net;
 	struct timer t1;
 	int key = 0;
 
@@ -425,7 +425,6 @@ int scr_info(void)
 	w_stats	 = newwin_title(3, COLS, 11, 0, "Statistics", 1, 1);
 	w_info	 = newwin_title(7, COLS, 14, 0, "Info", 1, 1);
 	w_net	 = newwin_title(4, COLS, 21, 0, "Network", 1, 0);
-	w_menu	 = wmenubar(SCR_INFO);
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);
@@ -454,7 +453,6 @@ int scr_info(void)
 	delwin(w_stats);
 	delwin(w_info);
 	delwin(w_net);
-	delwin(w_menu);
 
 	return key - KEY_F(1);
 }

@@ -80,13 +80,12 @@ static void draw_lines(WINDOW *w_about)
 	wrefresh(w_about);
 }
 
-int scr_about(void)
+enum wavemon_screen scr_about(WINDOW *w_menu)
 {
-	WINDOW *w_about, *w_menu;
+	WINDOW *w_about;
 	int key = 0;
 
 	w_about = newwin_title(LINES - 1, COLS, 0, 0, "About", 0, 0);
-	w_menu  = wmenubar(SCR_ABOUT);
 
 	init_scramble();
 
@@ -105,9 +104,7 @@ int scr_about(void)
 	}
 
 	free_scramble();
-
 	delwin(w_about);
-	delwin(w_menu);
 
 	return key - KEY_F(1);
 }

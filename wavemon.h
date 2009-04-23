@@ -151,12 +151,12 @@ enum wavemon_screen {
 	SCR_QUIT	/* F10 */
 };
 
-extern int scr_about(void);
-extern int scr_aplst(void);
-extern int scr_conf(void);
-extern int scr_help(void);
-extern int scr_info(void);
-extern int scr_lhist(void);
+extern enum wavemon_screen  scr_info(WINDOW *w_menu);
+extern enum wavemon_screen  scr_lhist(WINDOW *w_menu);
+extern enum wavemon_screen  scr_aplst(WINDOW *w_menu);
+extern enum wavemon_screen  scr_conf(WINDOW *w_menu);
+extern enum wavemon_screen  scr_help(WINDOW *w_menu);
+extern enum wavemon_screen  scr_about(WINDOW *w_menu);
 
 /*
  *	Ncurses definitions and functions

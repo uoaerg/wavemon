@@ -19,13 +19,12 @@
  */
 #include "wavemon.h"
 
-int scr_help(void)
+enum wavemon_screen scr_help(WINDOW *w_menu)
 {
-	WINDOW *w_help, *w_menu;
+	WINDOW *w_help;
 	int key = 0;
 
 	w_help = newwin_title(LINES - 1, COLS, 0, 0, "Help", 0, 0);
-	w_menu = wmenubar(SCR_HELP);
 
 	waddstr_center(w_help, (LINES >> 1) - 1, "don't panic.");
 
@@ -43,7 +42,6 @@ int scr_help(void)
 	}
 
 	delwin(w_help);
-	delwin(w_menu);
 
 	return key - KEY_F(1);
 }

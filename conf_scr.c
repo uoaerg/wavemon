@@ -196,9 +196,9 @@ static int m_pref(WINDOW *w_conf, int active_item)
 	return active_line;
 }
 
-int scr_conf(void)
+enum wavemon_screen scr_conf(WINDOW *w_menu)
 {
-	WINDOW *w_conf, *w_menu, *w_confpad;
+	WINDOW *w_conf, *w_confpad;
 	int key = 0;
 	int num_items;
 	int active_line, active_item = 0;
@@ -210,7 +210,6 @@ int scr_conf(void)
 
 	w_conf    = newwin_title(LINES - 1, COLS, 0, 0, "Preferences", 0, 0);
 	w_confpad = newpad(ll_size(conf_items) + 1, 40);
-	w_menu    = wmenubar(SCR_CONF);
 
 	getmaxyx(w_conf, wconfy, wconfx);
 	subw = wconfy - 3;
@@ -264,7 +263,6 @@ int scr_conf(void)
 
 	delwin(w_conf);
 	delwin(w_confpad);
-	delwin(w_menu);
 
 	return key - KEY_F(1);
 }

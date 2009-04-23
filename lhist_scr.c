@@ -216,14 +216,13 @@ static void redraw_lhist(void)
 	}
 }
 
-int scr_lhist(void)
+enum wavemon_screen scr_lhist(WINDOW *w_menu)
 {
-	WINDOW *w_key, *w_menu;
+	WINDOW *w_key;
 	int key = 0;
 
 	w_lhist = newwin_title(LINES - 4, COLS, 0, 0, "Level histogram", 0, 1);
 	w_key   = newwin_title(3, COLS, LINES - 4, 0, "Key", 1, 0);
-	w_menu  = wmenubar(SCR_LHIST);
 
 	display_key(w_key);
 
@@ -242,7 +241,6 @@ int scr_lhist(void)
 
 	delwin(w_lhist);
 	delwin(w_key);
-	delwin(w_menu);
 
 	return key - KEY_F(1);
 }

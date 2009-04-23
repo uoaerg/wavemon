@@ -22,7 +22,7 @@
 /* GLOBALS */
 static const struct {
 	char key_name[6];
-	int (*screen_func)(void);
+	enum wavemon_screen (*screen_func)(WINDOW *);
 } screens[] = {
 	[SCR_INFO]	= { "info",	scr_info  },
 	[SCR_LHIST]	= { "lhist",	scr_lhist },
@@ -51,17 +51,6 @@ static void update_menubar(WINDOW *menu, const enum wavemon_screen active)
 	wrefresh(menu);
 }
 
-WINDOW *wmenubar(const enum wavemon_screen active)
-{
-	WINDOW *menu = newwin(1, COLS, LINES - 1, 0);
-
-	nodelay(menu, TRUE);
-	keypad(menu, TRUE);
-	update_menubar(menu, active);
-
-	return menu;
-}
-
 static void sig_winch(int signo)
 {
 	endwin();
@@ -70,8 +59,8 @@ static void sig_winch(int signo)
 
 int main(int argc, char *argv[])
 {
-	int (*current_scr) (void) = NULL;
-	int nextscr;
+	WINDOW *w_menu;
+	enum wavemon_screen cur, next;
 
 	getconf(argc, argv);
 
@@ -104,44 +93,22 @@ int main(int argc, char *argv[])
 	init_pair(CP_PREF_SELECT, COLOR_WHITE, COLOR_BLUE);
 	init_pair(CP_PREF_ARROW, COLOR_RED, COLOR_BLACK);
 
-	switch (conf.startup_scr) {
-	case 0:
-		current_scr = scr_info;
-		break;
-	case 1:
-		current_scr = scr_lhist;
-		break;
-	case 2:
-		current_scr = scr_aplst;
-		break;
-	}
+	w_menu = newwin(1, COLS, LINES - 1, 0);
+	nodelay(w_menu, TRUE);
+	keypad(w_menu, TRUE);
 
-	do {
+	for (cur = SCR_HELP, next = conf.startup_scr; next != SCR_QUIT; ) {
+
+		if (screens[next].screen_func != NULL)
+			cur = next;
+
 		reinit_on_changes();
-		switch (nextscr = current_scr()) {
-		case 0:
-			current_scr = scr_info;
-			break;
-		case 1:
-			current_scr = scr_lhist;
-			break;
-		case 2:
-			current_scr = scr_aplst;
-			break;
-		case 6:
-			current_scr = scr_conf;
-			break;
-		case 7:
-			current_scr = scr_help;
-			break;
-		case 8:
-			current_scr = scr_about;
-			break;
-		}
+		update_menubar(w_menu, cur);
+		next = (*screens[cur].screen_func)(w_menu);
+
 		clear();
 		refresh();
-	} while (nextscr != 9);
-
+	}
 	endwin();
 
 	return EXIT_SUCCESS;
