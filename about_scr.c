@@ -106,12 +106,7 @@ int scr_about(void)
 
 	free_scramble();
 
-	werase(w_about);
-	wrefresh(w_about);
 	delwin(w_about);
-
-	werase(w_menu);
-	wrefresh(w_menu);
 	delwin(w_menu);
 
 	return key - KEY_F(1);

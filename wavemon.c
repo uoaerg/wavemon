@@ -138,6 +138,8 @@ int main(int argc, char *argv[])
 			current_scr = scr_about;
 			break;
 		}
+		clear();
+		refresh();
 	} while (nextscr != 9);
 
 	endwin();

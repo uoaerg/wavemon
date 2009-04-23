@@ -449,28 +449,11 @@ int scr_info(void)
 
 	iw_stat_redraw = NULL;
 
-	werase(w_if);
-	wrefresh(w_if);
 	delwin(w_if);
-
-	werase(w_levels);
-	wrefresh(w_levels);
 	delwin(w_levels);
-
-	werase(w_stats);
-	wrefresh(w_stats);
 	delwin(w_stats);
-
-	werase(w_info);
-	wrefresh(w_info);
 	delwin(w_info);
-
-	werase(w_net);
-	wrefresh(w_net);
 	delwin(w_net);
-
-	werase(w_menu);
-	wrefresh(w_menu);
 	delwin(w_menu);
 
 	return key - KEY_F(1);

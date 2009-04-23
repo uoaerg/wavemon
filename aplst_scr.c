@@ -127,12 +127,7 @@ int scr_aplst(void)
 			key = KEY_F(1);
 	}
 
-	werase(w_aplst);
-	wrefresh(w_aplst);
 	delwin(w_aplst);
-
-	werase(w_menu);
-	wrefresh(w_menu);
 	delwin(w_menu);
 
 	return key - KEY_F(1);

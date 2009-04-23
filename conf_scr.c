@@ -262,14 +262,8 @@ int scr_conf(void)
 		}
 	}
 
-	werase(w_conf);
-	wrefresh(w_conf);
 	delwin(w_conf);
-
 	delwin(w_confpad);
-
-	werase(w_menu);
-	wrefresh(w_menu);
 	delwin(w_menu);
 
 	return key - KEY_F(1);

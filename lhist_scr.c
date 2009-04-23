@@ -240,16 +240,8 @@ int scr_lhist(void)
 	}
 	iw_stat_redraw = NULL;
 
-	werase(w_lhist);
-	wrefresh(w_lhist);
 	delwin(w_lhist);
-
-	werase(w_key);
-	wrefresh(w_key);
 	delwin(w_key);
-
-	werase(w_menu);
-	wrefresh(w_menu);
 	delwin(w_menu);
 
 	return key - KEY_F(1);

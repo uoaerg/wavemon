@@ -42,12 +42,7 @@ int scr_help(void)
 			key = KEY_F(1);
 	}
 
-	werase(w_help);
-	wrefresh(w_help);
 	delwin(w_help);
-
-	werase(w_menu);
-	wrefresh(w_menu);
 	delwin(w_menu);
 
 	return key - KEY_F(1);
