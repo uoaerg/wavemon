@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
 	getconf(argc, argv);
 
-	if (signal(SIGWINCH, sig_winch) < 0)
+	if (signal(SIGWINCH, sig_winch) == SIG_ERR)
 		err(1, "cannot install handler for window changes");
 
 	/* initialize the ncurses interface */

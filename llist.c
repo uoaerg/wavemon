@@ -85,7 +85,7 @@ static llist *arg2element(char type, va_list * ap, llist * next)
 /*
  * start a new list
  */
-int ll_create()
+int ll_create(void)
 {
 	unsigned long i;
 	static char firstcall = 1;

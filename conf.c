@@ -297,7 +297,8 @@ static void write_cf(void)
 		}
 	}
 
-	if ((fd = fopen(cfname, "w")) < 0)
+	fd = fopen(cfname, "w");
+	if (fd == NULL)
 		fatal_error("cannot open %s", cfname);
 	ll_reset(cfld);
 	while ((lp = ll_getall(cfld)))

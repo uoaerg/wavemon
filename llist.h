@@ -19,7 +19,7 @@
  */
 #define LISTVAL_MAX	32	/* maximum string length of `s' elements */
 
-int 	ll_create();
+int	ll_create(void);
 void 	*ll_get(int ld, unsigned long n);
 void 	*ll_getall(int ld);
 void 	ll_reset(int ld);

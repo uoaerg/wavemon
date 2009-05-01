@@ -295,7 +295,7 @@ static void iw_getstat_old_style(struct iw_statistics *stat)
 	int tmp;
 	FILE *fd = fopen("/proc/net/wireless", "r");
 
-	if (fd < 0)
+	if (fd == NULL)
 		fatal_error("cannot open /proc/net/wireless");
 
 	while (fgets(line, sizeof(line), fd)) {
