@@ -164,6 +164,8 @@ extern enum wavemon_screen  scr_about(WINDOW *w_menu);
 extern WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b);
 extern WINDOW *wmenubar(const enum wavemon_screen active);
 
+extern void wclrtoborder(WINDOW *win);
+extern void mvwclrtoborder(WINDOW *win, int y, int x);
 extern void waddstr_b(WINDOW * win, const char *s);
 extern void waddstr_center(WINDOW * win, int y, const char *s);
 

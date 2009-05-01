@@ -48,6 +48,21 @@ WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b)
 	return win;
 }
 
+/* clear inside window content up to the right border */
+void mvwclrtoborder(WINDOW *win, int y, int x)
+{
+	if (x < COLS - 1 && x > 0)
+		mvwhline(win, y, x, ' ', COLS - 1 - x);
+}
+
+void wclrtoborder(WINDOW *win)
+{
+	int x, y;
+
+	getyx(win, y, x);
+	mvwclrtoborder(win, y, x);
+}
+
 void waddstr_b(WINDOW *win, const char *s)
 {
 	wattron(win, A_BOLD);
@@ -55,20 +70,20 @@ void waddstr_b(WINDOW *win, const char *s)
 	wattroff(win, A_BOLD);
 }
 
+static double interpolate(const double val, const double min, const double max)
+{
+	return	val < min ? 0 :
+		val > max ? 1 : (val - min) / (max - min);
+}
+
 void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x,
 	     int maxx, char *cscale, bool rev)
 {
-	int steps = maxx - x;
+	int len = (maxx - x) * interpolate(v, minv, maxv);
 	chtype ch = '=' | A_BOLD | cp_from_scale(v, cscale, rev);
 
-	if (v >= maxv) {
-		mvwhline(win, y, x, ch, steps);
-	} else {
-		int len = (float)steps * (v - minv) / (maxv - minv);
-
-		mvwhline(win, y, x, ch, len);
-		mvwhline(win, y, x + len, ' ', steps - len);
-	}
+	mvwhline(win, y, x, ch, len);
+	mvwclrtoborder(win, y, x + len);
 }
 
 void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv,

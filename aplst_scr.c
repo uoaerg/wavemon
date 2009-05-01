@@ -24,7 +24,7 @@ static void display_aplist(WINDOW *w_aplst)
 	uint8_t buf[(sizeof(struct iw_quality) +
 		     sizeof(struct sockaddr)) * IW_MAX_AP];
 	char s[0x100];
-	int ysize, xsize, i, j, line = 2;
+	int i, j, line = 2;
 	struct iw_quality *qual, qual_pivot;
 	struct sockaddr *hwa, hwa_pivot;
 	struct iw_range range;
@@ -36,9 +36,8 @@ static void display_aplist(WINDOW *w_aplst)
 		fatal_error("could not open socket");
 
 	iw_getinf_range(conf.ifname, &range);
-	getmaxyx(w_aplst, ysize, xsize);
-	for (i = 1; i < ysize - 1; i++)
-		mvwhline(w_aplst, i, 1, ' ', xsize - 2);
+	for (i = 1; i < LINES - 1; i++)
+		mvwclrtoborder(w_aplst, i, 1);
 
 	strncpy(iwr.ifr_name, conf.ifname, IFNAMSIZ);
 	iwr.u.data.pointer = (caddr_t) buf;

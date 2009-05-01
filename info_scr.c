@@ -165,7 +165,7 @@ static void display_stats(void)
 	sprintf(tmp, "%u", cur.stat.discard.misc);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " misc");
-	wclrtoeol(w_stats);
+	wclrtoborder(w_stats);
 
 	/*
 	 * Interface TX stats
@@ -185,7 +185,7 @@ static void display_stats(void)
 		sprintf(tmp, "%u", cur.stat.miss.beacon);
 		waddstr_b(w_stats, tmp);
 	}
-	wclrtoeol(w_stats);
+	wclrtoborder(w_stats);
 	wrefresh(w_stats);
 }
 
@@ -199,15 +199,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 {
 	struct iw_dyn_info info;
 	char tmp[0x100];
-	int ysize, xsize;
 	int i;
-
-	getmaxyx(w_if, ysize, xsize);
-	for (i = 1; i < ysize - 1; i++)
-		mvwhline(w_if, i, 1, ' ', xsize - 2);
-	getmaxyx(w_info, ysize, xsize);
-	for (i = 1; i < ysize - 1; i++)
-		mvwhline(w_info, i, 1, ' ', xsize - 2);
 
 	iw_getinf_dyn(conf.ifname, &info);
 
@@ -241,6 +233,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			sprintf(tmp, "%X", info.nwid.value);
 		waddstr_b(w_if, tmp);
 	}
+	wclrtoborder(w_if);
 	wrefresh(w_if);
 
 	wmove(w_info, 1, 1);
@@ -380,19 +373,14 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	sprintf(tmp, " (source version %d)", cur.range.we_version_source);
 	waddstr(w_info, tmp);
 
+	wclrtoborder(w_info);
 	wrefresh(w_info);
 }
 
 static void display_netinfo(WINDOW *w_net)
 {
 	struct if_info info;
-	int ysize, xsize;
-	int i;
 	char tmp[0x40];
-
-	getmaxyx(w_net, ysize, xsize);
-	for (i = 1; i < ysize - 1; i++)
-		mvwhline(w_net, i, 1, ' ', xsize - 2);
 
 	if_getinf(conf.ifname, &info);
 
@@ -409,6 +397,8 @@ static void display_netinfo(WINDOW *w_net)
 
 	waddstr(w_net, ",  bcast: ");
 	waddstr_b(w_net, inet_ntoa(info.bcast));
+
+	wclrtoborder(w_net);
 	wrefresh(w_net);
 }
 

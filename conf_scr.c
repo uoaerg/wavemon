@@ -31,7 +31,7 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 
 	wattrset(w, COLOR_PAIR(CP_PREF_NORMAL));
 
-	mvwhline(w, y, x1, ' ', x2 - x1);
+	mvwclrtoborder(w, y, x2 - x1);
 
 	if (item->type != t_sep && item->type != t_func) {
 		mvwaddstr(w, y, (item->dep ? x1 + 2 : x1), item->name);
