@@ -161,7 +161,7 @@ extern enum wavemon_screen  scr_about(WINDOW *w_menu);
 /*
  *	Ncurses definitions and functions
  */
-extern WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b);
+extern WINDOW *newwin_title(int x, int h, const char *title, bool nobottom);
 extern WINDOW *wmenubar(const enum wavemon_screen active);
 
 extern void wclrtoborder(WINDOW *win);

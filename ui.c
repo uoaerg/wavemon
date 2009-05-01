@@ -24,25 +24,36 @@ void waddstr_center(WINDOW *win, int y, const char *s)
 	mvwaddstr(win, y, (COLS >> 1) - (strlen(s) >> 1), s);
 }
 
-WINDOW *newwin_title(int h, int w, int x, int y, char *title, char t, char b)
+/**
+ * newwin_title  -  Create a new bordered window
+ * @x:		vertical x position to start at
+ * @h:		height of the new window in lines
+ * @title:	name of the window
+ * @nobottom:   whether to keep the bottom of the box open
+ * Creates a new window starting column 0 in the line number @x,
+ * spanning all COLS. Two columns are taken up by borders, hence
+ * the inner width is COLS - 2.
+ * The maximum inner height of the window is LINES - 2 - 1, as
+ * one line is used by the menubar at the bottom of each screen.
+ */
+WINDOW *newwin_title(int x, int h, const char *title, bool nobottom)
 {
-	WINDOW *win = newwin(h, w, x, y);
-	if (b) {
-		wmove(win, 0, 0);
-		waddch(win, (t ? ACS_LTEE : ACS_ULCORNER));
-		whline(win, ACS_HLINE, w - 2);
-		mvwaddch(win, 0, w - 1, (t ? ACS_RTEE : ACS_URCORNER));
-		mvwvline(win, 1, 0, ACS_VLINE, h);
-		mvwvline(win, 1, w - 1, ACS_VLINE, h);
-	} else
-		wborder(win, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
-			(t ? ACS_LTEE : ACS_ULCORNER),
-			(t ? ACS_RTEE : ACS_URCORNER), ACS_LLCORNER,
-			ACS_LRCORNER);
+	WINDOW *win = newwin(h, COLS, x, 0);
+	chtype top_left  = x > 0 ? ACS_LTEE : ACS_ULCORNER;
+	chtype top_right = x > 0 ? ACS_RTEE : ACS_URCORNER;
 
-	wmove(win, 0, 2);
+	if (nobottom) {
+		mvwaddch(win, 0, 0, top_left);
+		mvwhline(win, 0, 1, ACS_HLINE, COLS - 2);
+		mvwvline(win, 1, 0, ACS_VLINE, h);
+		mvwaddch(win, 0, COLS - 1, top_right);
+		mvwvline(win, 1, COLS - 1, ACS_VLINE, h);
+	} else {
+		wborder(win, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
+			top_left, top_right, ACS_LLCORNER, ACS_LRCORNER);
+	}
 	wattrset(win, COLOR_PAIR(CP_WTITLE));
-	waddstr(win, title);
+	mvwaddstr(win, 0, 2, title);
 	wattroff(win, COLOR_PAIR(CP_WTITLE));
 
 	return win;

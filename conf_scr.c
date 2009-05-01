@@ -208,7 +208,7 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 
 	num_items = ll_size(conf_items);
 
-	w_conf    = newwin_title(LINES - 1, COLS, 0, 0, "Preferences", 0, 0);
+	w_conf    = newwin_title(0, LINES - 1, "Preferences", false);
 	w_confpad = newpad(ll_size(conf_items) + 1, 40);
 
 	getmaxyx(w_conf, wconfy, wconfx);

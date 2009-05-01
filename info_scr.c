@@ -410,11 +410,11 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 
 	iw_getinf_range(conf.ifname, &cur.range);
 
-	w_if	 = newwin_title(2, COLS, 0, 0, "Interface", 0, 1);
-	w_levels = newwin_title(9, COLS, 2, 0, "Levels", 1, 1);
-	w_stats	 = newwin_title(3, COLS, 11, 0, "Statistics", 1, 1);
-	w_info	 = newwin_title(7, COLS, 14, 0, "Info", 1, 1);
-	w_net	 = newwin_title(4, COLS, 21, 0, "Network", 1, 0);
+	w_if	 = newwin_title(0,  2, "Interface",  true);
+	w_levels = newwin_title(2,  9, "Levels",     true);
+	w_stats	 = newwin_title(11, 3, "Statistics", true);
+	w_info	 = newwin_title(14, 7, "Info",       true);
+	w_net	 = newwin_title(21, 4, "Network",    false);
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);

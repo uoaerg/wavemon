@@ -110,7 +110,7 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 	struct timer t1;
 	int key = 0;
 
-	w_aplst = newwin_title(LINES - 1, COLS, 0, 0, "Access point list", 0, 0);
+	w_aplst = newwin_title(0, LINES - 1, "Access point list", false);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);

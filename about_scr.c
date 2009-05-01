@@ -85,7 +85,7 @@ enum wavemon_screen scr_about(WINDOW *w_menu)
 	WINDOW *w_about;
 	int key = 0;
 
-	w_about = newwin_title(LINES - 1, COLS, 0, 0, "About", 0, 0);
+	w_about = newwin_title(0, LINES - 1, "About", false);
 
 	init_scramble();
 
