@@ -169,11 +169,10 @@ extern void mvwclrtoborder(WINDOW *win, int y, int x);
 extern void waddstr_b(WINDOW * win, const char *s);
 extern void waddstr_center(WINDOW * win, int y, const char *s);
 
-extern void waddbar(WINDOW * win, float v, float minv, float maxv, int y, int x,
-		    int maxx, char *cscale, bool rev);
-extern void waddthreshold(WINDOW * win, float v, float tv, float minv,
-			  float maxv, int y, int x, int maxx, char *cscale,
-			  chtype tch);
+extern void waddbar(WINDOW *win, int y, float v, float min, float max,
+		    char *cscale, bool rev);
+extern void waddthreshold(WINDOW *win, int y, float v, float tv,
+			  float minv, float maxv, char *cscale, chtype tch);
 enum colour_pair {
 	CP_STANDARD = 1,
 	CP_SCALEHI,

@@ -79,8 +79,8 @@ static void display_levels(void)
 		qual = ewma(qual, cur.stat.qual.qual, conf.meter_decay / 100.0);
 		sprintf(tmp, "%0.f/%d  ", qual, cur.range.max_qual.qual);
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, qual, 0, cur.range.max_qual.qual,
-			line++, 1, COLS - 1, lvlscale, true);
+		waddbar(w_levels, line++, qual, 0, cur.range.max_qual.qual,
+			lvlscale, true);
 	}
 
 	if (!(cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
@@ -91,15 +91,15 @@ static void display_levels(void)
 
 		sprintf(tmp, "%.0f dBm (%s)      ", signal, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, signal, conf.sig_min,
-			conf.sig_max, line, 1, COLS - 1, lvlscale, true);
+		waddbar(w_levels, line, signal, conf.sig_min, conf.sig_max,
+			lvlscale, true);
 
 		if (conf.lthreshold_action)
-			waddthreshold(w_levels, signal, conf.lthreshold, conf.sig_min,
-				      conf.sig_max, line, 1, COLS - 1, lvlscale, '>');
+			waddthreshold(w_levels, line, signal, conf.lthreshold,
+				      conf.sig_min, conf.sig_max, lvlscale, '>');
 		if (conf.hthreshold_action)
-			waddthreshold(w_levels, signal, conf.hthreshold, conf.sig_min,
-				      conf.sig_max, line, 1, COLS - 1, lvlscale, '<');
+			waddthreshold(w_levels, line, signal, conf.hthreshold,
+				      conf.sig_min, conf.sig_max, lvlscale, '<');
 	}
 
 	if (!offset) {
@@ -110,8 +110,8 @@ static void display_levels(void)
 
 		sprintf(tmp, "%.0f dBm (%s)    ", noise, dbm2units(noise));
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, noise, conf.noise_min, conf.noise_max,
-			line++, 1, COLS - 1, nscale, false);
+		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
+			nscale, false);
 		/*
 		 * Since we make sure (in iw_if.c) that invalid noise levels always
 		 * imply invalid noise levels, we can display a valid SNR here.
@@ -124,7 +124,7 @@ static void display_levels(void)
 			waddstr_b(w_levels, "+");
 		sprintf(tmp, "%.0f dB   ", ssnr);
 		waddstr_b(w_levels, tmp);
-		waddbar(w_levels, ssnr, 0, 110, 8, 1, COLS - 1, snrscale, true);
+		waddbar(w_levels, 8, ssnr, 0, 110, snrscale, true);
 	}
 	wrefresh(w_levels);
 }

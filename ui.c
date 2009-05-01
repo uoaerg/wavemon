@@ -87,18 +87,18 @@ static double interpolate(const double val, const double min, const double max)
 		val > max ? 1 : (val - min) / (max - min);
 }
 
-void waddbar(WINDOW *win, float v, float minv, float maxv, int y, int x,
-	     int maxx, char *cscale, bool rev)
+void waddbar(WINDOW *win, int y, float v, float min, float max,
+		    char *cscale, bool rev)
 {
-	int len = (maxx - x) * interpolate(v, minv, maxv);
 	chtype ch = '=' | A_BOLD | cp_from_scale(v, cscale, rev);
+	int len = (COLS - 2) * interpolate(v, min, max);
 
-	mvwhline(win, y, x, ch, len);
-	mvwclrtoborder(win, y, x + len);
+	mvwhline(win, y, 1, ch, len);
+	mvwclrtoborder(win, y, len + 1);
 }
 
-void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv,
-		   int y, int x, int maxx, char *cscale, chtype tch)
+void waddthreshold(WINDOW *win, int y, float v, float tv,
+		   float minv, float maxv, char *cscale, chtype tch)
 {
 	if (tv > minv && tv < maxv) {
 		if (v > tv)
@@ -106,6 +106,6 @@ void waddthreshold(WINDOW *win, float v, float tv, float minv, float maxv,
 		else
 			tch |= cp_from_scale(v, cscale, true);
 
-		mvwaddch(win, y, x + (float)(maxx - x) * (tv - minv) / (maxv - minv), tch);
+		mvwaddch(win, y, 1 + (COLS - 2) * interpolate(tv, minv, maxv), tch);
 	}
 }
