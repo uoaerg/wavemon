@@ -347,12 +347,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		if (info.key_flags & IW_ENCODE_DISABLED || info.key_size == 0) {
 			waddstr_b(w_info, "off");
 		} else {
-			for (i = 0; i < info.key_size; i++) {
-				if (i > 0 && !(i & 0x1))
-					waddstr_b(w_info, "-");
-				sprintf(tmp, "%2X", info.key[i]);
-				waddstr_b(w_info, tmp);
-			}
+			waddstr_b(w_info, format_key(info.key, info.key_size));
 			i = info.key_flags & IW_ENCODE_INDEX;
 			if (i > 1) {
 				sprintf(tmp, " [%d]", i);

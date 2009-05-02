@@ -377,6 +377,32 @@ static inline int freq_to_channel(double freq, const struct iw_range *range)
 	return -1;
 }
 
+/* print @key in cleartext if it is in ASCII format, use hex format otherwise */
+static inline char *format_key(char *key, uint8_t key_len)
+{
+	static char buf[128];
+	int len = 0, i, is_printable;
+
+	for (i = 0, is_printable = 1; i < key_len && is_printable; i++)
+		is_printable = isprint(key[i]);
+
+	if (is_printable)
+		len += sprintf(buf, "\"");
+
+	for (i = 0; i < key_len; i++)
+		if (is_printable)
+			len += sprintf(buf + len, "%c", key[i]);
+		else if (i > 0 && (i & 1) == 0)
+			len += sprintf(buf + len, "-");
+		else
+			len += sprintf(buf + len, "%2X", key[i]);
+
+	if (is_printable)
+		sprintf(buf + len, "\"");
+
+	return buf;
+}
+
 static inline char *format_retry(const struct iw_param *retry,
 				 const struct iw_range *range)
 {

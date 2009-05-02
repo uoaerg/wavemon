@@ -556,11 +556,7 @@ void dump_parameters(void)
 		if (info.key_flags & IW_ENCODE_DISABLED || info.key_size == 0) {
 			printf("off");
 		} else {
-			for (i = 0; i < info.key_size; i++) {
-				if (i > 0 && !(i & 0x1))
-					printf("-");
-				printf("%2X", info.key[i]);
-			}
+			printf("%s", format_key(info.key, info.key_size));
 			i = info.key_flags & IW_ENCODE_INDEX;
 			if (i > 1)
 				printf(" [%d]", i);
