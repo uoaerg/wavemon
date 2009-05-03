@@ -133,36 +133,34 @@ static void display_stats(void)
 {
 	struct if_stat nstat;
 	char tmp[0x100];
-	int width;
 
 	if_getstat(conf.ifname, &nstat);
-	width = num_int_digits(max(nstat.rx_packets, nstat.tx_packets));
 
 	/*
 	 * Interface RX stats
 	 */
 	mvwaddstr(w_stats, 1, 1, "RX: ");
 
-	sprintf(tmp, "%*llu (%s)", width, nstat.rx_packets,
-				   byte_units(nstat.rx_bytes));
+	sprintf(tmp, "%'llu (%s)",  nstat.rx_packets,
+		byte_units(nstat.rx_bytes));
 	waddstr_b(w_stats, tmp);
 
 	waddstr(w_stats, ", invalid: ");
-	sprintf(tmp, "%u", cur.stat.discard.nwid);
+	sprintf(tmp, "%'u", cur.stat.discard.nwid);
 
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " nwid, ");
 
-	sprintf(tmp, "%u", cur.stat.discard.code);
+	sprintf(tmp, "%'u", cur.stat.discard.code);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " crypt, ");
 
 	if (cur.range.we_version_compiled > 11) {
-		sprintf(tmp, "%u", cur.stat.discard.fragment);
+		sprintf(tmp, "%'u", cur.stat.discard.fragment);
 		waddstr_b(w_stats, tmp);
 		waddstr(w_stats, " frag, ");
 	}
-	sprintf(tmp, "%u", cur.stat.discard.misc);
+	sprintf(tmp, "%'u", cur.stat.discard.misc);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " misc");
 	wclrtoborder(w_stats);
@@ -172,17 +170,17 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 2, 1, "TX: ");
 
-	sprintf(tmp, "%*llu (%s)", width, nstat.tx_packets,
+	sprintf(tmp, "%'llu (%s)",  nstat.tx_packets,
 		byte_units(nstat.tx_bytes));
 	waddstr_b(w_stats, tmp);
 
 	if (cur.range.we_version_compiled > 11) {
 		waddstr(w_stats, ", mac retries: ");
-		sprintf(tmp, "%u", cur.stat.discard.retries);
+		sprintf(tmp, "%'u", cur.stat.discard.retries);
 		waddstr_b(w_stats, tmp);
 
 		waddstr(w_stats, ", missed beacons: ");
-		sprintf(tmp, "%u", cur.stat.miss.beacon);
+		sprintf(tmp, "%'u", cur.stat.miss.beacon);
 		waddstr_b(w_stats, tmp);
 	}
 	wclrtoborder(w_stats);

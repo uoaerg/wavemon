@@ -586,21 +586,21 @@ void dump_parameters(void)
 	printf("              SNR: %.0f dB\n", iw.dbm.signal - iw.dbm.noise);
 
 	/* RX stats */
-	printf("         RX total: %llu packets (%s)\n", nstat.rx_packets,
+	printf("         RX total: %'llu packets (%s)\n", nstat.rx_packets,
 	       byte_units(nstat.rx_bytes));
-	printf("     invalid nwid: %u\n", iw.stat.discard.nwid);
-	printf("      invalid key: %u\n", iw.stat.discard.code);
+	printf("     invalid nwid: %'u\n", iw.stat.discard.nwid);
+	printf("      invalid key: %'u\n", iw.stat.discard.code);
 	if (iw.range.we_version_compiled > 11) {
-		printf("   invalid fragm.: %u\n", iw.stat.discard.fragment);
-		printf("   missed beacons: %u\n", iw.stat.miss.beacon);
+		printf("   invalid fragm.: %'u\n", iw.stat.discard.fragment);
+		printf("   missed beacons: %'u\n", iw.stat.miss.beacon);
 	}
-	printf("      misc errors: %u\n", iw.stat.discard.misc);
+	printf("      misc errors: %'u\n", iw.stat.discard.misc);
 
 	/* TX stats */
-	printf("         TX total: %llu packets (%s)\n", nstat.tx_packets,
+	printf("         TX total: %'llu packets (%s)\n", nstat.tx_packets,
 	       byte_units(nstat.tx_bytes));
 	if (iw.range.we_version_compiled > 11)
-		printf(" exc. MAC retries: %u\n", iw.stat.discard.retries);
+		printf(" exc. MAC retries: %'u\n", iw.stat.discard.retries);
 
 	printf("\n");
 }
