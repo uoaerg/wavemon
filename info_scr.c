@@ -377,19 +377,16 @@ static void display_netinfo(WINDOW *w_net)
 
 	if_getinf(conf.ifname, &info);
 
-	mvwaddstr(w_net, 1, 1, "if: ");
-	waddstr_b(w_net, conf.ifname);
-
-	waddstr(w_net, ",  mac: ");
-	waddstr_b(w_net, ether_addr(&info.hwaddr));
-
-	mvwaddstr(w_net, 2, 1, "ip: ");
+	mvwaddstr(w_net, 1, 1, "ip: ");
 	sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
 			      prefix_len(&info.netmask));
 	waddstr_b(w_net, tmp);
 
 	waddstr(w_net, ",  bcast: ");
 	waddstr_b(w_net, inet_ntoa(info.bcast));
+
+	waddstr(w_net, ",  mac: ");
+	waddstr_b(w_net, ether_addr(&info.hwaddr));
 
 	wclrtoborder(w_net);
 	wrefresh(w_net);
@@ -407,7 +404,7 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	w_levels = newwin_title(2,  9, "Levels",     true);
 	w_stats	 = newwin_title(11, 3, "Statistics", true);
 	w_info	 = newwin_title(14, 7, "Info",       true);
-	w_net	 = newwin_title(21, 4, "Network",    false);
+	w_net	 = newwin_title(21, 3, "Network",    false);
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);
