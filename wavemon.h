@@ -37,6 +37,15 @@
 #include "llist.h"
 
 #define CFNAME	".wavemonrc"
+/*
+ * Minimum screen dimensions.
+ * The number of lines depends on the size requirements of scr_info(), which
+ * is 24 + 1 lines (1 line is needed for the menubar). The number of columns
+ * comes from the menubar length (10 items of length 6 plus the 'Fxx').
+ * A size of 25x80 is favourable to support commandline/tty mode.
+ */
+#define MIN_SCREEN_LINES   25
+#define MIN_SCREEN_COLS    80
 
 /*
  * Symbolic names of actions to take when crossing thresholds.

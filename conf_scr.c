@@ -19,6 +19,9 @@
  */
 #include "wavemon.h"
 
+/* Make configuration screen fit into half of minimum screen width */
+#define CONF_SCREEN_WIDTH	(MIN_SCREEN_COLS / 2)
+
 static int first_item;
 static int list_ofs = 0;
 static int wconfx, wconfy;
@@ -26,15 +29,13 @@ static int wconfx, wconfy;
 static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
 	char s[0x40];
-	int x1 = 0,
-	    x2 = 40;
 
 	wattrset(w, COLOR_PAIR(CP_PREF_NORMAL));
 
-	mvwclrtoborder(w, y, x2 - x1);
+	mvwhline(w, y, 0, ' ', CONF_SCREEN_WIDTH);
 
 	if (item->type != t_sep && item->type != t_func) {
-		mvwaddstr(w, y, (item->dep ? x1 + 2 : x1), item->name);
+		mvwaddstr(w, y, item->dep ? 2 : 0, item->name);
 
 		switch (item->type) {
 		case t_int:
@@ -58,7 +59,7 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 		}
 
 		if (!item->unit) {
-			wmove(w, y, x2 - strlen(s));
+			wmove(w, y, CONF_SCREEN_WIDTH - strlen(s));
 			if (hilight) {
 				wattron(w, A_REVERSE);
 				waddstr_b(w, s);
@@ -66,20 +67,20 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 			} else
 				waddstr_b(w, s);
 		} else {
-			wmove(w, y, x2 - strlen(s) - strlen(item->unit) - 1);
+			wmove(w, y, CONF_SCREEN_WIDTH - strlen(s) - strlen(item->unit) - 1);
 			if (hilight) {
 				wattron(w, A_REVERSE);
 				waddstr_b(w, s);
 				wattroff(w, A_REVERSE);
 			} else
 				waddstr_b(w, s);
-			mvwaddstr(w, y, x2 - strlen(item->unit), item->unit);
+			mvwaddstr(w, y, CONF_SCREEN_WIDTH - strlen(item->unit), item->unit);
 		}
 	} else if (item->type == t_sep && item->name) {
 		sprintf(s, "- %s -", item->name);
-		mvwaddstr(w, y, 20 - (strlen(s) >> 1), s);
+		mvwaddstr(w, y, (CONF_SCREEN_WIDTH  - strlen(s)) / 2, s);
 	} else if (item->type == t_func) {
-		wmove(w, y, 20 - (strlen(item->name) >> 1));
+		wmove(w, y, (CONF_SCREEN_WIDTH - strlen(item->name)) / 2);
 		if (hilight) {
 			wattron(w, A_REVERSE);
 			waddstr(w, item->name);
@@ -200,16 +201,13 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 {
 	WINDOW *w_conf, *w_confpad;
 	int key = 0;
-	int num_items;
 	int active_line, active_item = 0;
 	int subw;
 	void (*func) ();
 	struct conf_item *item;
 
-	num_items = ll_size(conf_items);
-
 	w_conf    = newwin_title(0, LINES - 1, "Preferences", false);
-	w_confpad = newpad(ll_size(conf_items) + 1, 40);
+	w_confpad = newpad(ll_size(conf_items) + 1, CONF_SCREEN_WIDTH);
 
 	getmaxyx(w_conf, wconfy, wconfx);
 	subw = wconfy - 3;
@@ -226,7 +224,7 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 		} else if (active_line < list_ofs)
 			list_ofs = active_line;
 
-		prefresh(w_confpad, list_ofs, 0, 1, COLS/2 - 20,
+		prefresh(w_confpad, list_ofs, 0, 1, (COLS - CONF_SCREEN_WIDTH)/2,
 				    wconfy - 2, wconfx - 1);
 		wrefresh(w_conf);
 
