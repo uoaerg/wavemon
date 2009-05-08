@@ -2,6 +2,60 @@ NEWS
 ====
 
 --------------------
+0.6.5 (2009-05-08)
+--------------------
+ * Several improvements in displaying driver parameters:
+   - ESSID: support for indexed ESS identifiers,
+   - nickname: no longer present empty/void nicknames,
+   - nwid: added support for displaying it (even if is pre-802.11),
+   - IP-address: collapse netmask information into shorter CIDR prefix length,
+   - mode: preliminary support to display 802.11s mesh mode (2.6.26),
+   - retry: new code to display information about MAC-layer retransmissions,
+   - frequency: suppress trailing zeroes, unified conversion,
+   - channel: now also prints the number of the current channel,
+   - encryption keys: added pretty-printing, suppress always-present '0' index,
+   - sensitivity: only print if card supports it, now also supports dBm values,
+   - tx-power: better support for the various formats (relative | mW | dBm),
+   - power management: improved output formatting.
+
+ * Mode-sensitive display:
+   - when operating in 'monitor' or 'access point' mode, the 'access point'
+     field is not necessary or redundant (in AP mode, it is the same as the
+     mac address shown in the network window), hence omitted;
+   - when operating in 'master', 'repeater' or 'secondary' mode, the bitrate
+     information is also not needed and hence suppressed;
+   - wavemon is now able to distinguish auto-configured values (using upper-case
+     labels) from manually configured values (using standard lower-case labels).
+
+ * Encryption keys (only with CAP_NET_ADMIN privileges): display of all-ASCII
+   keys is now in cleartext, otherwise the hex format is now pretty-printed.
+
+ * Screen Layout: redundancies (repeated interface name) have been removed, the
+   whole screen fits again into a 25x80 console window. In addition, wavemon
+   tests if the screen size and bails out if the screen is too small for a
+   readable layout.
+
+ * Better display of MAC addresses:
+   - detects the "not associated" state of a managed client and then
+   - displays 'non-associated' state instead of showing zero MAC address,
+   - sanity checks on access point addresses (broadcast address is invalid),
+   - Ethernet addresses are automatically translated to symbolic names if a
+     mapping  exists for the MAC address in /etc/ethers.
+
+ * The Access Point List is now sorted in descending order of signal strength.
+
+ * The LC_NUMERIC locale is honoured: when displaying large numbers (e.g. packet
+   counters, numbers are now grouped according to the locale.
+
+ * Bug Fixes:
+   - fixed several conditions which caused the window borders to be punctured;
+   - fixed a bug in the display of MAC addresses on the access point screen;
+   - RTS/CTS threshold suffered from the same problem - also fixed,
+   - fixed broken display of frag[mentation] threshold;
+   - fixed a bug which caused empty nicknames ("") to be displayed;
+   - fixed several smaller bugs, thanks to sparse.
+
+--------------------
 0.6 (2009-04-01)
 --------------------
  * Update to the latest wireless extension API (number 22),
