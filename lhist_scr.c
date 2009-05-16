@@ -66,8 +66,11 @@ void iw_cache_update(struct iw_stat *iw)
 	static struct iw_levelstat avg, prev;
 	static int slot;
 
-	avg.signal += iw->dbm.signal / conf.slotsize;
-	avg.noise  += iw->dbm.noise  / conf.slotsize;
+	if (! (iw->stat.qual.updated & IW_QUAL_LEVEL_INVALID))
+		avg.signal += iw->dbm.signal / conf.slotsize;
+
+	if (! (iw->stat.qual.updated & IW_QUAL_NOISE_INVALID))
+		avg.noise += iw->dbm.noise / conf.slotsize;
 
 	if (++slot >= conf.slotsize) {
 		iw_cache_insert(avg);
