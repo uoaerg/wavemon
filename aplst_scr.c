@@ -36,7 +36,7 @@ static void display_aplist(WINDOW *w_aplst)
 		fatal_error("could not open socket");
 
 	iw_getinf_range(conf.ifname, &range);
-	for (i = 1; i < LINES - 1; i++)
+	for (i = 1; i < LINES - 2; i++)
 		mvwclrtoborder(w_aplst, i, 1);
 
 	strncpy(iwr.ifr_name, conf.ifname, IFNAMSIZ);
