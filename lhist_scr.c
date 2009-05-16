@@ -224,8 +224,8 @@ enum wavemon_screen scr_lhist(WINDOW *w_menu)
 	WINDOW *w_key;
 	int key = 0;
 
-	w_lhist = newwin_title(0, LINES - 4, "Level histogram", true);
-	w_key   = newwin_title(LINES - 4, 3, "Key", false);
+	w_lhist = newwin_title(0, WAV_HEIGHT - 3, "Level histogram", true);
+	w_key   = newwin_title(WAV_HEIGHT - 3, 3, "Key", false);
 
 	display_key(w_key);
 

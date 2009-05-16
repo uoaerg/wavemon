@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	init_pair(CP_PREF_SELECT, COLOR_WHITE, COLOR_BLUE);
 	init_pair(CP_PREF_ARROW, COLOR_RED, COLOR_BLACK);
 
-	w_menu = newwin(1, COLS, LINES - 1, 0);
+	w_menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
 	nodelay(w_menu, TRUE);
 	keypad(w_menu, TRUE);
 

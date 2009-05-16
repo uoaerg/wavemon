@@ -36,7 +36,7 @@ static void display_aplist(WINDOW *w_aplst)
 		fatal_error("could not open socket");
 
 	iw_getinf_range(conf.ifname, &range);
-	for (i = 1; i < LINES - 2; i++)
+	for (i = 1; i <= MAXYLEN; i++)
 		mvwclrtoborder(w_aplst, i, 1);
 
 	strncpy(iwr.ifr_name, conf.ifname, IFNAMSIZ);
@@ -47,13 +47,13 @@ static void display_aplist(WINDOW *w_aplst)
 	if (ioctl(skfd, SIOCGIWAPLIST, &iwr) < 0) {
 		sprintf(s, "%s does not have a list of peers/access points",
 			   conf.ifname);
-		waddstr_center(w_aplst, LINES / 2 - 1, s);
+		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 		goto done;
 	}
 
 	if (iwr.u.data.length == 0) {
 		sprintf(s, "%s: no peer/access point in range", conf.ifname);
-		waddstr_center(w_aplst, LINES / 2 - 1, s);
+		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 	} else if (iwr.u.data.length == 1) {
 		mvwaddstr(w_aplst, line, 1, "Peer/access point:");
 	} else {
@@ -110,7 +110,7 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 	struct timer t1;
 	int key = 0;
 
-	w_aplst = newwin_title(0, LINES - 1, "Access point list", false);
+	w_aplst = newwin_title(0, WAV_HEIGHT, "Access point list", false);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);

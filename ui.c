@@ -19,35 +19,26 @@
  */
 #include "wavemon.h"
 
-void waddstr_center(WINDOW *win, int y, const char *s)
-{
-	mvwaddstr(win, y, (COLS >> 1) - (strlen(s) >> 1), s);
-}
-
 /**
- * newwin_title  -  Create a new bordered window
- * @x:		vertical x position to start at
+ * newwin_title  -  Create a new bordered window at (y, 0)
+ * @y:		vertical row position to start at
  * @h:		height of the new window in lines
  * @title:	name of the window
  * @nobottom:   whether to keep the bottom of the box open
- * Creates a new window starting column 0 in the line number @x,
- * spanning all COLS. Two columns are taken up by borders, hence
- * the inner width is COLS - 2.
- * The maximum inner height of the window is LINES - 2 - 1, as
- * one line is used by the menubar at the bottom of each screen.
  */
-WINDOW *newwin_title(int x, int h, const char *title, bool nobottom)
+WINDOW *newwin_title(int y, int h, const char *title, bool nobottom)
 {
-	WINDOW *win = newwin(h, COLS, x, 0);
-	chtype top_left  = x > 0 ? ACS_LTEE : ACS_ULCORNER;
-	chtype top_right = x > 0 ? ACS_RTEE : ACS_URCORNER;
+	WINDOW *win = newwin(h, WAV_WIDTH, y, 0);
+
+	chtype top_left  = y > 0 ? ACS_LTEE : ACS_ULCORNER;
+	chtype top_right = y > 0 ? ACS_RTEE : ACS_URCORNER;
 
 	if (nobottom) {
 		mvwaddch(win, 0, 0, top_left);
-		mvwhline(win, 0, 1, ACS_HLINE, COLS - 2);
+		mvwhline(win, 0, 1, ACS_HLINE, MAXXLEN);
 		mvwvline(win, 1, 0, ACS_VLINE, h);
-		mvwaddch(win, 0, COLS - 1, top_right);
-		mvwvline(win, 1, COLS - 1, ACS_VLINE, h);
+		mvwaddch(win, 0, WAV_WIDTH - 1, top_right);
+		mvwvline(win, 1, WAV_WIDTH - 1, ACS_VLINE, h);
 	} else {
 		wborder(win, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
 			top_left, top_right, ACS_LLCORNER, ACS_LRCORNER);
@@ -62,8 +53,8 @@ WINDOW *newwin_title(int x, int h, const char *title, bool nobottom)
 /* clear inside window content up to the right border */
 void mvwclrtoborder(WINDOW *win, int y, int x)
 {
-	if (x < COLS - 1 && x > 0)
-		mvwhline(win, y, x, ' ', COLS - 1 - x);
+	if (x >= 1 && x <= MAXXLEN)
+		mvwhline(win, y, x, ' ', 1 + MAXXLEN - x);
 }
 
 void wclrtoborder(WINDOW *win)
@@ -72,6 +63,11 @@ void wclrtoborder(WINDOW *win)
 
 	getyx(win, y, x);
 	mvwclrtoborder(win, y, x);
+}
+
+void waddstr_center(WINDOW *win, int y, const char *s)
+{
+	mvwaddstr(win, y, (WAV_WIDTH - strlen(s)) / 2, s);
 }
 
 void waddstr_b(WINDOW *win, const char *s)
@@ -91,7 +87,7 @@ void waddbar(WINDOW *win, int y, float v, float min, float max,
 		    char *cscale, bool rev)
 {
 	chtype ch = '=' | A_BOLD | cp_from_scale(v, cscale, rev);
-	int len = (COLS - 2) * interpolate(v, min, max);
+	int len = MAXXLEN * interpolate(v, min, max);
 
 	mvwhline(win, y, 1, ch, len);
 	mvwclrtoborder(win, y, len + 1);
@@ -106,6 +102,6 @@ void waddthreshold(WINDOW *win, int y, float v, float tv,
 		else
 			tch |= cp_from_scale(v, cscale, true);
 
-		mvwaddch(win, y, 1 + (COLS - 2) * interpolate(tv, minv, maxv), tch);
+		mvwaddch(win, y, 1 + MAXXLEN * interpolate(tv, minv, maxv), tch);
 	}
 }

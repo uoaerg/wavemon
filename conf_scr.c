@@ -21,10 +21,14 @@
 
 /* Make configuration screen fit into half of minimum screen width */
 #define CONF_SCREEN_WIDTH	(MIN_SCREEN_COLS / 2)
+/*
+ * Maximum number of rows in the configuration box. Due to the top
+ * border, this is one less than the maximum vertical number of rows.
+ */
+#define MAX_NUM_CONF_ROWS	(MAXYLEN - 1)
 
 static int first_item;
 static int list_ofs = 0;
-static int wconfx, wconfy;
 
 static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
@@ -202,15 +206,11 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 	WINDOW *w_conf, *w_confpad;
 	int key = 0;
 	int active_line, active_item = 0;
-	int subw;
 	void (*func) ();
 	struct conf_item *item;
 
-	w_conf    = newwin_title(0, LINES - 1, "Preferences", false);
+	w_conf    = newwin_title(0, WAV_HEIGHT, "Preferences", false);
 	w_confpad = newpad(ll_size(conf_items) + 1, CONF_SCREEN_WIDTH);
-
-	getmaxyx(w_conf, wconfy, wconfx);
-	subw = wconfy - 3;
 
 	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep)
 		active_item++;
@@ -219,13 +219,15 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		active_line = m_pref(w_confpad, active_item);
 
-		if (active_line - list_ofs > subw) {
-			list_ofs = active_line - subw;
-		} else if (active_line < list_ofs)
+		if (active_line - list_ofs > MAX_NUM_CONF_ROWS) {
+			list_ofs = active_line - MAX_NUM_CONF_ROWS;
+		} else if (active_line < list_ofs) {
 			list_ofs = active_line;
+		}
 
-		prefresh(w_confpad, list_ofs, 0, 1, (COLS - CONF_SCREEN_WIDTH)/2,
-				    wconfy - 2, wconfx - 1);
+		prefresh(w_confpad, list_ofs, 0,
+			 1,       (WAV_WIDTH - CONF_SCREEN_WIDTH)/2,
+			 MAXYLEN, (WAV_WIDTH + CONF_SCREEN_WIDTH)/2);
 		wrefresh(w_conf);
 
 		key = wgetch(w_menu);

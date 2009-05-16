@@ -46,6 +46,22 @@
  */
 #define MIN_SCREEN_LINES   25
 #define MIN_SCREEN_COLS    80
+/*
+ * Screen layout constants.
+ *
+ * All windows extend over the whole screen width; the vertical number of
+ * rows is reduced by one due to the menubar at the bottom of the screen.
+ */
+#define WAV_WIDTH	(COLS)
+#define WAV_HEIGHT	(LINES-1)
+/*
+ * Maximum lengths/coordinates inside the bordered screen.
+ *
+ * The printable window area is constrained by the frame lines connecting
+ * the corner points (0, 0), (0, COLS-1), (LINES-1, 0), (LINES-1, COLS-1).
+ */
+#define MAXXLEN		(WAV_WIDTH  - 2)
+#define MAXYLEN		(WAV_HEIGHT - 2)
 
 /*
  * Symbolic names of actions to take when crossing thresholds.
@@ -170,7 +186,7 @@ extern enum wavemon_screen  scr_about(WINDOW *w_menu);
 /*
  *	Ncurses definitions and functions
  */
-extern WINDOW *newwin_title(int x, int h, const char *title, bool nobottom);
+extern WINDOW *newwin_title(int y, int h, const char *title, bool nobottom);
 extern WINDOW *wmenubar(const enum wavemon_screen active);
 
 extern void wclrtoborder(WINDOW *win);

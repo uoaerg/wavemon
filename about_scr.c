@@ -75,7 +75,7 @@ static void draw_lines(WINDOW *w_about)
 			}
 		}
 		buf[j] = '\0';
-		waddstr_center(w_about, (LINES - ARRAY_SIZE(about_lines)) / 2 + i, buf);
+		waddstr_center(w_about, (WAV_HEIGHT - ARRAY_SIZE(about_lines))/2 + i, buf);
 	}
 	wrefresh(w_about);
 }
@@ -85,7 +85,7 @@ enum wavemon_screen scr_about(WINDOW *w_menu)
 	WINDOW *w_about;
 	int key = 0;
 
-	w_about = newwin_title(0, LINES - 1, "About", false);
+	w_about = newwin_title(0, WAV_HEIGHT, "About", false);
 
 	init_scramble();
 
