@@ -82,7 +82,10 @@ static void display_aplist(WINDOW *w_aplst)
 		hwa[j]  = hwa_pivot;
 	}
 
-	for (i = 0, line += 2; i < iwr.u.data.length; i++, line++) {
+	line += 2;
+
+	/* Truncate overly long access point lists to match screen height */
+	for (i = 0; i < iwr.u.data.length && line < MAXYLEN; i++, line++) {
 
 		mvwaddstr(w_aplst, line++, 1, "  ");
 		waddstr_b(w_aplst, mac_addr(&hwa[i]));
