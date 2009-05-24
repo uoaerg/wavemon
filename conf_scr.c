@@ -27,9 +27,6 @@
  */
 #define MAX_NUM_CONF_ROWS	(MAXYLEN - 1)
 
-static int first_item;
-static int list_ofs = 0;
-
 static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
 	char s[0x40];
@@ -94,26 +91,16 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 	}
 }
 
-static void change_item(int inum, char sign, char accel)
+static void change_item(int inum, char sign)
 {
 	struct conf_item *item = ll_get(conf_items, inum);
 	int tmp;
 
 	switch (item->type) {
 	case t_int:
-		if (!accel) {
-			if (*item->v.i + item->inc * sign <= item->max &&
-			    *item->v.i + item->inc * sign >= item->min)
-				*item->v.i += item->inc * sign;
-		} else if (*item->v.i + 10 * item->inc * sign <= item->max &&
-			   *item->v.i + 10 * item->inc * sign >= item->min) {
-			*item->v.i += 10 * item->inc * sign;
-		} else if (sign > 0) {
-			if (*item->v.i < item->max)
-				*item->v.i = item->max;
-		} else if (*item->v.i > item->min) {
-			*item->v.i = item->min;
-		}
+		if (*item->v.i + item->inc * sign <= item->max &&
+		    *item->v.i + item->inc * sign >= item->min)
+			*item->v.i += item->inc * sign;
 		break;
 	case t_switch:
 		*item->v.b = *item->v.b == 0 ? 1 : 0;
@@ -147,46 +134,29 @@ static void change_item(int inum, char sign, char accel)
 	}
 }
 
-static int next_item(int rv)
-{
-	struct conf_item *item = ll_get(conf_items, rv);
 
-	do {
-		rv++;
-		item = ll_get(conf_items, rv);
-
-	} while (item->type == t_sep || (item->dep && !*item->dep));
-
-	if (rv >= ll_size(conf_items)) {
-		rv = first_item;
-		list_ofs = 0;
-	}
-	return rv;
-}
-
-static int prev_item(int rv)
+static int select_item(int rv, int incr)
 {
 	struct conf_item *item;
 
 	do {
-		rv--;
+		rv  += incr;
 		item = ll_get(conf_items, rv);
-	} while (item->type == t_sep || (item->dep && !*item->dep));
 
-	if (rv < first_item)
-		rv = ll_size(conf_items) - 1;
+	} while (item->type == t_sep || (item->dep && !*item->dep));
 
 	return rv;
 }
 
-static int m_pref(WINDOW *w_conf, int active_item)
+/* Perform selection, return offset value to ensure pad fits inside window */
+static int m_pref(WINDOW *w_conf, int list_offset, int active_item, int num_items)
 {
 	struct conf_item *item;
-	int active_line, i, j, items = ll_size(conf_items);
+	int active_line, i, j;
 
 	werase(w_conf);
 
-	for (active_line = i = j = 0; i < items; i++) {
+	for (active_line = i = j = 0; i < num_items; i++) {
 		item = ll_get(conf_items, i);
 		if (!item->dep || *item->dep) {
 			if (i != active_item)
@@ -198,34 +168,33 @@ static int m_pref(WINDOW *w_conf, int active_item)
 		}
 	}
 
-	return active_line;
+	if (active_line - list_offset > MAX_NUM_CONF_ROWS)
+		return active_line - MAX_NUM_CONF_ROWS;
+	if (active_line < list_offset)
+		return active_line;
+	return list_offset;
 }
 
 enum wavemon_screen scr_conf(WINDOW *w_menu)
 {
 	WINDOW *w_conf, *w_confpad;
+	int first_item, active_item = 0;
+	int num_items = ll_size(conf_items);
+	int list_offset = 0;
 	int key = 0;
-	int active_line, active_item = 0;
-	void (*func) ();
 	struct conf_item *item;
 
 	w_conf    = newwin_title(0, WAV_HEIGHT, "Preferences", false);
-	w_confpad = newpad(ll_size(conf_items) + 1, CONF_SCREEN_WIDTH);
+	w_confpad = newpad(num_items + 1, CONF_SCREEN_WIDTH);
 
 	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep)
 		active_item++;
 	first_item = active_item;
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
-		active_line = m_pref(w_confpad, active_item);
+		list_offset = m_pref(w_confpad, list_offset, active_item, num_items);
 
-		if (active_line - list_ofs > MAX_NUM_CONF_ROWS) {
-			list_ofs = active_line - MAX_NUM_CONF_ROWS;
-		} else if (active_line < list_ofs) {
-			list_ofs = active_line;
-		}
-
-		prefresh(w_confpad, list_ofs, 0,
+		prefresh(w_confpad, list_offset, 0,
 			 1,       (WAV_WIDTH - CONF_SCREEN_WIDTH)/2,
 			 MAXYLEN, (WAV_WIDTH + CONF_SCREEN_WIDTH)/2);
 		wrefresh(w_conf);
@@ -233,23 +202,28 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 		key = wgetch(w_menu);
 		switch (key) {
 		case KEY_DOWN:
-			active_item = next_item(active_item);
+			active_item = select_item(active_item, 1);
+			if (active_item >= num_items) {
+				active_item = first_item;
+				list_offset = 0;
+			}
 			break;
 		case KEY_UP:
-			active_item = prev_item(active_item);
+			active_item = select_item(active_item, -1);
+			if (active_item < first_item)
+				active_item = num_items - 1;
 			break;
 		case KEY_LEFT:
-			change_item(active_item, -1, 0);
+			change_item(active_item, -1);
 			break;
 		case KEY_RIGHT:
-			change_item(active_item, 1, 0);
+			change_item(active_item, 1);
 			break;
 		case '\r':
 			item = ll_get(conf_items, active_item);
 			if (item->type == t_func) {
 				flash();
-				func = item->v.fp;
-				func();
+				(*item->v.fp)();
 			}
 			break;
 			/* Keyboard shortcuts */
