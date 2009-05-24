@@ -73,175 +73,155 @@ static void getargs(int argc, char *argv[])
 		}
 }
 
+/* Return full path of rcfile. Allocates string which must bee free()-d. */
+static char *get_confname(void)
+{
+	char *full_path, *homedir = getenv("HOME");
+	struct passwd *pw;
+
+	if (homedir == NULL) {
+		pw = getpwuid(getuid());
+		if (pw == NULL)
+			fatal_error("cannot determine $HOME");
+		homedir = pw->pw_dir;
+	}
+	full_path = malloc(strlen(homedir) + strlen(CFNAME) + 3);
+	sprintf(full_path, "%s/%s", homedir, CFNAME);
+
+	return full_path;
+}
+
 static void read_cf(void)
 {
-	char tmp[0x100], lv[0x20], rv[0x20], *cfname;
-	char *lp;
-	FILE *fd;
-	int lnum = 0;
-	char found;
+	char tmp[0x100], lv[0x20], rv[0x20];
 	struct conf_item *ci = NULL;
-	struct passwd *pw = getpwuid(getuid());
-	int v_int;
-	char *conv_err;
+	FILE *fd;
+	size_t len;
+	int lnum, found, v_int;
+	char *lp, *conv_err;
+	char *cfname = get_confname();
 
-	cfname = malloc(strlen(pw->pw_dir) + strlen(CFNAME) + 3);
-	strcpy(cfname, pw->pw_dir);
-	strcat(cfname, "/");
-	strcat(cfname, CFNAME);
+	if (access(cfname, F_OK) != 0)
+		goto done;
 
-	if ((fd = fopen(cfname, "r"))) {
-		while (fgets(tmp, 0x100, fd)) {
-			found = 0;
-			++lnum;
-			lp = tmp + strspn(tmp, " ");
-			if (*lp != '#' && *lp != '\n') {
-				if (strcspn(lp, " =") > sizeof(lv)) {
-					fclose(fd);
-					fatal_error("parse error in %s, line %d: identifier too long",
-						    cfname, lnum);
-				}
-				strncpy(lv, lp, strcspn(lp, " ="));
-				lv[strcspn(lp, " =")] = '\0';
+	fd = fopen(cfname, "r");
+	if (fd == NULL)
+		fatal_error("cannot read configuration file '%s'", cfname);
 
-				ll_reset(conf_items);
-				while (!found && (ci = ll_getall(conf_items)))
-					if (ci->type != t_sep
-					    && ci->type != t_func
-					    && !strcasecmp(ci->cfname, lv))
-						found = 1;
-				if (!found) {
-					fclose(fd);
-					fatal_error("parse error in %s, line %d: unknown identifier '%s'",
-						    cfname, lnum, lv);
-				}
+	for (lnum = 1; fgets(tmp, sizeof(tmp), fd); lnum++) {
 
-				lp += strlen(lv);
-				lp += strspn(lp, " ");
-				if (*lp++ != '=') {
-					fclose(fd);
-					fatal_error("parse error in %s, line %d: missing '=' operator in assignment",
-						    cfname, lnum);
-				}
-				lp += strspn(lp, " ");
+		lp = tmp + strspn(tmp, " ");
+		if (*lp == '#' || *lp == '\n')
+			continue;
 
-				if (strcspn(lp, " \n") > sizeof(rv)) {
-					fclose(fd);
-					fatal_error("parse error in %s, line %d: argument too long",
-						    cfname, lnum);
-				}
-				if (*lp == '\n') {
-					fclose(fd);
-					fatal_error("parse error in %s, line %d: argument expected",
-						    cfname, lnum);
-				}
-				strncpy(rv, lp, strcspn(lp, " \n"));
-				rv[strcspn(lp, " \n")] = '\0';
+		len = strcspn(lp, " =");
+		if (len > sizeof(lv))
+			fatal_error("parse error in %s, line %d: identifier too long",
+				    cfname, lnum);
+		strncpy(lv, lp, len);
+		lv[len] = '\0';
+		lp += len;
 
-				switch (ci->type) {
-				case t_int:
-					v_int = strtol(rv, &conv_err, 10);
-					if (*conv_err == '\0') {
-						if (v_int > ci->max) {
-							fclose(fd);
-							fatal_error("parse error in %s, line %d: value exceeds maximum of %d",
-								    cfname, lnum, (int)ci->max);
-						} else if (v_int < ci->min) {
-							fclose(fd);
-							fatal_error("parse error in %s, line %d: value is below minimum of %d",
-								    cfname, lnum, (int)ci->min);
-						} else {
-							*ci->v.i = v_int;
-						}
-					} else {
-						fclose(fd);
-						fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead",
-							    cfname, lnum, rv);
-					}
-					break;
-				case t_string:
-					if (strlen(rv) <= ci->max) {
-						strncpy(ci->v.s, rv, LISTVAL_MAX);
-					} else {
-						fclose(fd);
-						fatal_error("parse error in %s, line %d: argument too long (max %d chars)",
-							    cfname, lnum, ci->max);
-					}
-					break;
-				case t_switch:
-					if (!strcasecmp(rv, "on")
-					    || !strcasecmp(rv, "enabled")
-					    || !strcasecmp(rv, "yes")
-					    || !strcasecmp(rv, "1")) {
-						*(ci->v.b) = 1;
-					} else if (!strcasecmp(rv, "off")
-						   || !strcasecmp(rv, "disabled")
-						   || !strcasecmp(rv, "no")
-						   || !strcasecmp(rv, "0")) {
-						*(ci->v.b) = 0;
-					} else {
-						fclose(fd);
-						fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead",
-							    cfname, lnum, rv);
-					}
-					break;
-				case t_list:
-					if ((v_int =
-					     ll_scan(ci->list, "S", rv)) >= 0) {
-						*ci->v.b = v_int;
-					} else {
-						fclose(fd);
-						fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
-							    cfname, lnum, rv);
-					}
-					break;
-				case t_listval:
-					if ((v_int =
-					     ll_scan(ci->list, "S", rv)) >= 0) {
-						strncpy(ci->v.s, ll_get(ci->list, v_int), LISTVAL_MAX);
-					} else {
-						fclose(fd);
-						fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
-							    cfname, lnum, rv);
-					}
-				case t_sep:	/* These two cases are missing from the enum, they are not handled */
-				case t_func:	/* To pacify gcc -Wall, fall through here */
-					break;
+		ll_reset(conf_items);
+		for (found = 0; !found && (ci = ll_getall(conf_items)); )
+			found = (ci->type != t_sep && ci->type != t_func &&
+				 strcasecmp(ci->cfname, lv) == 0);
+		if (!found)
+			fatal_error("parse error in %s, line %d: unknown identifier '%s'",
+				    cfname, lnum, lv);
 
-				}
+		lp += strspn(lp, " ");
+		if (*lp++ != '=')
+			fatal_error("parse error in %s, line %d: missing '=' operator in assignment",
+				    cfname, lnum);
+		lp += strspn(lp, " ");
+
+		len = strcspn(lp, " \n");
+		if (len > sizeof(rv))
+			fatal_error("parse error in %s, line %d: argument too long", cfname, lnum);
+		else if (*lp == '\n')
+			fatal_error("parse error in %s, line %d: argument expected", cfname, lnum);
+		strncpy(rv, lp, len);
+		rv[len] = '\0';
+
+		switch (ci->type) {
+		case t_int:
+			v_int = strtol(rv, &conv_err, 10);
+			if (*conv_err != '\0') {
+				fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead",
+					    cfname, lnum, rv);
+			} else if (v_int > ci->max) {
+				fatal_error("parse error in %s, line %d: value exceeds maximum of %d",
+					    cfname, lnum, (int)ci->max);
+			} else if (v_int < ci->min) {
+				fatal_error("parse error in %s, line %d: value is below minimum of %d",
+					    cfname, lnum, (int)ci->min);
+			} else {
+				*ci->v.i = v_int;
 			}
+			break;
+		case t_string:
+			if (strlen(rv) > ci->max)
+				fatal_error("parse error in %s, line %d: argument too long (max %d chars)",
+					    cfname, lnum, ci->max);
+			strncpy(ci->v.s, rv, LISTVAL_MAX);
+			break;
+		case t_switch:
+			if (!strcasecmp(rv, "on") || !strcasecmp(rv, "yes") ||
+			    !strcasecmp(rv, "enabled") || !strcasecmp(rv, "1")) {
+				*(ci->v.b) = 1;
+			} else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "no") ||
+				   !strcasecmp(rv, "disabled") || !strcasecmp(rv, "0")) {
+				*(ci->v.b) = 0;
+			} else {
+				fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead",
+					    cfname, lnum, rv);
+			}
+			break;
+		case t_list:
+			v_int = ll_scan(ci->list, "S", rv);
+			if (v_int < 0)
+				fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
+					    cfname, lnum, rv);
+			*ci->v.b = v_int;
+			break;
+		case t_listval:
+			v_int = ll_scan(ci->list, "S", rv);
+			if (v_int < 0)
+				fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
+					    cfname, lnum, rv);
+			strncpy(ci->v.s, ll_get(ci->list, v_int), LISTVAL_MAX);
+			break;
+		case t_sep:	/* These two cases are missing from the enum, they are not handled */
+		case t_func:	/* To pacify gcc -Wall, fall through here */
+			break;
 		}
-		fclose(fd);
-	} else if (errno != ENOENT) {
-		fatal_error("cannot open %s: %s", cfname, strerror(errno));
 	}
+	fclose(fd);
+done:
+	free(cfname);
 }
 
 static void write_cf(void)
 {
-	struct passwd *pw = getpwuid(getuid());
+	char tmp[0x100], rv[0x40];
 	struct conf_item *ci = NULL;
-	char tmp[0x100], rv[0x40], *cfname;
 	char *lp, *cp;
+	int add, i;
 	FILE *fd;
-	int cfld;
-	int add;
-	int i;
+	char *cfname = get_confname();
+	int cfld = ll_create();
 
-	cfname = malloc(strlen(pw->pw_dir) + strlen(CFNAME) + 3);
-	strcpy(cfname, pw->pw_dir);
-	strcat(cfname, "/");
-	strcat(cfname, CFNAME);
-
-	cfld = ll_create();
-	if ((fd = fopen(cfname, "r"))) {
-		while (fgets(tmp, 0x100, fd))
+	if (access(cfname, F_OK) == 0) {
+		fd = fopen(cfname, "r");
+		if (fd == NULL)
+			fatal_error("cannot read configuration file '%s'", cfname);
+		while (fgets(tmp, sizeof(tmp), fd))
 			ll_push(cfld, "s", tmp);
 		fclose(fd);
 	}
 
-	ll_reset(conf_items);
-	while ((ci = ll_getall(conf_items))) {
+	for (ll_reset(conf_items); (ci = ll_getall(conf_items)); ) {
 		if (ci->type != t_sep && ci->type != t_func &&
 		    (!ci->dep || (ci->dep && *ci->dep))) {
 			switch (ci->type) {
@@ -299,9 +279,9 @@ static void write_cf(void)
 
 	fd = fopen(cfname, "w");
 	if (fd == NULL)
-		fatal_error("cannot open %s", cfname);
-	ll_reset(cfld);
-	while ((lp = ll_getall(cfld)))
+		fatal_error("cannot write to '%s'", cfname);
+
+	for (ll_reset(cfld); (lp = ll_getall(cfld)); )
 		fputs(lp, fd);
 	fclose(fd);
 
