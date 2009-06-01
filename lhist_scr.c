@@ -20,7 +20,47 @@
 #include "iw_if.h"
 
 /* GLOBALS */
-static WINDOW *w_lhist;
+static WINDOW *w_lhist, *w_key;
+
+/*
+ *	Keeping track of global minima/maxima
+ */
+static struct iw_extrema {
+	bool	initialised;
+	float	min;
+	float	max;
+} e_signal, e_noise, e_snr;
+
+static void init_extrema(struct iw_extrema *ie)
+{
+	memset(ie, 0, sizeof(*ie));
+}
+
+static void track_extrema(const float new_sample, struct iw_extrema *ie)
+{
+	if (! ie->initialised) {
+		ie->initialised = true;
+		ie->min = ie->max = new_sample;
+	} else if (new_sample < ie->min) {
+		ie->min = new_sample;
+	} else if (new_sample > ie->max) {
+		ie->max = new_sample;
+	}
+}
+
+static char *fmt_extrema(const struct iw_extrema *ie, const char *unit)
+{
+	static char range[256];
+
+	if (! ie->initialised)
+		snprintf(range, sizeof(range), "unknown");
+	else if (ie->min == ie->max)
+		snprintf(range, sizeof(range), "%+.0f %s", ie->min, unit);
+	else
+		snprintf(range, sizeof(range), "%+.0f..%+.0f %s", ie->min,
+								ie->max, unit);
+	return range;
+}
 
 /*
  * Simple array-based circular FIFO buffer
@@ -66,11 +106,16 @@ void iw_cache_update(struct iw_stat *iw)
 	static struct iw_levelstat avg, prev;
 	static int slot;
 
-	if (! (iw->stat.qual.updated & IW_QUAL_LEVEL_INVALID))
+	if (! (iw->stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
 		avg.signal += iw->dbm.signal / conf.slotsize;
+		track_extrema(iw->dbm.signal, &e_signal);
+	}
 
-	if (! (iw->stat.qual.updated & IW_QUAL_NOISE_INVALID))
+	if (! (iw->stat.qual.updated & IW_QUAL_NOISE_INVALID)) {
 		avg.noise += iw->dbm.noise / conf.slotsize;
+		track_extrema(iw->dbm.noise, &e_noise);
+		track_extrema(iw->dbm.signal - iw->dbm.noise, &e_snr);
+	}
 
 	if (++slot >= conf.slotsize) {
 		iw_cache_insert(avg);
@@ -186,25 +231,29 @@ static void display_lhist(void)
 
 static void display_key(WINDOW *w_key)
 {
-	char s[0x100];
-
+	/* Clear the (one-line) screen) */
 	wmove(w_key, 1, 1);
+	wclrtoborder(w_key);
+
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 	waddch(w_key, '[');
 	wattrset(w_key, COLOR_PAIR(CP_STATSIG));
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	sprintf(s, "] sig lvl (%d..%d dBm)  [", conf.sig_min, conf.sig_max);
-	waddstr(w_key, s);
+
+	wprintw(w_key, "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
+
 	wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	sprintf(s, "] ns lvl (%d..%d dBm)  [", conf.noise_min, conf.noise_max);
-	waddstr(w_key, s);
+
+	wprintw(w_key, "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
+
 	wattrset(w_key, COLOR_PAIR(CP_STATSNR));
 	waddch(w_key, ' ');
+
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	waddstr(w_key, "] S-N ratio (dB)");
+	wprintw(w_key, "] S-N ratio (%s)", fmt_extrema(&e_snr, "dB"));
 
 	wrefresh(w_key);
 }
@@ -216,16 +265,20 @@ static void redraw_lhist(void)
 	if (!--vcount) {
 		vcount = conf.slotsize;
 		display_lhist();
+		display_key(w_key);
 	}
 }
 
 enum wavemon_screen scr_lhist(WINDOW *w_menu)
 {
-	WINDOW *w_key;
 	int key = 0;
 
 	w_lhist = newwin_title(0, WAV_HEIGHT - 3, "Level histogram", true);
 	w_key   = newwin_title(WAV_HEIGHT - 3, 3, "Key", false);
+
+	init_extrema(&e_signal);
+	init_extrema(&e_noise);
+	init_extrema(&e_snr);
 
 	display_key(w_key);
 
