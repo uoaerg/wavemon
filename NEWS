@@ -2,6 +2,30 @@ NEWS
 ====
 
 --------------------
+0.6.6 (2009-06-01)
+--------------------
+ * Access point screen:
+   Overly long access point lists (more than 6 peer access points) are now
+   truncated, so as not to overwrite screen borders.
+
+ * Histogram screen:
+   The bottom 'key' window used to replicate the configured range values which
+   are available also via the configuration screen. This replication has now
+   been superseded by a dynamic range-tracking feature:
+   - for each of the three ranges (signal level, noise level, SNR), it shows
+     the min..max values on the screen or 'unknown' if the driver reports
+     values as unknown (e.g. noise levels on iwl3945),
+   - these values correspond to the current histogram and are updated
+     dynamically, thus complementing the visual display.
+
+ * Bug Fixes:
+   - histogram screen no longer tracks values that the driver reports as invalid;
+   - fixed off-by-one bug which caused the bottom access-point border to be erased;
+   - miscellaneous code clean-ups:
+     o unified description of window sizes via header file constants,
+     o updated and extended source code documentation.
+
+--------------------
 0.6.5 (2009-05-08)
 --------------------
  * Several improvements in displaying driver parameters:
