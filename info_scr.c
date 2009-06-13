@@ -359,13 +359,6 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	} else
 		waddstr(w_info, "n/a");
 
-
-	mvwaddstr(w_info, 6, 1, "wireless extensions: ");
-	sprintf(tmp, "%d", cur.range.we_version_compiled);
-	waddstr_b(w_info, tmp);
-	sprintf(tmp, " (source version %d)", cur.range.we_version_source);
-	waddstr(w_info, tmp);
-
 	wclrtoborder(w_info);
 	wrefresh(w_info);
 }
@@ -403,8 +396,8 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	w_if	 = newwin_title(0,  2, "Interface",  true);
 	w_levels = newwin_title(2,  9, "Levels",     true);
 	w_stats	 = newwin_title(11, 3, "Statistics", true);
-	w_info	 = newwin_title(14, 7, "Info",       true);
-	w_net	 = newwin_title(21, 3, "Network",    false);
+	w_info	 = newwin_title(14, 6, "Info",       true);
+	w_net	 = newwin_title(20, 3, "Network",    false);
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);

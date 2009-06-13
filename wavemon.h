@@ -40,11 +40,12 @@
 /*
  * Minimum screen dimensions.
  * The number of lines depends on the size requirements of scr_info(), which
- * is 24 + 1 lines (1 line is needed for the menubar). The number of columns
+ * is 23 + 1 lines (1 line is needed for the menubar). The number of columns
  * comes from the menubar length (10 items of length 6 plus the 'Fxx').
- * A size of 25x80 is favourable to support commandline/tty mode.
+ * This value was also chosen since 24x80 is a very common screen size, so
+ * that wavemon can also be used without restrictions on the console.
  */
-#define MIN_SCREEN_LINES   25
+#define MIN_SCREEN_LINES   24
 #define MIN_SCREEN_COLS    80
 /*
  * Screen layout constants.
