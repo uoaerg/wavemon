@@ -126,9 +126,11 @@ static void read_cf(void)
 		for (found = 0; !found && (ci = ll_getall(conf_items)); )
 			found = (ci->type != t_sep && ci->type != t_func &&
 				 strcasecmp(ci->cfname, lv) == 0);
-		if (!found)
-			err_quit("parse error in %s, line %d: unknown identifier '%s'",
-				 cfname, lnum, lv);
+		if (!found) {
+			err_msg("%s, line %d: ignoring unknown identifier '%s'",
+				cfname, lnum, lv);
+			continue;
+		}
 
 		lp += strspn(lp, " ");
 		if (*lp++ != '=')
