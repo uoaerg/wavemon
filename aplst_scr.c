@@ -33,7 +33,7 @@ static void display_aplist(WINDOW *w_aplst)
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
-		fatal_error("could not open socket");
+		err_sys("%s: can not open socket", __func__);
 
 	iw_getinf_range(conf.ifname, &range);
 	for (i = 1; i <= MAXYLEN; i++)

@@ -30,7 +30,7 @@ void if_getinf(char *ifname, struct if_info *info)
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
-		fatal_error("cannot open socket");
+		err_sys("%s: can not open socket", __func__);
 
 	memset(&ifr, 0, sizeof(struct ifreq));
 	memset(info, 0, sizeof(struct if_info));
@@ -60,7 +60,7 @@ int iw_get_interface_list(void)
 	FILE *fd = fopen("/proc/net/wireless", "r");
 
 	if (fd == NULL)
-		fatal_error("no /proc/net/wireless - not compiled in?");
+		err_quit("no /proc/net/wireless - not compiled in?");
 
 	while (fgets(tmp, LISTVAL_MAX, fd))
 		if ((lp = strchr(tmp, ':'))) {
@@ -70,7 +70,7 @@ int iw_get_interface_list(void)
 	fclose(fd);
 
 	if (ll_size(ld) == 0)
-		fatal_error("no wireless interfaces found!");
+		err_quit("no wireless interfaces found!");
 	return ld;
 }
 
@@ -82,7 +82,7 @@ void if_getstat(char *ifname, struct if_stat *stat)
 	FILE *fd = fopen("/proc/net/dev", "r");
 
 	if (fd == NULL)
-		fatal_error("can not open /proc/net/");
+		err_sys("can not open /proc/net/");
 	/*
 	 * Inter-|   Receive                                                | Transmit
 	 *  face |bytes    packets errs drop fifo frame compressed multicast|bytes packets
@@ -111,13 +111,13 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
-		fatal_error("cannot open socket");
+		err_sys("%s: can not open socket", __func__);
 
 	memset(info, 0, sizeof(struct iw_dyn_info));
 
 	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
-		fatal_error("cannot open device '%s'", iwr.u.name);
+		err_sys("can not open device '%s'", iwr.u.name);
 	strncpy(info->name, iwr.u.name, IFNAMSIZ);
 
 	iwr.u.essid.pointer = (caddr_t) info->essid;
@@ -213,19 +213,19 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
 	struct iwreq iwr;
 
 	if ((skfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-		fatal_error("cannot open socket");
+		err_sys("%s: can not open socket", __func__);
 
 	memset(range, 0, sizeof(struct iw_range));
 
 	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
-		fatal_error("cannot open device '%s'", iwr.u.name);
+		err_sys("can not open device '%s'", iwr.u.name);
 
 	iwr.u.data.pointer = (caddr_t) range;
 	iwr.u.data.length  = sizeof(struct iw_range);
 	iwr.u.data.flags   = 0;
 	if (ioctl(skfd, SIOCGIWRANGE, &iwr) < 0)
-		fatal_error("could not get range information");
+		err_sys("can not get range information");
 
 	close(skfd);
 }
@@ -296,7 +296,7 @@ static void iw_getstat_old_style(struct iw_statistics *stat)
 	FILE *fd = fopen("/proc/net/wireless", "r");
 
 	if (fd == NULL)
-		fatal_error("cannot open /proc/net/wireless");
+		err_sys("can not open /proc/net/wireless");
 
 	while (fgets(line, sizeof(line), fd)) {
 		for (lp = line; *lp && isspace(*lp); lp++)
@@ -356,7 +356,7 @@ static void iw_getstat_new_style(struct iw_statistics *stat)
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
-		fatal_error("cannot open socket");
+		err_sys("%s: can not open socket", __func__);
 
 	wrq.u.data.pointer = (caddr_t) stat;
 	wrq.u.data.length  = sizeof(*stat);
@@ -364,7 +364,7 @@ static void iw_getstat_new_style(struct iw_statistics *stat)
 	strncpy(wrq.ifr_name, conf.ifname, IFNAMSIZ);
 
 	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0)
-		fatal_error("cannot obtain iw statistics");
+		err_sys("can not obtain iw statistics");
 	close(skfd);
 }
 

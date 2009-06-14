@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 	/* initialize the ncurses interface */
 	initscr();
 	if (LINES < MIN_SCREEN_LINES || COLS < MIN_SCREEN_COLS)
-		fatal_error("need at least a screen of %ux%u, have only %ux%u",
+		err_quit("need at least a screen of %ux%u, have only %ux%u",
 			    MIN_SCREEN_LINES, MIN_SCREEN_COLS, LINES, COLS);
 	cbreak();
 	noecho();

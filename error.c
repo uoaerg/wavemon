@@ -20,15 +20,44 @@
 #include "wavemon.h"
 #include <stdarg.h>
 
-void fatal_error(char *format, ...)
+/*
+ * For displaying warning messages that are unrelated to system calls,
+ * outside ncurses mode for %WARN_DISPLAY_DELAY seconds.
+ */
+void err_msg(const char *format, ...)
+{
+	va_list argp;
+
+	va_start(argp, format);
+	vwarnx(format, argp);
+	va_end(argp);
+	sleep(WARN_DISPLAY_DELAY);
+}
+
+/*
+ * Abort on fatal error unrelated to system call.
+ */
+void err_quit(const char *format, ...)
 {
 	va_list argp;
 
 	endwin();
 
 	va_start(argp, format);
-	if (errno == 0)
-		verrx(EXIT_FAILURE, format, argp);
+	verrx(EXIT_FAILURE, format, argp);
+	va_end(argp);
+}
+
+/*
+ * Abort on fatal error related to system call.
+ */
+void err_sys(const char *format, ...)
+{
+	va_list argp;
+
+	endwin();
+
+	va_start(argp, format);
 	verr(EXIT_FAILURE, format, argp);
 	va_end(argp);
 }

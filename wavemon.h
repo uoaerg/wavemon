@@ -64,6 +64,9 @@
 #define MAXXLEN		(WAV_WIDTH  - 2)
 #define MAXYLEN		(WAV_HEIGHT - 2)
 
+/* Number of seconds to display a warning message outside ncurses mode */
+#define WARN_DISPLAY_DELAY	3
+
 /*
  * Symbolic names of actions to take when crossing thresholds.
  * These actions invoke the corresponding ncurses functions.
@@ -252,7 +255,9 @@ extern int end_timer(struct timer *t);
 /*
  *	Error handling
  */
-extern void fatal_error(char *format, ...);
+extern void err_msg(const char *format, ...);
+extern void err_quit(const char *format, ...);
+extern void err_sys(const char *format, ...);
 
 /*
  *	Helper functions

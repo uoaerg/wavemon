@@ -60,7 +60,7 @@ static void getargs(int argc, char *argv[])
 					sizeof(conf.ifname));
 				break;
 			}
-			fatal_error("no wireless extensions found on '%s'", optarg);
+			err_quit("no wireless extensions found on '%s'", optarg);
 		case 'r':
 			conf.random = true;
 			break;
@@ -82,7 +82,7 @@ static char *get_confname(void)
 	if (homedir == NULL) {
 		pw = getpwuid(getuid());
 		if (pw == NULL)
-			fatal_error("cannot determine $HOME");
+			err_quit("can not determine $HOME");
 		homedir = pw->pw_dir;
 	}
 	full_path = malloc(strlen(homedir) + strlen(CFNAME) + 3);
@@ -106,7 +106,7 @@ static void read_cf(void)
 
 	fd = fopen(cfname, "r");
 	if (fd == NULL)
-		fatal_error("cannot read configuration file '%s'", cfname);
+		err_sys("can not read configuration file '%s'", cfname);
 
 	for (lnum = 1; fgets(tmp, sizeof(tmp), fd); lnum++) {
 
@@ -116,8 +116,8 @@ static void read_cf(void)
 
 		len = strcspn(lp, " =");
 		if (len > sizeof(lv))
-			fatal_error("parse error in %s, line %d: identifier too long",
-				    cfname, lnum);
+			err_quit("parse error in %s, line %d: identifier too long",
+				 cfname, lnum);
 		strncpy(lv, lp, len);
 		lv[len] = '\0';
 		lp += len;
@@ -127,20 +127,20 @@ static void read_cf(void)
 			found = (ci->type != t_sep && ci->type != t_func &&
 				 strcasecmp(ci->cfname, lv) == 0);
 		if (!found)
-			fatal_error("parse error in %s, line %d: unknown identifier '%s'",
-				    cfname, lnum, lv);
+			err_quit("parse error in %s, line %d: unknown identifier '%s'",
+				 cfname, lnum, lv);
 
 		lp += strspn(lp, " ");
 		if (*lp++ != '=')
-			fatal_error("parse error in %s, line %d: missing '=' operator in assignment",
-				    cfname, lnum);
+			err_quit("parse error in %s, line %d: missing '=' operator in assignment",
+				 cfname, lnum);
 		lp += strspn(lp, " ");
 
 		len = strcspn(lp, " \n");
 		if (len > sizeof(rv))
-			fatal_error("parse error in %s, line %d: argument too long", cfname, lnum);
+			err_quit("parse error in %s, line %d: argument too long", cfname, lnum);
 		else if (*lp == '\n')
-			fatal_error("parse error in %s, line %d: argument expected", cfname, lnum);
+			err_quit("parse error in %s, line %d: argument expected", cfname, lnum);
 		strncpy(rv, lp, len);
 		rv[len] = '\0';
 
@@ -148,22 +148,22 @@ static void read_cf(void)
 		case t_int:
 			v_int = strtol(rv, &conv_err, 10);
 			if (*conv_err != '\0') {
-				fatal_error("parse error in %s, line %d: integer value expected, '%s' found instead",
-					    cfname, lnum, rv);
+				err_quit("parse error in %s, line %d: integer value expected, '%s' found instead",
+					 cfname, lnum, rv);
 			} else if (v_int > ci->max) {
-				fatal_error("parse error in %s, line %d: value exceeds maximum of %d",
-					    cfname, lnum, (int)ci->max);
+				err_quit("parse error in %s, line %d: value exceeds maximum of %d",
+					 cfname, lnum, (int)ci->max);
 			} else if (v_int < ci->min) {
-				fatal_error("parse error in %s, line %d: value is below minimum of %d",
-					    cfname, lnum, (int)ci->min);
+				err_quit("parse error in %s, line %d: value is below minimum of %d",
+					 cfname, lnum, (int)ci->min);
 			} else {
 				*ci->v.i = v_int;
 			}
 			break;
 		case t_string:
 			if (strlen(rv) > ci->max)
-				fatal_error("parse error in %s, line %d: argument too long (max %d chars)",
-					    cfname, lnum, ci->max);
+				err_quit("parse error in %s, line %d: argument too long (max %d chars)",
+					 cfname, lnum, ci->max);
 			strncpy(ci->v.s, rv, LISTVAL_MAX);
 			break;
 		case t_switch:
@@ -174,22 +174,22 @@ static void read_cf(void)
 				   !strcasecmp(rv, "disabled") || !strcasecmp(rv, "0")) {
 				*(ci->v.b) = 0;
 			} else {
-				fatal_error("parse error in %s, line %d: boolean expected, '%s' found instead",
-					    cfname, lnum, rv);
+				err_quit("parse error in %s, line %d: boolean expected, '%s' found instead",
+					 cfname, lnum, rv);
 			}
 			break;
 		case t_list:
 			v_int = ll_scan(ci->list, "S", rv);
 			if (v_int < 0)
-				fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
-					    cfname, lnum, rv);
+				err_quit("parse error in %s, line %d: '%s' is not a valid argument here",
+					 cfname, lnum, rv);
 			*ci->v.b = v_int;
 			break;
 		case t_listval:
 			v_int = ll_scan(ci->list, "S", rv);
 			if (v_int < 0)
-				fatal_error("parse error in %s, line %d: '%s' is not a valid argument here",
-					    cfname, lnum, rv);
+				err_quit("parse error in %s, line %d: '%s' is not a valid argument here",
+					 cfname, lnum, rv);
 			strncpy(ci->v.s, ll_get(ci->list, v_int), LISTVAL_MAX);
 			break;
 		case t_sep:	/* These two cases are missing from the enum, they are not handled */
@@ -215,7 +215,7 @@ static void write_cf(void)
 	if (access(cfname, F_OK) == 0) {
 		fd = fopen(cfname, "r");
 		if (fd == NULL)
-			fatal_error("cannot read configuration file '%s'", cfname);
+			err_sys("can not read configuration file '%s'", cfname);
 		while (fgets(tmp, sizeof(tmp), fd))
 			ll_push(cfld, "s", tmp);
 		fclose(fd);
@@ -279,7 +279,7 @@ static void write_cf(void)
 
 	fd = fopen(cfname, "w");
 	if (fd == NULL)
-		fatal_error("cannot write to '%s'", cfname);
+		err_sys("can not write to configuration file '%s'", cfname);
 
 	for (ll_reset(cfld); (lp = ll_getall(cfld)); )
 		fputs(lp, fd);
