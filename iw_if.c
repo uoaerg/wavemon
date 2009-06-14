@@ -45,8 +45,23 @@ void if_getinf(char *ifname, struct if_info *info)
 		memcpy(&info->netmask, &ifr.ifr_netmask.sa_data[2], 4);
 	if (ioctl(skfd, SIOCGIFBRDADDR, &ifr) >= 0)
 		memcpy(&info->bcast, &ifr.ifr_broadaddr.sa_data[2], 4);
-
 	close(skfd);
+}
+
+static FILE *open_proc_net(const char *filename)
+{
+	char path[128];
+	FILE *fp;
+
+	snprintf(path, sizeof(path), "/proc/net/%s", filename);
+	if (access(path, F_OK) != 0)
+		err_quit("'%s' not accessible - not compiled in?", path);
+
+	fp = fopen(path, "r");
+	if (fp == NULL)
+		err_sys("can not open %s", path);
+
+	return fp;
 }
 
 /*
@@ -57,17 +72,14 @@ int iw_get_interface_list(void)
 {
 	char *lp, tmp[LISTVAL_MAX];
 	int ld = ll_create();
-	FILE *fd = fopen("/proc/net/wireless", "r");
+	FILE *fp = open_proc_net("wireless");
 
-	if (fd == NULL)
-		err_quit("no /proc/net/wireless - not compiled in?");
-
-	while (fgets(tmp, LISTVAL_MAX, fd))
+	while (fgets(tmp, LISTVAL_MAX, fp))
 		if ((lp = strchr(tmp, ':'))) {
 			*lp = '\0';
 			ll_push(ld, "s", tmp + strspn(tmp, " "));
 		}
-	fclose(fd);
+	fclose(fp);
 
 	if (ll_size(ld) == 0)
 		err_quit("no wireless interfaces found!");
@@ -79,15 +91,13 @@ void if_getstat(char *ifname, struct if_stat *stat)
 	char line[0x100];
 	unsigned long d;
 	char *lp;
-	FILE *fd = fopen("/proc/net/dev", "r");
+	FILE *fp = open_proc_net("dev");
 
-	if (fd == NULL)
-		err_sys("can not open /proc/net/");
 	/*
 	 * Inter-|   Receive                                                | Transmit
 	 *  face |bytes    packets errs drop fifo frame compressed multicast|bytes packets
 	 */
-	while (fgets(line, sizeof(line), fd)) {
+	while (fgets(line, sizeof(line), fp)) {
 		lp = line + strspn(line, " ");
 		if (!strncmp(lp, ifname, strlen(ifname))) {
 			lp += strlen(ifname) + 1;
@@ -98,8 +108,7 @@ void if_getstat(char *ifname, struct if_stat *stat)
 				&stat->tx_bytes, &stat->tx_packets);
 		}
 	}
-
-	fclose(fd);
+	fclose(fp);
 }
 
 /*
@@ -200,7 +209,6 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		info->cap_ap = 1;
 		memcpy(&info->ap_addr, &iwr.u.ap_addr, sizeof(struct sockaddr));
 	}
-
 	close(skfd);
 }
 
@@ -209,10 +217,10 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
  */
 void iw_getinf_range(char *ifname, struct iw_range *range)
 {
-	int skfd;
 	struct iwreq iwr;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-	if ((skfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	if (skfd < 0)
 		err_sys("%s: can not open socket", __func__);
 
 	memset(range, 0, sizeof(struct iw_range));
@@ -226,7 +234,6 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
 	iwr.u.data.flags   = 0;
 	if (ioctl(skfd, SIOCGIWRANGE, &iwr) < 0)
 		err_sys("can not get range information");
-
 	close(skfd);
 }
 
@@ -293,12 +300,9 @@ static void iw_getstat_old_style(struct iw_statistics *stat)
 {
 	char line[0x100], *lp;
 	int tmp;
-	FILE *fd = fopen("/proc/net/wireless", "r");
+	FILE *fp = open_proc_net("wireless");
 
-	if (fd == NULL)
-		err_sys("can not open /proc/net/wireless");
-
-	while (fgets(line, sizeof(line), fd)) {
+	while (fgets(line, sizeof(line), fp)) {
 		for (lp = line; *lp && isspace(*lp); lp++)
 			;
 		if (strncmp(lp, conf.ifname, strlen(conf.ifname)) == 0 &&
@@ -347,7 +351,7 @@ static void iw_getstat_old_style(struct iw_statistics *stat)
 			break;
 		}
 	}
-	fclose(fd);
+	fclose(fp);
 }
 
 static void iw_getstat_new_style(struct iw_statistics *stat)
