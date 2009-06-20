@@ -390,12 +390,13 @@ static inline char *format_key(char *key, uint8_t key_len)
 		len += sprintf(buf, "\"");
 
 	for (i = 0; i < key_len; i++)
-		if (is_printable)
+		if (is_printable) {
 			len += sprintf(buf + len, "%c", key[i]);
-		else if (i > 0 && (i & 1) == 0)
-			len += sprintf(buf + len, "-");
-		else
+		} else {
+			if (i > 0 && (i & 1) == 0)
+				len += sprintf(buf + len, "-");
 			len += sprintf(buf + len, "%2X", key[i]);
+		}
 
 	if (is_printable)
 		sprintf(buf + len, "\"");
