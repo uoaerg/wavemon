@@ -19,6 +19,21 @@
  */
 #include "iw_if.h"
 
+/* CONSTANTS */
+
+/* Number of lines in the key window at the bottom */
+#define KEY_WIN_HEIGHT	3
+
+/* Total number of lines in the histogram window */
+#define HIST_WIN_HEIGHT	(WAV_HEIGHT - KEY_WIN_HEIGHT)
+
+/*
+ * Analogous to MAXYLEN, the following sets both the
+ * - highest y/line index and the
+ * - total count of lines inside the histogram window.
+ */
+#define HIST_MAXYLEN	(HIST_WIN_HEIGHT - 1)
+
 /* GLOBALS */
 static WINDOW *w_lhist, *w_key;
 
@@ -139,18 +154,14 @@ static void display_lhist(void)
 	struct iw_levelstat iwl;
 	chtype ch;
 	double ratio, p, p_fract, snr;
-	int y, ysize, x, xsize;
+	int x, y;
 
-	getmaxyx(w_lhist, ysize, xsize);
-	--xsize;
-	--ysize;
+	ratio = (double)(HIST_MAXYLEN - 1) / (conf.sig_max - conf.sig_min);
 
-	ratio = (double)(ysize - 1) / (conf.sig_max - conf.sig_min);
+	for (x = 1; x <= MAXXLEN; x++) {
 
-	for (x = 1; x < xsize; x++) {
-
-		for (y = 1; y <= ysize; y++)
-			mvwaddch(w_lhist, y, xsize - x, ' ');
+		for (y = 1; y <= HIST_MAXYLEN; y++)
+			mvwaddch(w_lhist, y, 1 + MAXXLEN - x, ' ');
 
 		iwl = iw_cache_get(x);
 		snr = iwl.signal - max(iwl.noise, conf.noise_min);
@@ -160,22 +171,22 @@ static void display_lhist(void)
 
 				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
 				for (y = 0; y < snr * ratio; y++)
-					mvwaddch(w_lhist, ysize - y, xsize - x, ' ');
+					mvwaddch(w_lhist, HIST_MAXYLEN - y, 1 + MAXXLEN - x, ' ');
 
 				wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
-				for (; y < ysize; y++)
-					mvwaddch(w_lhist, ysize - y, xsize - x,
+				for (; y < HIST_MAXYLEN; y++)
+					mvwaddch(w_lhist, HIST_MAXYLEN - y, 1 + MAXXLEN - x,
 						 y % 5 ? ' ' : '-');
 
 			} else {
 				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
-				for (y = 1; y <= ysize; y++)
-					mvwaddch(w_lhist, y, xsize - x, ' ');
+				for (y = 1; y <= HIST_MAXYLEN; y++)
+					mvwaddch(w_lhist, y, 1 + MAXXLEN - x, ' ');
 			}
 		} else {
 			wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
-			for (y = 1; y < ysize; y++)
-				mvwaddch(w_lhist, ysize - y, xsize - x,
+			for (y = 1; y < HIST_MAXYLEN; y++)
+				mvwaddch(w_lhist, HIST_MAXYLEN - y, 1 + MAXXLEN - x,
 					 y % 5 ? ' ' : '-');
 		}
 
@@ -200,7 +211,7 @@ static void display_lhist(void)
 			/* check whether the line goes through the SNR base graph */
 			wattrset(w_lhist, p > snr * ratio ? COLOR_PAIR(CP_STATNOISE)
 							  : COLOR_PAIR(CP_STATNOISE_S));
-			mvwaddch(w_lhist, ysize - (int)p, xsize - x, ch);
+			mvwaddch(w_lhist, HIST_MAXYLEN - (int)p, 1 + MAXXLEN - x, ch);
 		}
 
 		if (iwl.signal >= conf.sig_min && iwl.signal <= conf.sig_max) {
@@ -218,7 +229,7 @@ static void display_lhist(void)
 				ch = ACS_S1;
 			wattrset(w_lhist, p > snr * ratio ? COLOR_PAIR(CP_STATSIG)
 							  : COLOR_PAIR(CP_STATSIG_S));
-			mvwaddch(w_lhist, ysize - (int)p, xsize - x, ch);
+			mvwaddch(w_lhist, HIST_MAXYLEN - (int)p, 1 + MAXXLEN - x, ch);
 		}
 	}
 	wrefresh(w_lhist);
@@ -268,8 +279,8 @@ enum wavemon_screen scr_lhist(WINDOW *w_menu)
 {
 	int key = 0;
 
-	w_lhist = newwin_title(0, WAV_HEIGHT - 3, "Level histogram", true);
-	w_key   = newwin_title(WAV_HEIGHT - 3, 3, "Key", false);
+	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level histogram", true);
+	w_key   = newwin_title(HIST_MAXYLEN + 1, KEY_WIN_HEIGHT, "Key", false);
 
 	init_extrema(&e_signal);
 	init_extrema(&e_noise);
