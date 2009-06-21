@@ -161,26 +161,22 @@ static void display_lhist(void)
 				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
 				for (y = 0; y < snr * ratio; y++)
 					mvwaddch(w_lhist, ysize - y, xsize - x, ' ');
-				wattroff(w_lhist, COLOR_PAIR(CP_STATSNR));
 
 				wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
 				for (; y < ysize; y++)
 					mvwaddch(w_lhist, ysize - y, xsize - x,
 						 y % 5 ? ' ' : '-');
-				wattroff(w_lhist, COLOR_PAIR(CP_STATBKG));
 
 			} else {
 				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
 				for (y = 1; y <= ysize; y++)
 					mvwaddch(w_lhist, y, xsize - x, ' ');
-				wattroff(w_lhist, COLOR_PAIR(CP_STATSNR));
 			}
 		} else {
 			wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
 			for (y = 1; y < ysize; y++)
 				mvwaddch(w_lhist, ysize - y, xsize - x,
 					 y % 5 ? ' ' : '-');
-			wattroff(w_lhist, COLOR_PAIR(CP_STATBKG));
 		}
 
 		if (iwl.noise >= conf.sig_min && iwl.noise <= conf.sig_max) {
@@ -223,7 +219,6 @@ static void display_lhist(void)
 			wattrset(w_lhist, p > snr * ratio ? COLOR_PAIR(CP_STATSIG)
 							  : COLOR_PAIR(CP_STATSIG_S));
 			mvwaddch(w_lhist, ysize - (int)p, xsize - x, ch);
-			wattroff(w_lhist, COLOR_PAIR(CP_STATSIG));
 		}
 	}
 	wrefresh(w_lhist);
