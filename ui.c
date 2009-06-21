@@ -77,6 +77,35 @@ void waddstr_b(WINDOW *win, const char *s)
 	wattroff(win, A_BOLD);
 }
 
+/* Enforce that @str is at most @len characters (excluding the terminal '\0') */
+const char *curtail(const char *str, const char *sep, int len)
+{
+	static char out_buf[128];
+	const char fallback_sep[] = "~";
+	int l = 0, front, mid, back;
+
+	assert(len < sizeof(out_buf));
+
+	if (sep == NULL)
+		sep = fallback_sep;
+	mid = strlen(sep);
+	assert(len >= mid);
+
+	if (str != NULL)
+		l = strlen(str);
+	if (l <= len)
+		return str;
+
+	front = (len - mid)/2.0 + 0.5;
+	back  = len - front - mid;
+
+	strncpy(out_buf, str, front);
+	strncpy(out_buf + front, sep, mid);
+	strncpy(out_buf + front + mid, str + l - back, back + 1);
+
+	return out_buf;
+}
+
 static double interpolate(const double val, const double min, const double max)
 {
 	return	val < min ? 0 :

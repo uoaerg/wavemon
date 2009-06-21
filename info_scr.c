@@ -345,7 +345,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		if (info.key_flags & IW_ENCODE_DISABLED || info.key_size == 0) {
 			waddstr_b(w_info, "off");
 		} else {
-			waddstr_b(w_info, format_key(info.key, info.key_size));
+			char *key = format_key(info.key, info.key_size);
+
+			waddstr_b(w_info, curtail(key, "..", MAXXLEN / 2));
+
 			i = info.key_flags & IW_ENCODE_INDEX;
 			if (i > 1) {
 				sprintf(tmp, " [%d]", i);

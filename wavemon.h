@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <assert.h>
 #include <errno.h>
 #include <err.h>
 #include <sys/time.h>
@@ -197,6 +198,7 @@ extern void wclrtoborder(WINDOW *win);
 extern void mvwclrtoborder(WINDOW *win, int y, int x);
 extern void waddstr_b(WINDOW * win, const char *s);
 extern void waddstr_center(WINDOW * win, int y, const char *s);
+extern const char *curtail(const char *str, const char *sep, int len);
 
 extern void waddbar(WINDOW *win, int y, float v, float min, float max,
 		    char *cscale, bool rev);
