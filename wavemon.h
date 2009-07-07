@@ -283,6 +283,16 @@ static inline int max(const int a, const int b)
 	return a > b ? a : b;
 }
 
+static inline bool in_range(int val, int min, int max)
+{
+	return min <= val && val <= max;
+}
+
+static inline int clamp(int val, int min, int max)
+{
+	return val < min ? min : (val > max ? max : val);
+}
+
 /* SI units -- see units(7) */
 static inline char *byte_units(const double bytes)
 {
@@ -309,4 +319,24 @@ static inline char *byte_units(const double bytes)
 static inline double ewma(double mavg, double sample, double weight)
 {
 	return mavg == 0 ? sample : weight * mavg + (1.0 - weight) * sample;
+}
+
+/* map 0.0 <= ratio <= 1.0 into min..max */
+static inline double map_val(double ratio, double min, double max)
+{
+	return min + ratio * (max - min);
+}
+
+/* map minv <= val <= maxv into the range min..max (no clamping) */
+static inline double map_range(double val, double minv, double maxv,
+			       double min, double max)
+{
+	return map_val((val - minv) / (maxv - minv), min, max);
+}
+
+/* map val into the reverse range max..min */
+static inline int reverse_range(int val, int min, int max)
+{
+	assert(min <= val && val <= max);
+	return max - (val - min);
 }

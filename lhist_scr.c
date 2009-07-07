@@ -149,89 +149,93 @@ void iw_cache_update(struct iw_stat *iw)
 	}
 }
 
+/*
+ * Histogram-specific display functions
+ */
+static double hist_level(double val, int min, int max)
+{
+	return map_range(val, min, max, 1, HIST_MAXYLEN);
+}
+
+/* Order needs to be reversed as y-coordinates grow downwards */
+static int hist_y(int yval)
+{
+	return reverse_range(yval, 1, HIST_MAXYLEN);
+}
+
+/* Values come in from the right, so 'x' also needs to be reversed */
+static int hist_x(int xval)
+{
+	return reverse_range(xval, 1, MAXXLEN);
+}
+
+/* plot single values, without clamping to min/max */
+static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
+{
+	double level, fraction;
+	chtype ch;
+
+	fraction = modf(yval, &level);
+
+	if (in_range(level, 1, HIST_MAXYLEN)) {
+		/*
+		 * The 5 different scanline chars provide a pretty good accuracy.
+		 * ncurses will fall back to standard ASCII chars anyway if they
+		 * are not available.
+		 */
+		if (fraction < 0.2)
+			ch = ACS_S9;
+		else if (fraction < 0.4)
+			ch = ACS_S7;
+		else if (fraction < 0.6)
+			ch = ACS_HLINE;
+		else if (fraction < 0.8)
+			ch = ACS_S3;
+		else
+			ch = ACS_S1;
+
+		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
+		mvwaddch(w_lhist, hist_y(level), hist_x(xval), ch);
+	}
+}
+
 static void display_lhist(void)
 {
 	struct iw_levelstat iwl;
-	chtype ch;
-	double ratio, p, p_fract, snr;
+	double snr, snr_level, noise_level, sig_level;
+	enum colour_pair plot_colour;
 	int x, y;
-
-	ratio = (double)(HIST_MAXYLEN - 1) / (conf.sig_max - conf.sig_min);
 
 	for (x = 1; x <= MAXXLEN; x++) {
 
-		for (y = 1; y <= HIST_MAXYLEN; y++)
-			mvwaddch(w_lhist, y, 1 + MAXXLEN - x, ' ');
-
 		iwl = iw_cache_get(x);
-		snr = iwl.signal - max(iwl.noise, conf.noise_min);
 
-		if (snr > 0) {
-			if (snr < (conf.sig_max - conf.sig_min)) {
+		/* Clear screen and set up horizontal grid lines */
+		wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
+		for (y = 1; y <= HIST_MAXYLEN; y++)
+			mvwaddch(w_lhist, hist_y(y), hist_x(x), y % 5 ? ' ' : '-');
 
-				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
-				for (y = 0; y < snr * ratio; y++)
-					mvwaddch(w_lhist, HIST_MAXYLEN - y, 1 + MAXXLEN - x, ' ');
 
-				wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
-				for (; y < HIST_MAXYLEN; y++)
-					mvwaddch(w_lhist, HIST_MAXYLEN - y, 1 + MAXXLEN - x,
-						 y % 5 ? ' ' : '-');
+		/* SNR comes first, as it determines the background */
+		snr	  = iwl.signal - max(iwl.noise, conf.noise_min);
+		snr_level = hist_level(snr, conf.sig_min - conf.noise_max,
+					    conf.sig_max - conf.noise_min);
 
-			} else {
-				wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
-				for (y = 1; y <= HIST_MAXYLEN; y++)
-					mvwaddch(w_lhist, y, 1 + MAXXLEN - x, ' ');
-			}
-		} else {
-			wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
-			for (y = 1; y < HIST_MAXYLEN; y++)
-				mvwaddch(w_lhist, HIST_MAXYLEN - y, 1 + MAXXLEN - x,
-					 y % 5 ? ' ' : '-');
-		}
+		wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
+		for (y = 1; y <= clamp(snr_level, 1, HIST_MAXYLEN); y++)
+			mvwaddch(w_lhist, hist_y(y), hist_x(x), ' ');
 
-		if (iwl.noise >= conf.sig_min && iwl.noise <= conf.sig_max) {
 
-			p_fract = modf((iwl.noise - conf.noise_min) * ratio, &p);
-			/*
-			 *      the 5 different scanline chars provide a pretty good accuracy.
-			 *      ncurses will fall back to standard ASCII chars anyway if they're
-			 *      not available.
-			 */
-			if (p_fract < 0.2)
-				ch = ACS_S9;
-			else if (p_fract < 0.4)
-				ch = ACS_S7;
-			else if (p_fract < 0.6)
-				ch = ACS_HLINE;
-			else if (p_fract < 0.8)
-				ch = ACS_S3;
-			else
-				ch = ACS_S1;
-			/* check whether the line goes through the SNR base graph */
-			wattrset(w_lhist, p > snr * ratio ? COLOR_PAIR(CP_STATNOISE)
-							  : COLOR_PAIR(CP_STATNOISE_S));
-			mvwaddch(w_lhist, HIST_MAXYLEN - (int)p, 1 + MAXXLEN - x, ch);
-		}
+		noise_level = hist_level(iwl.noise, conf.noise_min, conf.noise_max);
+		plot_colour = noise_level > snr_level ? CP_STATNOISE : CP_STATNOISE_S;
+		hist_plot(noise_level, x, plot_colour);
 
-		if (iwl.signal >= conf.sig_min && iwl.signal <= conf.sig_max) {
 
-			p_fract = modf((iwl.signal - conf.sig_min) * ratio, &p);
-			if (p_fract < 0.2)
-				ch = ACS_S9;
-			else if (p_fract < 0.4)
-				ch = ACS_S7;
-			else if (p_fract < 0.6)
-				ch = ACS_HLINE;
-			else if (p_fract < 0.8)
-				ch = ACS_S3;
-			else
-				ch = ACS_S1;
-			wattrset(w_lhist, p > snr * ratio ? COLOR_PAIR(CP_STATSIG)
-							  : COLOR_PAIR(CP_STATSIG_S));
-			mvwaddch(w_lhist, HIST_MAXYLEN - (int)p, 1 + MAXXLEN - x, ch);
-		}
+		sig_level   = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
+		plot_colour = sig_level > snr_level ? CP_STATSIG : CP_STATSIG_S;
+		hist_plot(sig_level, x, plot_colour);
 	}
+
 	wrefresh(w_lhist);
 }
 
