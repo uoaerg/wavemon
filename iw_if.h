@@ -140,9 +140,12 @@ extern void if_getstat(char *ifname, struct if_stat *stat);
  *	 Structs to communicate WiFi statistics
  */
 struct iw_levelstat {
-	float signal;		/* signal level in dBm */
-	float noise;		/* noise  level in dBm */
+	float	signal;		/* signal level in dBm */
+	float	noise;		/* noise  level in dBm */
+	uint8_t	flags;		/* level validity      */
 };
+#define IW_LSTAT_INIT { 0, 0, IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID }
+
 extern void iw_sanitize(struct iw_range *range,
 			struct iw_quality *qual,
 			struct iw_levelstat *dbm);

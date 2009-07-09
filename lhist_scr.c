@@ -109,7 +109,7 @@ static void iw_cache_insert(const struct iw_levelstat new)
 
 static struct iw_levelstat iw_cache_get(const uint32_t index)
 {
-	struct iw_levelstat zero = { 0, 0 };
+	struct iw_levelstat zero = IW_LSTAT_INIT;
 
 	if (index > IW_STACKSIZE || index > count)
 		return zero;
@@ -118,15 +118,17 @@ static struct iw_levelstat iw_cache_get(const uint32_t index)
 
 void iw_cache_update(struct iw_stat *iw)
 {
-	static struct iw_levelstat avg, prev;
+	static struct iw_levelstat prev, avg = IW_LSTAT_INIT;
 	static int slot;
 
 	if (! (iw->stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
+		avg.flags  &= ~IW_QUAL_LEVEL_INVALID;
 		avg.signal += iw->dbm.signal / conf.slotsize;
 		track_extrema(iw->dbm.signal, &e_signal);
 	}
 
 	if (! (iw->stat.qual.updated & IW_QUAL_NOISE_INVALID)) {
+		avg.flags &= ~IW_QUAL_NOISE_INVALID;
 		avg.noise += iw->dbm.noise / conf.slotsize;
 		track_extrema(iw->dbm.noise, &e_noise);
 		track_extrema(iw->dbm.signal - iw->dbm.noise, &e_snr);
@@ -146,6 +148,7 @@ void iw_cache_update(struct iw_stat *iw)
 
 		prev = avg;
 		avg.signal = avg.noise = slot = 0;
+		avg.flags  = IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID;
 	}
 }
 
@@ -202,7 +205,7 @@ static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 static void display_lhist(void)
 {
 	struct iw_levelstat iwl;
-	double snr, snr_level, noise_level, sig_level;
+	double snr_level, noise_level, sig_level;
 	enum colour_pair plot_colour;
 	int x, y;
 
@@ -215,25 +218,34 @@ static void display_lhist(void)
 		for (y = 1; y <= HIST_MAXYLEN; y++)
 			mvwaddch(w_lhist, hist_y(y), hist_x(x), y % 5 ? ' ' : '-');
 
+		/*
+		 * SNR comes first, as it determines the background. If either
+		 * noise or signal is invalid, set level below minimum value to
+		 * indicate that no background is present.
+		 */
+		if (iwl.flags & (IW_QUAL_NOISE_INVALID | IW_QUAL_LEVEL_INVALID)) {
+			snr_level = 0;
+		} else {
+			snr_level = hist_level(iwl.signal - iwl.noise,
+					       conf.sig_min - conf.noise_max,
+					       conf.sig_max - conf.noise_min);
 
-		/* SNR comes first, as it determines the background */
-		snr	  = iwl.signal - max(iwl.noise, conf.noise_min);
-		snr_level = hist_level(snr, conf.sig_min - conf.noise_max,
-					    conf.sig_max - conf.noise_min);
+			wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
+			for (y = 1; y <= clamp(snr_level, 1, HIST_MAXYLEN); y++)
+				mvwaddch(w_lhist, hist_y(y), hist_x(x), ' ');
+		}
 
-		wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
-		for (y = 1; y <= clamp(snr_level, 1, HIST_MAXYLEN); y++)
-			mvwaddch(w_lhist, hist_y(y), hist_x(x), ' ');
+		if (! (iwl.flags & IW_QUAL_NOISE_INVALID)) {
+			noise_level = hist_level(iwl.noise, conf.noise_min, conf.noise_max);
+			plot_colour = noise_level > snr_level ? CP_STATNOISE : CP_STATNOISE_S;
+			hist_plot(noise_level, x, plot_colour);
+		}
 
-
-		noise_level = hist_level(iwl.noise, conf.noise_min, conf.noise_max);
-		plot_colour = noise_level > snr_level ? CP_STATNOISE : CP_STATNOISE_S;
-		hist_plot(noise_level, x, plot_colour);
-
-
-		sig_level   = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
-		plot_colour = sig_level > snr_level ? CP_STATSIG : CP_STATSIG_S;
-		hist_plot(sig_level, x, plot_colour);
+		if (! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
+			sig_level   = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
+			plot_colour = sig_level > snr_level ? CP_STATSIG : CP_STATSIG_S;
+			hist_plot(sig_level, x, plot_colour);
+		}
 	}
 
 	wrefresh(w_lhist);
