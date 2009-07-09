@@ -2,6 +2,32 @@ NEWS
 ====
 
 --------------------
+0.6.7 (2009-07-09)
+--------------------
+ * Screen geometry:
+   Reduced the screen size again, to 24x80, since this is a widely used default
+   size (thanks to Nelson A. de Oliveira). Removed the "wireless extensions"
+   information from the information screen, to reduce the minimum required
+   number of lines from 25 to 24. The wireless extension information however
+   remains still available, via the "wavemon -d" dump option.
+
+ * Histogram screen improvements:
+   - a new revised approach to fix several old bugs and limitations,
+   - new code better observes the boundaries and the configured ranges,
+   - better visibility, signal/noise are now plotted in bold.
+
+ * Better separation of error messages, into:
+   - informational warning messages (outside ncurses mode),
+   - fatal errors unrelated to system calls,
+   - fatal errors following a system call (with interpretation of errno(3)).
+
+ * Bug Fixes:
+   - fixed a bug in the histogram initialisation (producing ghost values);
+   - fixed a bug which caused non-ASCII encryption key strings to be garbled;
+   - key string length is now checked to avoid spilling over the right border
+     into the next line; curtailing long keys in a pretty-printing manner.
+
+--------------------
 0.6.6 (2009-06-01)
 --------------------
  * Access point screen:
