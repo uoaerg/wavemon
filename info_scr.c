@@ -55,6 +55,7 @@ void reinit_on_changes(void)
 	static int stat_iv = 0;
 
 	if (conf.stat_iv != stat_iv) {
+		iw_getinf_range(conf.ifname, &cur.range);
 		init_stat_iv();
 		stat_iv = conf.stat_iv;
 	}
@@ -393,8 +394,6 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	WINDOW *w_if, *w_info, *w_net;
 	struct timer t1;
 	int key = 0;
-
-	iw_getinf_range(conf.ifname, &cur.range);
 
 	w_if	 = newwin_title(0,  2, "Interface",  true);
 	w_levels = newwin_title(2,  9, "Levels",     true);
