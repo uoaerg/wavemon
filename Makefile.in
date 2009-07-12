@@ -2,8 +2,9 @@ prefix	    = @prefix@
 exec_prefix = @exec_prefix@
 
 bindir	    = @bindir@
+datarootdir = @prefix@/share
 mandir	    = @mandir@
-datadir     = @datarootdir@/@PACKAGE_NAME@
+datadir     = $(datarootdir)/@PACKAGE_NAME@
 
 CC	= @CC@
 CFLAGS	= @CFLAGS@
@@ -13,16 +14,17 @@ LIBS	= @LIBS@
 INSTALL = @INSTALL@
 RM	= rm -vf
 
-MAIN	= wavemon.c
+MAIN	= @PACKAGE_NAME@.c
+HEADERS	= @PACKAGE_NAME@.h llist.h iw_if.h
 PURESRC	= $(filter-out $(MAIN),$(wildcard *.c))
 OBJS	= $(PURESRC:.c=.o)
 DOCS	= README NEWS THANKS AUTHORS COPYING ChangeLog
 
-%.o: %.c wavemon.h llist.h iw_if.h
+%.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) $(DEFS) -c -o $@ $<
 
-all: wavemon
-wavemon: $(MAIN) $(OBJS)
+all: @PACKAGE_NAME@
+@PACKAGE_NAME@: $(MAIN) $(OBJS)
 	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
 
 $(MAIN): Makefile
@@ -33,29 +35,34 @@ config.status: configure
 configure: configure.ac
 	autoconf
 
-tags: $(wildcard *[ch])
+tags: $(MAIN) $(PURESRC) $(HEADERS)
 	ctags $^ > $@
 
-.PHONY: install uninstall clean distclean
+.PHONY: all install uninstall clean distclean
 
-install: wavemon wavemon.1 wavemonrc.5 $(DOCS)
+install: install-binaries install-docs
+
+install-binaries: all
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 wavemon $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 @PACKAGE_NAME@ $(DESTDIR)$(bindir)
+
+install-docs: @PACKAGE_NAME@.1 @PACKAGE_NAME@rc.5 $(DOCS)
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man1
-	$(INSTALL) -m 0644 wavemon.1 $(DESTDIR)$(mandir)/man1
+	$(INSTALL) -m 0644 @PACKAGE_NAME@.1 $(DESTDIR)$(mandir)/man1
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man5
-	$(INSTALL) -m 0644 wavemonrc.5 $(DESTDIR)$(mandir)/man5
+	$(INSTALL) -m 0644 @PACKAGE_NAME@rc.5 $(DESTDIR)$(mandir)/man5
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(datadir)
 	$(INSTALL) -m 0644 $(DOCS) $(DESTDIR)$(datadir)
 
 uninstall:
-	@$(RM) $(bindir)/wavemon
-	@$(RM) $(mandir)/man1/wavemon.1
-	@$(RM) $(mandir)/man5/wavemonrc.5
+	@$(RM) $(bindir)/@PACKAGE_NAME@
+	@$(RM) $(mandir)/man1/@PACKAGE_NAME@.1
+	@$(RM) $(mandir)/man5/@PACKAGE_NAME@rc.5
 	@$(RM) -r $(datadir)
 
 clean:
-	@$(RM) *.o *.doc wavemon tags
+	@$(RM) *.o *~ tags @PACKAGE_NAME@
 
 distclean: uninstall clean
 	@$(RM) config.status config.log config.cache Makefile
+	@$(RM) -r autom4te.cache
