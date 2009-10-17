@@ -9,7 +9,7 @@ datadir     = $(datarootdir)/@PACKAGE_NAME@
 CC	= @CC@
 CFLAGS	= @CFLAGS@
 DEFS	= @DEFS@
-LIBS	= @LIBS@
+LDLIBS	= @LIBS@
 
 INSTALL = @INSTALL@
 RM	= rm -vf
@@ -25,7 +25,6 @@ DOCS	= README NEWS THANKS AUTHORS COPYING ChangeLog
 
 all: @PACKAGE_NAME@
 @PACKAGE_NAME@: $(MAIN) $(OBJS)
-	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
 
 $(MAIN): Makefile
 Makefile: Makefile.in config.status
