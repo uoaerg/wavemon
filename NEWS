@@ -2,6 +2,15 @@ NEWS
 ====
 
 --------------------
+0.6.10 (2009-10-25)
+--------------------
+ * Bug Fixes:
+   - fixed installation bug which caused manpages to be installed in /man;
+   - fixed mode of installation to support sandbox-builds on Gentoo (Lovelace);
+   - improved (automated) linking process, now possible to pass LDFLAGS (Boeck);
+   - bail out when no statistics are available, instead of flagging an error.
+
+--------------------
 0.6.7 (2009-07-09)
 --------------------
  * Screen geometry:

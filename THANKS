@@ -10,8 +10,11 @@ Tom Gordon to help fix a build error occurring under Puppy Linux, in wavemon
 version 0.5 (2009-02-06).
 
 Dave W. Capella (dave.capella@cornell.edu) provided modifications to build
-ipkg packages for mobile devices in 2002 (now in contrib).
+ipkg packages for mobile devices in 2002 (now in contrib/).
 
 Nelson A. de Oliveira provided helpful tips for choosing a sensible screen-size
 default, and helped much to reduce annoyances in keeping the configuration-file
 parser backward-compatible (0.6.7).
+
+Jonathan Lovelace  provided a patch to enable build on Gentoo (0.6.10).
+Hanno Boeck supplied a patch to improve the linking process (0.6.10).
