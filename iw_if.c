@@ -367,8 +367,16 @@ static void iw_getstat_new_style(struct iw_statistics *stat)
 	wrq.u.data.flags   = 0;
 	strncpy(wrq.ifr_name, conf.ifname, IFNAMSIZ);
 
-	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0)
-		err_sys("can not obtain iw statistics");
+	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0) {
+		/*
+		 * iw_handler_get_iwstats() returns EOPNOTSUPP if
+		 * there are no statistics. Bail out in this case.
+		 */
+		if (errno != EOPNOTSUPP)
+			err_sys("can not obtain iw statistics");
+		errno = 0;
+		memset(&wrq, 0, sizeof(wrq));
+	}
 	close(skfd);
 }
 
