@@ -393,13 +393,17 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 {
 	WINDOW *w_if, *w_info, *w_net;
 	struct timer t1;
-	int key = 0;
+	int key = 0, line = 0;
 
-	w_if	 = newwin_title(0,  2, "Interface",  true);
-	w_levels = newwin_title(2,  9, "Levels",     true);
-	w_stats	 = newwin_title(11, 3, "Statistics", true);
-	w_info	 = newwin_title(14, 6, "Info",       true);
-	w_net	 = newwin_title(20, 3, "Network",    false);
+	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
+	line += WH_IFACE;
+	w_levels = newwin_title(line, WH_LEVEL, "Levels", true);
+	line += WH_LEVEL;
+	w_stats	 = newwin_title(line, WH_STATS, "Statistics", true);
+	line += WH_STATS;
+	w_info	 = newwin_title(line, WH_INFO_MIN, "Info", true);
+	line += WH_INFO_MIN;
+	w_net	 = newwin_title(line, WH_NET_MIN, "Network", false);
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);
