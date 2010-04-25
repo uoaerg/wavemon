@@ -34,6 +34,9 @@
  */
 #define HIST_MAXYLEN	(HIST_WIN_HEIGHT - 1)
 
+/* Position (relative to right border) and maximum length of dBm level tags. */
+#define LEVEL_TAG_POS	5
+
 /* GLOBALS */
 static WINDOW *w_lhist, *w_key;
 
@@ -160,6 +163,11 @@ static double hist_level(double val, int min, int max)
 	return map_range(val, min, max, 1, HIST_MAXYLEN);
 }
 
+static double hist_level_inverse(int y_level, int min, int max)
+{
+	return map_range(y_level, 1, HIST_MAXYLEN, min, max);
+}
+
 /* Order needs to be reversed as y-coordinates grow downwards */
 static int hist_y(int yval)
 {
@@ -239,6 +247,24 @@ static void display_lhist(void)
 			noise_level = hist_level(iwl.noise, conf.noise_min, conf.noise_max);
 			plot_colour = noise_level > snr_level ? CP_STATNOISE : CP_STATNOISE_S;
 			hist_plot(noise_level, x, plot_colour);
+
+		} else if (x == LEVEL_TAG_POS && ! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
+			char	tmp[LEVEL_TAG_POS + 1];
+			int	len;
+			/*
+			 * Tag the horizontal grid lines with dBm levels.
+			 * This is only supported for signal levels, when the screen is not
+			 * shared by several graphs (each having a different scale).
+			 */
+			wattrset(w_lhist, COLOR_PAIR(CP_STATSIG));
+			for (y = 1; y <= HIST_MAXYLEN; y++) {
+				if (y != 1 && (y % 5) && y != HIST_MAXYLEN)
+					continue;
+				len = snprintf(tmp, sizeof(tmp), "%.0f",
+					       hist_level_inverse(y, conf.sig_min,
+								     conf.sig_max));
+				mvwaddstr(w_lhist, hist_y(y), hist_x(len), tmp);
+			}
 		}
 
 		if (! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
