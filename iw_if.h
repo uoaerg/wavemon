@@ -366,6 +366,18 @@ static inline float freq_to_hz(const struct iw_freq *freq)
 	return freq->m * pow(10, freq->e);
 }
 
+/* Return frequency or 0 on error. Based on iw_channel_to_freq() */
+static inline double channel_to_freq(uint8_t chan, const struct iw_range *range)
+{
+	int c;
+
+	for (c = 0; c < range->num_frequency; c++)
+		/* Check if it actually has stored a frequency */
+		if (range->freq[c].i == chan && range->freq[c].m > 1000)
+			return freq_to_hz(&range->freq[c]);
+	return 0.0;
+}
+
 /* Return channel number or -1 on error. Based on iw_freq_to_channel() */
 static inline int freq_to_channel(double freq, const struct iw_range *range)
 {

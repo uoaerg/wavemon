@@ -503,7 +503,10 @@ void dump_parameters(void)
 			printf("             nwid: %X\n", info.nwid.value);
 	}
 
-	if (info.cap_freq) {
+	/* Some drivers only return the channel (e.g. ipw2100) */
+	if (info.cap_freq && info.freq < 256)
+		info.freq = channel_to_freq(info.freq, &iw.range);
+	if (info.cap_freq && info.freq > 1e3) {
 		i = freq_to_channel(info.freq, &iw.range);
 		if (i >= 0)
 			printf("          channel: %d\n", i);

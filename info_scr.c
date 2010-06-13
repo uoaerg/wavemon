@@ -282,10 +282,13 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 
 	wmove(w_info, 2, 1);
-	if (info.cap_freq) {
+	if (info.cap_freq && info.freq < 256)
+		info.freq = channel_to_freq(info.freq, &cur.range);
+	if (info.cap_freq && info.freq > 1e3) {
 		waddstr(w_info, "freq: ");
 		sprintf(tmp, "%g GHz", info.freq / 1.0e9);
 		waddstr_b(w_info, tmp);
+
 		i = freq_to_channel(info.freq, &cur.range);
 		if (i >= 0) {
 			waddstr(w_info, ", channel: ");
