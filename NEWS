@@ -2,6 +2,28 @@ NEWS
 ====
 
 --------------------
+0.6.11 (2010-06-14)
+--------------------
+ * Info screen:
+   - fixed a bug in the freq/channel display: some drivers, such as ipw2100,
+     only return the channel number, requiring to look up the frequency;
+   - added a warning to indicate the absence of data from the interface.
+ * Histogram screen:
+   Tag the grid lines with the corresponding dBm levels:
+   - no levels are shown if there is no valid interface data (screen empty);
+   - level tags are restricted to the signal level graph only:
+     o if both signal and noise level data are valid, there are three graphs
+       (signal level, noise level, SNR), which would cause ambiguity,
+     o many cards (e.g. ath5k, rt73usb, iwl3945) do not supply noise data,
+       so that the histogram screen will then only contain the level graph;
+   - since the scale is adjustable, while the grid lines are fixed, the tags
+     are dynamically recomputed based on the y position and current scale;
+   - the min/max bounds of the scale are also shown.
+   Thanks to Sean Muir for this suggestion.
+ * Updated manpage regarding access point screen; as soon there is time, the
+   outdated and restricted SIOCGIWAPLIST ioctl should be replaced by a scan.
+
+--------------------
 0.6.10 (2009-10-25)
 --------------------
  * Bug Fixes:
