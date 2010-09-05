@@ -68,13 +68,18 @@ static void display_levels(void)
 	     snrscale[2] = { 6, 12 };
 	char tmp[0x100];
 	static float qual, signal, noise, ssnr;
-	int line = 1;
+	int line;
+
+	for (line = 1; line <= WH_LEVEL; line++)
+		mvwclrtoborder(w_levels, line, 1);
 
 	if ((cur.stat.qual.updated & IW_QUAL_ALL_INVALID) == IW_QUAL_ALL_INVALID) {
 		wattron(w_levels, A_BOLD);
 		waddstr_center(w_levels, (WH_LEVEL + 1)/2, "NO INTERFACE DATA");
 		goto done_levels;
 	}
+
+	line = 1;
 
 	/* Noise data is rare. Use the space for spreading out. */
 	if (cur.stat.qual.updated & IW_QUAL_NOISE_INVALID)
@@ -279,7 +284,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 				cur.range.sensitivity);
 		waddstr_b(w_info, tmp);
 	}
-
+	wclrtoborder(w_info);
 
 	wmove(w_info, 2, 1);
 	if (info.cap_freq && info.freq < 256)
@@ -307,6 +312,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		} else
 			waddstr(w_info, "n/a");
 	}
+	wclrtoborder(w_info);
 
 	wmove(w_info, 3, 1);
 	waddstr(w_info, "power mgt: ");
@@ -328,6 +334,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, ",  TX-power: ");
 		waddstr_b(w_info, format_txpower(&info.txpower));
 	}
+	wclrtoborder(w_info);
 
 	wmove(w_info, 4, 1);
 	waddstr(w_info, "retry: ");
@@ -344,8 +351,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		else
 			sprintf(tmp, "%d B", info.rts.value);
 		waddstr_b(w_info, tmp);
-	} else
+	} else {
 		waddstr(w_info, "rts/cts: n/a");
+	}
 
 	waddstr(w_info, ",  ");
 	if (info.cap_frag) {
@@ -355,8 +363,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		else
 			sprintf(tmp, "%d B", info.frag.value);
 		waddstr_b(w_info, tmp);
-	} else
+	} else {
 		waddstr(w_info, "frag: n/a");
+	}
+	wclrtoborder(w_info);
 
 	wmove(w_info, 5, 1);
 	waddstr(w_info, "encryption: ");
@@ -378,10 +388,11 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			if (info.key_flags & IW_ENCODE_OPEN)
 				waddstr(w_info, ", open");
 		}
-	} else
+	} else {
 		waddstr(w_info, "n/a");
-
+	}
 	wclrtoborder(w_info);
+
 	wrefresh(w_info);
 }
 
