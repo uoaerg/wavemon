@@ -278,8 +278,8 @@ extern void err_sys(const char *format, ...);
 
 static inline void str_tolower(char *s)
 {
-	while (s && *s != '\0')
-		*s++ = tolower(*s);
+	for (; s && *s; s++)
+		*s = tolower(*s);
 }
 
 /* number of digits needed to display integer part of @val */
