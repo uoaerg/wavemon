@@ -23,6 +23,25 @@
  * Obtain network device information
  */
 
+/* Return true if @ifname is known to be up */
+bool if_is_up(char *ifname)
+{
+	struct ifreq ifr;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
+
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
+
+	if (ioctl(skfd, SIOCGIFFLAGS, &ifr) < 0)
+		err_sys("can not check interface %s", ifname);
+	close(skfd);
+
+	return ifr.ifr_flags & IFF_UP;
+}
+
 /* Interface information */
 void if_getinf(char *ifname, struct if_info *info)
 {

@@ -56,6 +56,7 @@ struct if_info {		/* modified ifreq */
 				netmask,
 				bcast;
 };
+extern bool if_is_up(char *ifname);
 extern void if_getinf(char *ifname, struct if_info *info);
 
 /**
