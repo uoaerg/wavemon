@@ -282,6 +282,17 @@ static inline void str_tolower(char *s)
 		*s = tolower(*s);
 }
 
+/* Check if @str is printable (compare iw_essid_escape()) */
+static inline bool str_is_ascii(char *s)
+{
+	if (!s || !*s)
+		return false;
+	for (; *s; s++)
+		if (!isascii(*s) || iscntrl(*s))
+			return false;
+	return true;
+}
+
 /* number of digits needed to display integer part of @val */
 static inline int num_int_digits(const double val)
 {
