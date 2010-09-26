@@ -1,4 +1,4 @@
-.TH WAVEMON 1 "JANUARY 2009" Linux "User Manuals"
+.TH WAVEMON 1 "SEPTEMBER 2010" Linux "User Manuals"
 .SH NAME
 wavemon \- a wireless network monitor application
 .SH SYNOPSIS
@@ -42,9 +42,15 @@ Another keyboard shortcut for this screen is 'i'.
 .B Level histogram (F2)
 This is a full-screen histogram plot of the signal/noise levels and the signal-to-noise levels. It shows the level changes with time. Below the plot, the key is shown. If available, the terminfo scanline chars are used in order to enhance the precision of the level plots, i.e. this screen will particularly look nifty in a xterm.
 .TP
-.B Access point list (F3)
-This screen provides a list of MAC addresses specifying the access points within range. Please note that this functionality is based on a \fIdeprecated\fR
-API call, therefore it is likely to be superseded or replaced in one of the forthcoming releases.
+.B Scanned access point list (F3)
+This screen provides a ranked list of access points and other wireless clients
+within range. The list is sorted in descending order of signal quality. Each
+entry is headed by the ESSID or the MAC address (in case the ESSID is absent
+or not printable).  Within the entry, the relative signal quality, signal level,
+channel, frequency, and operation mode are shown. The screen is refreshed
+every 20 seconds. Pressing any key other than \'q\' and \'i\' will also trigger
+a refresh. Please note that gathering meaningful scan data may take several
+seconds.
 .TP
 .B Preferences (F7)
 This screen allows you to change all program options such as interface and level scale parameters, and to save the new settings to the configuration file. Select a parameter with <up> and <down>, then change the value with <left> and <right>. Please refer to the

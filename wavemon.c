@@ -27,7 +27,7 @@ static const struct {
 } screens[] = {
 	[SCR_INFO]	= { "info",	scr_info  },
 	[SCR_LHIST]	= { "lhist",	scr_lhist },
-	[SCR_APLIST]	= { "aplst",	scr_aplst },
+	[SCR_APLIST]	= { "scan",	scr_aplst },
 	[SCR_EMPTY_F4]	= { "",		NULL	  },
 	[SCR_EMPTY_F5]	= { "",		NULL	  },
 	[SCR_EMPTY_F6]	= { "",		NULL	  },

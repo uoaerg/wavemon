@@ -19,6 +19,10 @@
  */
 #include "iw_if.h"
 
+#define START_LINE	2	/* where to begin the screen */
+#define MAX_SCAN_WAIT	10000	/* maximum milliseconds spent waiting */
+#define REFRESH_INTVL	(2 * MAX_SCAN_WAIT)
+
 /*
  * Auxiliary declarations and functions imported from iwlib in order to
  * process and parse scan events. This code is copied with little change
@@ -561,89 +565,197 @@ static void free_scan_result(struct scan_result *head)
 	}
 }
 
+static struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
+{
+	struct scan_result *head = NULL;
+	struct iwreq wrq;
+	int wait, waited = 0;
+	/*
+	 * Some drivers may return very large scan results, either because there
+	 * are many cells, or there are many large elements. Do not bother to
+	 * guess buffer size, use maximum u16 wrq.u.data.length size.
+	 */
+	char scan_buf[0xffff];
+
+	memset(&wrq, 0, sizeof(wrq));
+	strncpy(wrq.ifr_ifrn.ifrn_name, ifname, IFNAMSIZ);
+	if (ioctl(skfd, SIOCSIWSCAN, &wrq) < 0)
+		return NULL;
+
+	/* Larger initial timeout of 250ms between set and first get */
+	for (wait = 250; waited += wait < MAX_SCAN_WAIT; wait = 100) {
+		struct timespec ts = { 0, wait * 1000000 }, ts_rem;
+
+		while (nanosleep(&ts, &ts_rem) < 0 && errno == EINTR)
+			ts = ts_rem;
+
+		wrq.u.data.pointer = scan_buf;
+		wrq.u.data.length  = sizeof(scan_buf);
+		wrq.u.data.flags   = 0;
+
+		if (ioctl(skfd, SIOCGIWSCAN, &wrq) == 0)
+			break;
+		else if (errno != EAGAIN && errno != EINTR)
+			return NULL;
+	}
+
+	if (wrq.u.data.length) {
+		struct iw_event iwe;
+		struct stream_descr stream;
+		struct scan_result *new = NULL;
+		int f = 0;		/* Idea taken from waproamd */
+
+		memset(&stream, 0, sizeof(stream));
+		stream.current = scan_buf;
+		stream.end     = scan_buf + wrq.u.data.length;
+
+		while (iw_extract_event_stream(&stream, &iwe, we_version) > 0) {
+        		if (!new)
+				new = calloc(1, sizeof(*new));
+
+			switch (iwe.cmd) {
+			case SIOCGIWAP:
+                		f = 1;
+				memcpy(&new->ap_addr, &iwe.u.ap_addr, sizeof(struct sockaddr));
+				break;
+			case SIOCGIWESSID:
+                		f |= 2;
+				memset(new->essid, 0, sizeof(new->essid));
+
+				if (iwe.u.essid.flags && iwe.u.essid.pointer && iwe.u.essid.length)
+					memcpy(new->essid, iwe.u.essid.pointer, iwe.u.essid.length);
+				break;
+			case SIOCGIWMODE:
+				new->mode = iwe.u.mode;
+                    		f |= 4;
+				break;
+			case SIOCGIWFREQ:
+                		f |= 8;
+				new->freq = freq_to_hz(&iwe.u.freq);
+				break;
+			case SIOCGIWENCODE:
+                		f |= 16;
+				new->has_key = !(iwe.u.data.flags & IW_ENCODE_DISABLED);
+				break;
+			case IWEVQUAL:
+				f |= 32;
+				memcpy(&new->qual, &iwe.u.qual, sizeof(struct iw_quality));
+				break;
+			}
+        		if (f == 63) {
+				struct scan_result *cur = head, **prev = &head;
+
+				f = 0;
+
+				/* Sort in descending order of signal strength */
+				while (cur && cmp_scan_sig(cur, new) > 0)
+					prev = &cur->next, cur = cur->next;
+
+				*prev     = new;
+				new->next = cur;
+				new       = NULL;
+			}
+		}
+		free(new);	/* may have been allocated but not filled in */
+	}
+	return head;
+}
+
+static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
+			     char buf[], size_t buflen)
+{
+	struct iw_levelstat dbm;
+	size_t len = 0;
+
+	iw_sanitize(iw_range, &cur->qual, &dbm);
+	if (cur->qual.updated & IW_QUAL_LEVEL_INVALID) {
+		if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
+			len += snprintf(buf + len, buflen - len, "%d/%d",
+					cur->qual.qual,
+					iw_range->max_qual.qual);
+	} else if (cur->qual.updated & IW_QUAL_LEVEL_INVALID) {
+		len += snprintf(buf + len, buflen - len, "%.0f dBm",
+				dbm.signal);
+	} else {
+		len += snprintf(buf + len, buflen - len, "%2d/%d, %.0f dBm",
+				cur->qual.qual, iw_range->max_qual.qual,
+				dbm.signal);
+	}
+
+	if (cur->freq < 1e3) {
+		snprintf(buf + len, buflen - len, ", chan %.0f", cur->freq);
+	} else {
+		int channel = freq_to_channel(cur->freq, iw_range);
+
+		if (channel >= 0)
+			len += snprintf(buf + len, buflen - len, ", Ch %2d, %g MHz",
+					channel, cur->freq / 1e6);
+		else
+			len += snprintf(buf + len, buflen - len, ", %g GHz",
+					cur->freq / 1e9);
+	}
+
+	len += snprintf(buf + len, buflen - len, ", Type %s",
+			iw_opmode(cur->mode));
+
+	len += snprintf(buf + len, buflen - len, "%s",
+			cur->has_key ? "" : ", unencrypted");
+	return buf;
+}
+
 static void display_aplist(WINDOW *w_aplst)
 {
-	uint8_t buf[(sizeof(struct iw_quality) +
-		     sizeof(struct sockaddr)) * IW_MAX_AP];
 	char s[0x100];
-	int i, j, line = 2;
-	struct iw_quality *qual, qual_pivot;
-	struct sockaddr *hwa, hwa_pivot;
+	int i, line = START_LINE;
 	struct iw_range range;
-	struct iw_levelstat dbm;
-	struct iwreq iwr;
+	struct scan_result *head, *cur;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
 		err_sys("%s: can not open socket", __func__);
 
 	iw_getinf_range(conf.ifname, &range);
-	for (i = 1; i <= MAXYLEN; i++)
-		mvwclrtoborder(w_aplst, i, 1);
-
-	strncpy(iwr.ifr_name, conf.ifname, IFNAMSIZ);
-	iwr.u.data.pointer = (caddr_t) buf;
-	iwr.u.data.length  = IW_MAX_AP;
-	iwr.u.data.flags   = 0;
-
-	if (ioctl(skfd, SIOCGIWAPLIST, &iwr) < 0) {
-		sprintf(s, "%s does not have a list of peers/access points",
-			   conf.ifname);
+	if (range.we_version_compiled < 14) {
+		mvwclrtoborder(w_aplst, START_LINE, 1);
+		sprintf(s, "%s does not support scanning", conf.ifname);
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 		goto done;
 	}
 
-	if (iwr.u.data.length == 0) {
-		sprintf(s, "%s: no peer/access point in range", conf.ifname);
-		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
-	} else if (iwr.u.data.length == 1) {
-		mvwaddstr(w_aplst, line, 1, "Peer/access point:");
+	head = get_scan_list(skfd, conf.ifname, range.we_version_compiled);
+	if (head) {
+		;
+	} else if (errno == EPERM) {
+		/*
+		 * Don't try to read leftover results, it does not work reliably
+		 */
+		sprintf(s, "This screen requires CAP_NET_ADMIN permissions");
+	} else if (!if_is_up(conf.ifname)) {
+		sprintf(s, "Interface '%s' is down - can not scan", conf.ifname);
+	} else if (errno) {
+		sprintf(s, "No scan on %s: %s", conf.ifname, strerror(errno));
 	} else {
-		sprintf(s, "%d peers/access points in range:", iwr.u.data.length);
-		mvwaddstr(w_aplst, line, 1, s);
+		sprintf(s, "No scan results on %s", conf.ifname);
 	}
 
-	hwa  = (struct sockaddr *)   buf;
-	qual = (struct iw_quality *) (hwa + iwr.u.data.length);
-
-	/*
-	 * Show access points in descending order of signal quality by
-	 * sorting both lists in parallel, using simple insertion sort.
-	 */
-	for (i = 0; i < iwr.u.data.length; i++) {
-
-		qual_pivot = qual[i];
-		hwa_pivot  = hwa[i];
-
-		for (j = i; j > 0 && qual[j-1].qual < qual_pivot.qual; j--) {
-			qual[j] = qual[j-1];
-			hwa[j]  = hwa[j-1];
-		}
-
-		qual[j] = qual_pivot;
-		hwa[j]  = hwa_pivot;
-	}
-
-	line += 2;
+	for (i = 1; i <= MAXYLEN; i++)
+		mvwclrtoborder(w_aplst, i, 1);
+	if (!head)
+		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 
 	/* Truncate overly long access point lists to match screen height */
-	for (i = 0; i < iwr.u.data.length && line < MAXYLEN; i++, line++) {
+	for (i = 0, cur = head; cur && line < MAXYLEN; i++, line++, cur = cur->next) {
 
-		mvwaddstr(w_aplst, line++, 1, "  ");
-		waddstr_b(w_aplst, mac_addr(&hwa[i]));
+		mvwaddstr(w_aplst, line++, 1, " ");
+		if (str_is_ascii(cur->essid))
+			waddstr_b(w_aplst, cur->essid);
+		else
+			waddstr_b(w_aplst, mac_addr(&cur->ap_addr));
 
-		if (iwr.u.data.flags) {
-			iw_sanitize(&range, &qual[i], &dbm);
-			sprintf(s, "Quality%c %2d/%d, Signal%c %.0f dBm (%s), Noise%c %.0f dBm",
-				qual[i].updated & IW_QUAL_QUAL_UPDATED ? ':' : '=',
-				qual[i].qual, range.max_qual.qual,
-				qual[i].updated & IW_QUAL_LEVEL_UPDATED ? ':' : '=',
-				dbm.signal, dbm2units(dbm.signal),
-				qual[i].updated & IW_QUAL_NOISE_UPDATED ? ':' : '=',
-				dbm.noise);
-			mvwaddstr(w_aplst, line++, 5, s);
-		}
+		fmt_scan_result(cur, &range, s, sizeof(s));
+		mvwaddstr(w_aplst, line++, 5, s);
 	}
+	free_scan_result(head);
 done:
 	close(skfd);
 	wrefresh(w_aplst);
@@ -657,9 +769,13 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Access point list", false);
 
+	/* Refreshing scan data can take seconds. Inform user. */
+	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
+	wrefresh(w_aplst);
+
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);
-		start_timer(&t1, 50000);
+		start_timer(&t1, REFRESH_INTVL * 1000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
 			usleep(5000);
 
