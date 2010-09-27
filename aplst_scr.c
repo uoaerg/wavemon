@@ -51,7 +51,12 @@ static const int event_type_size[] = {
 	[IW_HEADER_TYPE_UINT]  = IW_EV_UINT_PK_LEN,
 	[IW_HEADER_TYPE_FREQ]  = IW_EV_FREQ_PK_LEN,
 	[IW_HEADER_TYPE_ADDR]  = IW_EV_ADDR_PK_LEN,
-	[IW_HEADER_TYPE_POINT] = IW_EV_POINT_PK_LEN,
+	/*
+	 * Fix IW_EV_POINT_PK_LEN: some wireless.h versions define this
+	 * erroneously as IW_EV_LCP_LEN + 4 (e.g. ESSID will disappear).
+	 * The value below is from wireless tools 30.
+	 */
+	[IW_HEADER_TYPE_POINT] = IW_EV_LCP_PK_LEN + 4,
 	[IW_HEADER_TYPE_PARAM] = IW_EV_PARAM_PK_LEN,
 	[IW_HEADER_TYPE_QUAL]  = IW_EV_QUAL_PK_LEN
 };
@@ -583,7 +588,7 @@ static struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
 		return NULL;
 
 	/* Larger initial timeout of 250ms between set and first get */
-	for (wait = 250; waited += wait < MAX_SCAN_WAIT; wait = 100) {
+	for (wait = 250; (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
 		struct timespec ts = { 0, wait * 1000000 }, ts_rem;
 
 		while (nanosleep(&ts, &ts_rem) < 0 && errno == EINTR)
