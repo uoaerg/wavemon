@@ -493,7 +493,7 @@ static void init_conf_items(void)
 	item->list	= ll_create();
 	ll_push(item->list, "s", "Info");
 	ll_push(item->list, "s", "Histogram");
-	ll_push(item->list, "s", "Access points");
+	ll_push(item->list, "s", "Scan window");
 	ll_push(conf_items, "*", item);
 
 	/* separator (dummy entry) */

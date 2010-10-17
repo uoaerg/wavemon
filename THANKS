@@ -18,3 +18,7 @@ parser backward-compatible (0.6.7).
 
 Jonathan Lovelace  provided a patch to enable build on Gentoo (0.6.10).
 Hanno Boeck supplied a patch to improve the linking process (0.6.10).
+
+Jean Tourrilhes helped with the scan window in 0.7.0 (most of the code to
+extract the scan data is from wireless tools 30) and also kindly provided
+an earlier wavemon prototype with scanning support.

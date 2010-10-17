@@ -21,7 +21,6 @@
 
 #define START_LINE	2	/* where to begin the screen */
 #define MAX_SCAN_WAIT	10000	/* maximum milliseconds spent waiting */
-#define REFRESH_INTVL	(2 * MAX_SCAN_WAIT)
 
 /*
  * Auxiliary declarations and functions imported from iwlib in order to
@@ -589,10 +588,11 @@ static struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
 
 	/* Larger initial timeout of 250ms between set and first get */
 	for (wait = 250; (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
-		struct timespec ts = { 0, wait * 1000000 }, ts_rem;
+		struct timeval tv = { 0, wait * 1000 };
 
-		while (nanosleep(&ts, &ts_rem) < 0 && errno == EINTR)
-			ts = ts_rem;
+		while (select(0, NULL, NULL, NULL, &tv) < 0)
+			if (errno != EINTR && errno != EAGAIN)
+				return NULL;
 
 		wrq.u.data.pointer = scan_buf;
 		wrq.u.data.length  = sizeof(scan_buf);
@@ -600,8 +600,6 @@ static struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
 
 		if (ioctl(skfd, SIOCGIWSCAN, &wrq) == 0)
 			break;
-		else if (errno != EAGAIN && errno != EINTR)
-			return NULL;
 	}
 
 	if (wrq.u.data.length) {
@@ -671,40 +669,38 @@ static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
 {
 	struct iw_levelstat dbm;
 	size_t len = 0;
+	int channel = freq_to_channel(cur->freq, iw_range);
 
 	iw_sanitize(iw_range, &cur->qual, &dbm);
-	if (cur->qual.updated & IW_QUAL_LEVEL_INVALID) {
-		if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
-			len += snprintf(buf + len, buflen - len, "%d/%d",
-					cur->qual.qual,
-					iw_range->max_qual.qual);
-	} else if (cur->qual.updated & IW_QUAL_LEVEL_INVALID) {
-		len += snprintf(buf + len, buflen - len, "%.0f dBm",
-				dbm.signal);
-	} else {
+
+	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
 		len += snprintf(buf + len, buflen - len, "%2d/%d, %.0f dBm",
 				cur->qual.qual, iw_range->max_qual.qual,
 				dbm.signal);
-	}
+	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
+		len += snprintf(buf + len, buflen - len, "%2d/%d",
+				cur->qual.qual, iw_range->max_qual.qual);
+	else if (!(cur->qual.updated & IW_QUAL_LEVEL_INVALID))
+		len += snprintf(buf + len, buflen - len, "%.0f dBm",
+				dbm.signal);
+	else
+		len += snprintf(buf + len, buflen - len, "? dBm");
 
-	if (cur->freq < 1e3) {
-		snprintf(buf + len, buflen - len, ", chan %.0f", cur->freq);
-	} else {
-		int channel = freq_to_channel(cur->freq, iw_range);
 
-		if (channel >= 0)
-			len += snprintf(buf + len, buflen - len, ", Ch %2d, %g MHz",
-					channel, cur->freq / 1e6);
-		else
-			len += snprintf(buf + len, buflen - len, ", %g GHz",
-					cur->freq / 1e9);
-	}
+	if (cur->freq < 1e3)
+		len += snprintf(buf + len, buflen - len, ", Chan %2.0f",
+				cur->freq);
+	else if (channel >= 0)
+		len += snprintf(buf + len, buflen - len, ", Ch %2d, %g MHz",
+				channel, cur->freq / 1e6);
+	else
+		len += snprintf(buf + len, buflen - len, ", %g GHz",
+				cur->freq / 1e9);
 
-	len += snprintf(buf + len, buflen - len, ", Type %s",
-			iw_opmode(cur->mode));
-
-	len += snprintf(buf + len, buflen - len, "%s",
-			cur->has_key ? "" : ", unencrypted");
+	/* Access Points are encoded in red/green already */
+	if (cur->mode != IW_MODE_MASTER)
+		len += snprintf(buf + len, buflen - len, " %s",
+				iw_opmode(cur->mode));
 	return buf;
 }
 
@@ -735,6 +731,9 @@ static void display_aplist(WINDOW *w_aplst)
 		 * Don't try to read leftover results, it does not work reliably
 		 */
 		sprintf(s, "This screen requires CAP_NET_ADMIN permissions");
+	} else if (errno == EINTR || errno == EAGAIN || errno == EBUSY) {
+		/* Ignore temporary errors */
+		goto done;
 	} else if (!if_is_up(conf.ifname)) {
 		sprintf(s, "Interface '%s' is down - can not scan", conf.ifname);
 	} else if (errno) {
@@ -745,20 +744,30 @@ static void display_aplist(WINDOW *w_aplst)
 
 	for (i = 1; i <= MAXYLEN; i++)
 		mvwclrtoborder(w_aplst, i, 1);
+
 	if (!head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 
 	/* Truncate overly long access point lists to match screen height */
-	for (i = 0, cur = head; cur && line < MAXYLEN; i++, line++, cur = cur->next) {
+	for (cur = head; cur && line < MAXYLEN; line++, cur = cur->next) {
+		int col = CP_SCAN_NON_AP;
 
+		if (cur->mode == IW_MODE_MASTER)
+			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
+
+		wattron(w_aplst, COLOR_PAIR(col));
 		mvwaddstr(w_aplst, line++, 1, " ");
-		if (str_is_ascii(cur->essid))
-			waddstr_b(w_aplst, cur->essid);
+		if (!*cur->essid || str_is_ascii(cur->essid))
+			snprintf(s, sizeof(s), " \"%s\" ", cur->essid);
 		else
-			waddstr_b(w_aplst, mac_addr(&cur->ap_addr));
+			snprintf(s, sizeof(s), " <cryptic ESSID> ");
+		waddstr_b(w_aplst, s);
+		waddstr(w_aplst, mac_addr(&cur->ap_addr));
+		wattroff(w_aplst, COLOR_PAIR(col));
 
 		fmt_scan_result(cur, &range, s, sizeof(s));
-		mvwaddstr(w_aplst, line++, 5, s);
+		mvwaddstr(w_aplst, line, 1, "    ");
+		waddstr_b(w_aplst, s);
 	}
 	free_scan_result(head);
 done:
@@ -772,7 +781,7 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 	struct timer t1;
 	int key = 0;
 
-	w_aplst = newwin_title(0, WAV_HEIGHT, "Access point list", false);
+	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 
 	/* Refreshing scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
@@ -780,7 +789,8 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_aplist(w_aplst);
-		start_timer(&t1, REFRESH_INTVL * 1000);
+
+		start_timer(&t1, conf.info_iv * 1000000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
 			usleep(5000);
 

@@ -231,7 +231,10 @@ enum colour_pair {
 	CP_STATNOISE_S,
 	CP_PREF_NORMAL,
 	CP_PREF_SELECT,
-	CP_PREF_ARROW
+	CP_PREF_ARROW,
+	CP_SCAN_CRYPT,
+	CP_SCAN_UNENC,
+	CP_SCAN_NON_AP
 };
 
 static inline int cp_from_scale(float value, const char *cscale, bool reverse)

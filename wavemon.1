@@ -42,15 +42,16 @@ Another keyboard shortcut for this screen is 'i'.
 .B Level histogram (F2)
 This is a full-screen histogram plot of the signal/noise levels and the signal-to-noise levels. It shows the level changes with time. Below the plot, the key is shown. If available, the terminfo scanline chars are used in order to enhance the precision of the level plots, i.e. this screen will particularly look nifty in a xterm.
 .TP
-.B Scanned access point list (F3)
-This screen provides a ranked list of access points and other wireless clients
-within range. The list is sorted in descending order of signal quality. Each
-entry is headed by the ESSID or the MAC address (in case the ESSID is absent
-or not printable).  Within the entry, the relative signal quality, signal level,
-channel, frequency, and operation mode are shown. The screen is refreshed
-every 20 seconds. Pressing any key other than \'q\' and \'i\' will also trigger
-a refresh. Please note that gathering meaningful scan data may take several
-seconds.
+.B Scan window (F3)
+This screen provides a ranked list of access points and other wireless clients within range.
+The list is sorted in descending order of signal quality. Entries consist of a coloured header
+and a line with signal/channel information. A green/red header indicates an (un-)encrypted
+access point; the colour changes to yellow for non-access points (in this case the mode is
+shown in the subsequent line). The subsequent information line contains relative and absolute
+signal strength, channel, frequency and the mode if the entry is not an access point.
+
+Scan results are refreshed periodically, depending on the 'Dynamic info updates' configuration.
+Please note that gathering meaningful scan data can take several seconds.
 .TP
 .B Preferences (F7)
 This screen allows you to change all program options such as interface and level scale parameters, and to save the new settings to the configuration file. Select a parameter with <up> and <down>, then change the value with <left> and <right>. Please refer to the
