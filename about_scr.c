@@ -33,7 +33,7 @@ static char *about_lines[] = {
 	"please send suggestions and bug reports to ",
 	PACKAGE_BUGREPORT,
 	"",
-	"http://eden-feed.erg.abdn.ac.uk/wavemon",
+	PACKAGE_URL
 };
 
 static int *linecd[ARRAY_SIZE(about_lines)];

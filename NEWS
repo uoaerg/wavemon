@@ -2,6 +2,18 @@ NEWS
 ====
 
 --------------------
+0.7.0 (2010-10-18)
+--------------------
+  * NEW Scan Window: this replaces the old access point screen. It displays
+    a sorted list (in descending order of signal quality) of access points
+    and other wireless clients within range, periodically refreshed at a
+    configurable rate.
+  * Access Point screen: finally deprecated this - the SIOCGIWAPLIST
+    ioctl itself is deprecated and works only on some older kernels.
+  * Info Window: clear screen to erase stale data.
+  * Bug Fixes: fixed a compiler warning in string-tolower operation.
+
+--------------------
 0.6.11 (2010-06-14)
 --------------------
  * Info screen:
