@@ -84,12 +84,16 @@ const char *curtail(const char *str, const char *sep, int len)
 	const char fallback_sep[] = "~";
 	int l = 0, front, mid, back;
 
-	assert(len < sizeof(out_buf));
+	if (len >= sizeof(out_buf))
+		len = sizeof(out_buf) - 1;
 
-	if (sep == NULL)
+	if (sep == NULL || *sep == '\0')
 		sep = fallback_sep;
 	mid = strlen(sep);
-	assert(len >= mid);
+	if (mid > len) {
+		sep = fallback_sep;
+		mid = strlen(sep);
+	}
 
 	if (str != NULL)
 		l = strlen(str);
