@@ -42,6 +42,13 @@ AC_CHECK_HEADERS([sys/socket.h linux/if.h linux/wireless.h], [],
 		  # include <linux/if.h>
 		  #endif
 		 ])
+# require minimum version of the wireless extensions
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <linux/wireless.h>
+		    #if WIRELESS_EXT < 18
+		    #error "Need minimum version WIRELESS_EXT = 18"
+		    #endif])],[],
+		   [AC_MSG_FAILURE([linux/wireless.h is too old, need WE >= 18])])
 AC_HEADER_STDBOOL
 
 # Tests involving libraries
