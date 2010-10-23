@@ -424,6 +424,8 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	struct timer t1;
 	int key = 0, line = 0;
 
+	iw_stat_redraw = NULL;
+
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
 	w_levels = newwin_title(line, WH_LEVEL, "Levels", true);
@@ -434,14 +436,10 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	line += WH_INFO_MIN;
 	w_net	 = newwin_title(line, WH_NET_MIN, "Network", false);
 
-	display_info(w_if, w_info);
-	display_netinfo(w_net);
-
-	iw_stat_redraw = redraw_stats;
-
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_info(w_if, w_info);
 		display_netinfo(w_net);
+		iw_stat_redraw = redraw_stats;
 
 		start_timer(&t1, conf.info_iv * 1000000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
