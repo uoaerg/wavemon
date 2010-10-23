@@ -223,11 +223,16 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	iw_getinf_dyn(conf.ifname, &info);
 
 	wmove(w_if, 1, 1);
-	sprintf(tmp, "%s (%s)", conf.ifname, info.name);
-	waddstr_b(w_if, tmp);
+	waddstr_b(w_if, conf.ifname);
+	if (cur.range.enc_capa & IW_WPA_MASK)
+		sprintf(tmp, " (%s, %s)", info.name, format_wpa(&cur.range));
+	else
+		sprintf(tmp, " (%s)", info.name);
+	waddstr(w_if, tmp);
 
 	if (info.cap_essid) {
-		waddstr(w_if, ",  ESSID: ");
+		waddstr_b(w_if, ",");
+		waddstr(w_if, "  ESSID: ");
 		if (info.essid_ct > 1)
 			sprintf(tmp, "\"%s\" [%d]", info.essid,
 						    info.essid_ct);

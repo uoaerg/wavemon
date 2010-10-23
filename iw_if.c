@@ -498,7 +498,9 @@ void dump_parameters(void)
 	if_getstat(conf.ifname, &nstat);
 
 	printf("\n");
-	printf("Configured device: %s\n", conf.ifname);
+	printf("Configured device: %s (%s)\n", conf.ifname, info.name);
+	printf("         Security: %s\n", iw.range.enc_capa ?
+			format_enc_capab(iw.range.enc_capa, ", ") : "WEP");
 	printf("       WE version: %d (source version %d)\n\n",
 	       iw.range.we_version_compiled, iw.range.we_version_source);
 
