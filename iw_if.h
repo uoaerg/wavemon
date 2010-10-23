@@ -395,13 +395,19 @@ static inline int freq_to_channel(double freq, const struct iw_range *range)
 }
 
 /* print @key in cleartext if it is in ASCII format, use hex format otherwise */
-static inline char *format_key(char *key, uint8_t key_len)
+static inline char *format_key(const char *const key, const uint8_t key_len)
 {
 	static char buf[128];
-	int len = 0, i, is_printable;
+	int i, is_printable, len = 0;
 
-	for (i = 0, is_printable = 1; i < key_len && is_printable; i++)
-		is_printable = isprint(key[i]);
+	/* Over-estimate key size: 2 chars per hex digit plus '-' */
+	if (key == NULL || key_len * 3 >= sizeof(buf)) {
+		sprintf(buf, "%u bits", key_len * 8);
+		return buf;
+	}
+
+	for (i = 0; i < key_len && (is_printable = isprint(key[i])); i++)
+		;
 
 	if (is_printable)
 		len += sprintf(buf, "\"");
@@ -412,11 +418,13 @@ static inline char *format_key(char *key, uint8_t key_len)
 		} else {
 			if (i > 0 && (i & 1) == 0)
 				len += sprintf(buf + len, "-");
-			len += sprintf(buf + len, "%2X", key[i]);
+			len += sprintf(buf + len, "%02X", (uint8_t)key[i]);
 		}
 
 	if (is_printable)
-		sprintf(buf + len, "\"");
+		len += sprintf(buf + len, "\"");
+
+	sprintf(buf + len, " (%u bits)", key_len * 8);
 
 	return buf;
 }

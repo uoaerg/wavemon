@@ -501,6 +501,23 @@ void dump_parameters(void)
 	printf("Configured device: %s (%s)\n", conf.ifname, info.name);
 	printf("         Security: %s\n", iw.range.enc_capa ?
 			format_enc_capab(iw.range.enc_capa, ", ") : "WEP");
+	if (iw.range.num_encoding_sizes &&
+	    iw.range.num_encoding_sizes < IW_MAX_ENCODING_SIZES) {
+
+		printf("        Key sizes: ");
+		for (i = 0; i < iw.range.num_encoding_sizes; i++) {
+			if (i)
+				printf(", ");
+			if (iw.range.encoding_size[i] == 5)
+				printf("WEP-40");
+			else if (iw.range.encoding_size[i] == 13)
+				printf("WEP-104");
+			else
+				printf("%u bits",
+					iw.range.encoding_size[i] * 8);
+		}
+		printf("\n");
+	}
 	printf("       WE version: %d (source version %d)\n\n",
 	       iw.range.we_version_compiled, iw.range.we_version_source);
 
