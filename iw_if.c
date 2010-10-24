@@ -243,10 +243,7 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
 		err_sys("%s: can not open socket", __func__);
 
 	memset(range, 0, sizeof(struct iw_range));
-
 	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
-	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
-		err_sys("can not open device '%s'", iwr.u.name);
 
 	iwr.u.data.pointer = (caddr_t) range;
 	iwr.u.data.length  = sizeof(struct iw_range);
