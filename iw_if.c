@@ -155,7 +155,7 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		info->cap_essid = 1;
 		/* Convert potential ESSID index to count > 0 */
 		info->essid_ct  = iwr.u.essid.flags & IW_ENCODE_INDEX ?  : 1;
-		strncpy(info->essid, iwr.u.essid.pointer, IW_ESSID_MAX_SIZE);
+		info->essid[iwr.u.essid.length] = '\0';
 	}
 
 	if (ioctl(skfd, SIOCGIWNWID, &iwr) >= 0) {
