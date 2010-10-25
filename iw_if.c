@@ -130,20 +130,23 @@ void if_getstat(char *ifname, struct if_stat *stat)
 	fclose(fp);
 }
 
-/*
- * obtain dynamic device information
+/**
+ * iw_dyn_info_get  -  populate dynamic information
+ * @info:   information to populate
+ * @ifname: interface name
+ * @if:	    range information to use (number of encryption keys)
  */
-void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
+void dyn_info_get(struct iw_dyn_info *info, char *ifname, struct iw_range *ir)
 {
 	struct iwreq iwr;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+	int i, skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
 		err_sys("%s: can not open socket", __func__);
 
 	memset(info, 0, sizeof(struct iw_dyn_info));
-
 	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
+
 	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
 		err_sys("can not open device '%s'", iwr.u.name);
 	strncpy(info->name, iwr.u.name, IFNAMSIZ);
@@ -215,13 +218,41 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 		info->mode     = iwr.u.mode;
 	}
 
-	iwr.u.data.pointer = (caddr_t) info->key;
-	iwr.u.data.length  = sizeof(info->key);
-	iwr.u.data.flags   = 0;
-	if (ioctl(skfd, SIOCGIWENCODE, &iwr) >= 0) {
-		info->cap_key	= 1;
-		info->key_flags	= iwr.u.data.flags;
-		info->key_size	= iwr.u.data.length;
+	info->nkeys = ir->max_encoding_tokens;
+	if (info->nkeys) {
+		info->keys = calloc(info->nkeys, sizeof(*info->keys));
+		if (info->keys == NULL)
+			err_sys("malloc(key array)");
+
+		/* Get index of default key first */
+		iwr.u.data.pointer = info->keys[0].key;
+		iwr.u.data.length  = sizeof(info->keys[0].key);
+		iwr.u.data.flags   = 0;
+		if (ioctl(skfd, SIOCGIWENCODE, &iwr) < 0) {
+			free(info->keys);
+			info->keys  = NULL;
+			info->nkeys = 0;
+		} else {
+			info->active_key = iwr.u.data.flags & IW_ENCODE_INDEX;
+		}
+	}
+	/* If successful, populate the key array */
+	for (i = 0; i < info->nkeys; i++) {
+		iwr.u.data.pointer = info->keys[i].key;
+		iwr.u.data.length  = sizeof(info->keys->key);
+		iwr.u.data.flags   = i + 1;	/* counts 1..n instead of 0..n-1 */
+		if (ioctl(skfd, SIOCGIWENCODE, &iwr) < 0) {
+			free(info->keys);
+			info->nkeys = 0;
+			break;
+		}
+		info->keys[i].size  = iwr.u.data.length;
+		info->keys[i].flags = iwr.u.data.flags;
+
+		/* Validate whether the current key is indeed active */
+		if (i + 1 == info->active_key && (info->keys[i].size == 0 ||
+		    (info->keys[i].flags & IW_ENCODE_DISABLED)))
+			info->active_key = 0;
 	}
 
 	if (ioctl(skfd, SIOCGIWAP, &iwr) >= 0) {
@@ -230,6 +261,13 @@ void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info)
 	}
 	close(skfd);
 }
+
+void dyn_info_cleanup(struct iw_dyn_info *info)
+{
+	if (info)
+		free(info->keys);
+}
+
 
 /*
  * get range information
@@ -489,8 +527,8 @@ void dump_parameters(void)
 	struct if_stat nstat;
 	int i;
 
-	iw_getinf_dyn(conf.ifname, &info);
 	iw_getinf_range(conf.ifname, &iw.range);
+	dyn_info_get(&info, conf.ifname, &iw.range);
 	iw_getstat(&iw);
 	if_getstat(conf.ifname, &nstat);
 
@@ -602,24 +640,26 @@ void dump_parameters(void)
 	}
 
 	printf("       encryption: ");
-	if (info.cap_key) {
-		if (info.key_flags & IW_ENCODE_DISABLED || info.key_size == 0) {
-			printf("off");
+	if (info.nkeys == 0)
+		printf("no information available\n");
+	for (i = 0; i < info.nkeys; i++) {
+		if (i)
+			printf("                   ");
+		/* Current key is marked by `=' sign */
+		printf("[%u]%s ", i + 1, i + 1 == info.active_key ? "=" : ":");
+
+		if (info.keys[i].flags & IW_ENCODE_DISABLED || !info.keys[i].size) {
+			printf("off\n");
 		} else {
-			printf("%s", format_key(info.key, info.key_size));
-			i = info.key_flags & IW_ENCODE_INDEX;
-			if (i > 1)
-				printf(" [%d]", i);
-			if (info.key_flags & IW_ENCODE_RESTRICTED)
+			printf("%s", format_key(info.keys + i));
+			if (info.keys[i].flags & IW_ENCODE_RESTRICTED)
 				printf(", restricted");
-			if (info.key_flags & IW_ENCODE_OPEN)
+			if (info.keys[i].flags & IW_ENCODE_OPEN)
 				printf(", open");
+			printf("\n");
 		}
-	} else {
-		printf("n/a");
 	}
 
-	printf("\n");
 	printf(" power management: ");
 	if (info.cap_power)
 		printf("%s\n", format_power(&info.power, &iw.range));
@@ -653,4 +693,5 @@ void dump_parameters(void)
 		printf(" exc. MAC retries: %'u\n", iw.stat.discard.retries);
 
 	printf("\n");
+	dyn_info_cleanup(&info);
 }

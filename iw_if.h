@@ -60,6 +60,18 @@ extern bool if_is_up(char *ifname);
 extern void if_getinf(char *ifname, struct if_info *info);
 
 /**
+ * struct iw_key  -  Encoding information
+ * @key:	encryption key
+ * @size:	length of @key in bytes
+ * @flags:	flags reported by SIOCGIWENCODE
+ */
+struct iw_key {
+	uint8_t		key[IW_ENCODING_TOKEN_MAX];
+	uint16_t	size;
+	uint16_t	flags;
+};
+
+/**
  * struct iw_dyn_info  -  modified iw_req
  * @name:	interface name
  * @mode:	current operation mode (IW_MODE_xxx)
@@ -82,9 +94,9 @@ extern void if_getinf(char *ifname, struct if_info *info);
  * @sens:	sensitivity threshold of the card
  * @bitrate:	bitrate (client mode)
  *
- * @key:	encryption key
- * @key_size:	length of @key in bytes
- * @key_flags:	bitmask with information about @key
+ * @keys:	array of encryption keys
+ * @nkeys:	length of @keys
+ * @active_key:	index of current key into @keys (counting from 1)
  *
  */
 struct iw_dyn_info {
@@ -103,7 +115,6 @@ struct iw_dyn_info {
 			cap_frag:1,
 			cap_mode:1,
 			cap_ap:1,
-			cap_key:1,
 			cap_power:1,
 			cap_aplist:1;
 
@@ -123,11 +134,40 @@ struct iw_dyn_info {
 	int32_t		sens;
 	unsigned long	bitrate;
 
-	char		key[IW_ENCODING_TOKEN_MAX];
-	uint16_t	key_size;
-	uint16_t	key_flags;
+	struct iw_key	*keys;
+	uint8_t		nkeys;
+	uint8_t		active_key;
 };
 
+/* Return the number of encryption keys marked 'active' in @info */
+static inline uint8_t dyn_info_active_keys(struct iw_dyn_info *info)
+{
+	int i, num_active = 0;
+
+	for (i = 0; i < info->nkeys; i++)
+		num_active += info->keys[i].size &&
+			      !(info->keys[i].flags & IW_ENCODE_DISABLED);
+	return num_active;
+}
+
+/* Return the number of 40-bit/104-bit keys in @info */
+static inline uint8_t dyn_info_wep_keys(struct iw_dyn_info *info)
+{
+	int i, num_wep = 0;
+
+	for (i = 0; i < info->nkeys; i++)
+		if (!(info->keys[i].flags & IW_ENCODE_DISABLED))
+			num_wep += info->keys[i].size == 5 ||
+				   info->keys[i].size == 13;
+	return num_wep;
+}
+extern void dyn_info_get(struct iw_dyn_info *, char *ifname, struct iw_range *);
+extern void dyn_info_cleanup(struct iw_dyn_info *info);
+
+
+/**
+ * struct if_stat  -  Packet/byte counts for interfaces
+ */
 struct if_stat {
 	unsigned long long	rx_packets,
 				tx_packets;
@@ -166,7 +206,6 @@ struct iw_stat {
 extern void iw_getstat(struct iw_stat *stat);
 extern void iw_cache_update(struct iw_stat *stat);
 
-extern void iw_getinf_dyn(char *ifname, struct iw_dyn_info *info);
 extern void iw_getinf_range(char *ifname, struct iw_range *range);
 
 extern void (*iw_stat_redraw) (void);
@@ -395,36 +434,33 @@ static inline int freq_to_channel(double freq, const struct iw_range *range)
 }
 
 /* print @key in cleartext if it is in ASCII format, use hex format otherwise */
-static inline char *format_key(const char *const key, const uint8_t key_len)
+static inline char *format_key(const struct iw_key *const iwk)
 {
 	static char buf[128];
 	int i, is_printable, len = 0;
 
 	/* Over-estimate key size: 2 chars per hex digit plus '-' */
-	if (key == NULL || key_len * 3 >= sizeof(buf)) {
-		sprintf(buf, "%u bits", key_len * 8);
-		return buf;
-	}
+	assert(iwk != NULL && iwk->size * 3 < sizeof(buf));
 
-	for (i = 0; i < key_len && (is_printable = isprint(key[i])); i++)
+	for (i = 0; i < iwk->size && (is_printable = isprint(iwk->key[i])); i++)
 		;
 
 	if (is_printable)
 		len += sprintf(buf, "\"");
 
-	for (i = 0; i < key_len; i++)
+	for (i = 0; i < iwk->size; i++)
 		if (is_printable) {
-			len += sprintf(buf + len, "%c", key[i]);
+			len += sprintf(buf + len, "%c", iwk->key[i]);
 		} else {
 			if (i > 0 && (i & 1) == 0)
 				len += sprintf(buf + len, "-");
-			len += sprintf(buf + len, "%02X", (uint8_t)key[i]);
+			len += sprintf(buf + len, "%02X", iwk->key[i]);
 		}
 
 	if (is_printable)
 		len += sprintf(buf + len, "\"");
 
-	sprintf(buf + len, " (%u bits)", key_len * 8);
+	sprintf(buf + len, " (%u bits)", iwk->size * 8);
 
 	return buf;
 }
@@ -495,4 +531,3 @@ static inline char *format_retry(const struct iw_param *retry,
 
 	return buf;
 }
-
