@@ -44,7 +44,8 @@ AC_CHECK_HEADERS([sys/socket.h linux/if.h linux/wireless.h], [],
 		 ])
 # require minimum version of the wireless extensions
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		   [#include <linux/wireless.h>
+		   [#include <sys/socket.h>
+		    #include <linux/wireless.h>
 		    #if WIRELESS_EXT < 18
 		    #error "Need minimum version WIRELESS_EXT = 18"
 		    #endif])],[],

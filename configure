@@ -3616,7 +3616,8 @@ done
 # require minimum version of the wireless extensions
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <linux/wireless.h>
+#include <sys/socket.h>
+		    #include <linux/wireless.h>
 		    #if WIRELESS_EXT < 18
 		    #error "Need minimum version WIRELESS_EXT = 18"
 		    #endif
