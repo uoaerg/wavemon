@@ -674,8 +674,8 @@ static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
 	iw_sanitize(iw_range, &cur->qual, &dbm);
 
 	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
-		len += snprintf(buf + len, buflen - len, "%2d/%d, %.0f dBm",
-				cur->qual.qual, iw_range->max_qual.qual,
+		len += snprintf(buf + len, buflen - len, "%.0f%%, %.0f dBm",
+				1E2 * cur->qual.qual / iw_range->max_qual.qual,
 				dbm.signal);
 	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%2d/%d",
@@ -757,17 +757,24 @@ static void display_aplist(WINDOW *w_aplst)
 
 		wattron(w_aplst, COLOR_PAIR(col));
 		mvwaddstr(w_aplst, line++, 1, " ");
-		if (!*cur->essid || str_is_ascii(cur->essid))
-			snprintf(s, sizeof(s), " \"%s\" ", cur->essid);
-		else
-			snprintf(s, sizeof(s), " <cryptic ESSID> ");
-		waddstr_b(w_aplst, s);
+
 		waddstr(w_aplst, ether_addr(&cur->ap_addr));
+		waddstr_b(w_aplst, "  ");
+
+		if (!*cur->essid) {
+			waddstr(w_aplst, "<hidden ESSID>");
+		} else if (str_is_ascii(cur->essid)) {
+			wattroff(w_aplst, COLOR_PAIR(col));
+			waddstr_b(w_aplst, cur->essid);
+			wattron(w_aplst, COLOR_PAIR(col));
+		} else {
+			waddstr(w_aplst, "<cryptic ESSID>");
+		}
 		wattroff(w_aplst, COLOR_PAIR(col));
 
 		fmt_scan_result(cur, &range, s, sizeof(s));
-		mvwaddstr(w_aplst, line, 1, "    ");
-		waddstr_b(w_aplst, s);
+		mvwaddstr(w_aplst, line, 1, "   ");
+		waddstr(w_aplst, s);
 	}
 	free_scan_result(head);
 done:
