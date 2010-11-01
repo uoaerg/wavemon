@@ -448,7 +448,7 @@ static void display_netinfo(WINDOW *w_net)
 	waddstr_b(w_net, inet_ntoa(info.bcast));
 
 	waddstr(w_net, ",  mac: ");
-	waddstr_b(w_net, ether_addr(&info.hwaddr));
+	waddstr_b(w_net, ether_lookup(&info.hwaddr));
 
 	wclrtoborder(w_net);
 	wrefresh(w_net);

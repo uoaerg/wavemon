@@ -544,7 +544,7 @@ static int iw_extract_event_stream(struct stream_descr *stream,
  *	Scan results are represented as a ranked list
  */
 struct scan_result {
-	struct sockaddr		ap_addr;
+	struct ether_addr	ap_addr;
 	char			essid[IW_ESSID_MAX_SIZE + 2];
 	double			freq;		/* Frequency/channel */
 	struct	iw_quality	qual;
@@ -619,7 +619,7 @@ static struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
 			switch (iwe.cmd) {
 			case SIOCGIWAP:
                 		f = 1;
-				memcpy(&new->ap_addr, &iwe.u.ap_addr, sizeof(struct sockaddr));
+				memcpy(&new->ap_addr, &iwe.u.ap_addr.sa_data, sizeof(new->ap_addr));
 				break;
 			case SIOCGIWESSID:
                 		f |= 2;
@@ -762,7 +762,7 @@ static void display_aplist(WINDOW *w_aplst)
 		else
 			snprintf(s, sizeof(s), " <cryptic ESSID> ");
 		waddstr_b(w_aplst, s);
-		waddstr(w_aplst, mac_addr(&cur->ap_addr));
+		waddstr(w_aplst, ether_addr(&cur->ap_addr));
 		wattroff(w_aplst, COLOR_PAIR(col));
 
 		fmt_scan_result(cur, &range, s, sizeof(s));
