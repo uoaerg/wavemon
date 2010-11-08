@@ -210,6 +210,31 @@ extern void iw_getinf_range(char *ifname, struct iw_range *range);
 
 extern void (*iw_stat_redraw) (void);
 
+/**
+ * struct scan_result  -  Ranked list of scan results
+ * @ap_addr:	MAC address
+ * @essid:	station SSID (may be empty)
+ * @mode:	operation mode (type of station)
+ * @freq:	frequency/channel information
+ * @qual:	signal quality information
+ * @has_key:	whether using encryption or not
+ * @next:	next, lower-ranking entry
+ */
+struct scan_result {
+	struct ether_addr	ap_addr;
+	char			essid[IW_ESSID_MAX_SIZE + 2];
+	int			mode;
+	double			freq;
+	struct	iw_quality	qual;
+
+	int 			has_key:1;
+
+	struct scan_result *next;
+};
+extern struct scan_result *get_scan_list(int skfd, char *ifname, int weversion);
+extern void free_scan_result(struct scan_result *head);
+
+
 /*
  *	Helper routines
  */
