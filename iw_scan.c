@@ -517,6 +517,34 @@ static int iw_extract_event_stream(struct stream_descr *stream,
 	}
 	return 1;
 }
+
+static void iw_extract_ie(struct iw_event *iwe, struct scan_result *sr)
+{
+	const uint8_t wpa1_oui[3] = { 0x00, 0x50, 0xf2 };
+	uint8_t *buffer = iwe->u.data.pointer;
+	int ielen = 0, ietype, i;
+
+	/* Loop on each IE, each is min. 2 bytes TLV: IE-ID - Length - Value */
+	for (i = 0; i <= iwe->u.data.length - 2;  i += ielen + 2) {
+		ietype = buffer[i];
+		ielen  = buffer[i + 1];
+
+		switch (ietype) {
+		case 0x30:
+			if (ielen < 4)	/* make sure we have enough data */
+				continue;
+			sr->flags |= IW_ENC_CAPA_WPA2;
+			break;
+		case 0xdd:
+			/* Not all IEs that start with 0xdd are WPA1 */
+			if (ielen < 8 || memcmp(buffer + i + 2, wpa1_oui, 3) ||
+			    buffer[i + 5] != 1)
+				continue;
+			sr->flags |= IW_ENC_CAPA_WPA;
+			break;
+		}
+	}
+}
 /*----------------- End of code copied from iwlib -----------------------*/
 
 /* Return >= 0 if a's signal >= b's signal, < 0 otherwise */
@@ -600,8 +628,12 @@ struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
 				f |= 32;
 				memcpy(&new->qual, &iwe.u.qual, sizeof(struct iw_quality));
 				break;
+			case IWEVGENIE:
+				f |= 64;
+				iw_extract_ie(&iwe, new);
+				break;
 			}
-        		if (f == 63) {
+			if (f == 127) {
 				struct scan_result *cur = head, **prev = &head;
 
 				f = 0;

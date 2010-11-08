@@ -58,6 +58,9 @@ static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
 	if (cur->mode != IW_MODE_MASTER)
 		len += snprintf(buf + len, buflen - len, " %s",
 				iw_opmode(cur->mode));
+	if (cur->flags)
+		len += snprintf(buf + len, buflen - len, ", %s",
+				 format_enc_capab(cur->flags, "/"));
 	return buf;
 }
 

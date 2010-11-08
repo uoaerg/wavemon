@@ -218,6 +218,7 @@ extern void (*iw_stat_redraw) (void);
  * @freq:	frequency/channel information
  * @qual:	signal quality information
  * @has_key:	whether using encryption or not
+ * @flags:	properties gathered from Information Elements
  * @next:	next, lower-ranking entry
  */
 struct scan_result {
@@ -228,6 +229,7 @@ struct scan_result {
 	struct	iw_quality	qual;
 
 	int 			has_key:1;
+	uint32_t		flags;
 
 	struct scan_result *next;
 };
