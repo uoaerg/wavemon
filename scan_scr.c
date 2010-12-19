@@ -147,15 +147,24 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 	WINDOW *w_aplst;
 	struct timer t1;
 	int key = 0;
+	pid_t pid;
 
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 
-	/* Refreshing scan data can take seconds. Inform user. */
+	/* Gathering scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
 
+	pid = fork();
+	if (pid < 0) {
+		err_sys("could not fork scan process");
+	} else if (pid == 0) {
+		do display_aplist(w_aplst);
+		while (usleep(200000) == 0);
+		exit(EXIT_SUCCESS);
+	}
+
 	while (key < KEY_F(1) || key > KEY_F(10)) {
-		display_aplist(w_aplst);
 
 		start_timer(&t1, conf.info_iv * 1000000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
@@ -168,6 +177,7 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 			key = KEY_F(1);
 	}
 
+	kill(pid, SIGTERM);
 	delwin(w_aplst);
 
 	return key - KEY_F(1);

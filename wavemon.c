@@ -65,8 +65,10 @@ int main(int argc, char *argv[])
 
 	getconf(argc, argv);
 
-	if (signal(SIGWINCH, sig_winch) == SIG_ERR)
-		err(1, "cannot install handler for window changes");
+	if (signal(SIGWINCH, sig_winch) == SIG_ERR	||
+	    signal(SIGTSTP, SIG_IGN) == SIG_ERR		||
+	    signal(SIGCHLD, SIG_IGN) == SIG_ERR)
+		err(1, "cannot install signal handlers");
 
 	/* honour numeric separators if the environment defines them */
 	setlocale(LC_NUMERIC, "");
