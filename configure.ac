@@ -55,6 +55,7 @@ AC_HEADER_STDBOOL
 # Tests involving libraries
 AC_CHECK_LIB([m], [pow])
 AC_CHECK_LIB([ncurses], [waddstr])
+AC_CHECK_LIB([cap], [cap_get_flag])
 
 
 # Testing library functions

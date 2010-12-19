@@ -5,6 +5,8 @@ bindir	    = @bindir@
 datarootdir = $(prefix)/share
 mandir	    = @mandir@
 datadir     = $(datarootdir)/@PACKAGE_NAME@
+exec_perms  = 0755
+install-suid-root: exec_perms = 4755
 
 CC	= @CC@
 CFLAGS	= @CFLAGS@
@@ -41,9 +43,9 @@ tags: $(MAIN) $(PURESRC) $(HEADERS)
 
 install: install-binaries install-docs
 
-install-binaries: all
+install-suid-root install-binaries: all
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 @PACKAGE_NAME@ $(DESTDIR)$(bindir)
+	$(INSTALL) -m $(exec_perms) @PACKAGE_NAME@ $(DESTDIR)$(bindir)
 
 install-docs: @PACKAGE_NAME@.1 @PACKAGE_NAME@rc.5 $(DOCS)
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(mandir)/man1

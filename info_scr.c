@@ -423,8 +423,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			sprintf(tmp + j, " bits");
 			waddstr_b(w_info, tmp);
 		}
-	} else {
+	} else if (has_net_admin_capability()) {
 		waddstr(w_info, "no information available");
+	} else {
+		waddstr(w_info, "n/a (requires CAP_NET_ADMIN permissions)");
 	}
 
 	dyn_info_cleanup(&info);

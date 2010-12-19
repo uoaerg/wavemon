@@ -31,6 +31,11 @@ wavemon uses autoconf, so that in most cases you can simply run
 to build and install the package. Type 'make uninstall' if not happy.
 Refer to the file INSTALL for generic installation instructions.
 
+To grant users access to restricted networking operations (e.g. reading WEP
+keys or performing scan operations), use additionally
+
+	sudo make install-suid-root
+
 If you have changed some of the autoconf files or use a git version, run
 	./config/bootstrap
 (requires a recent installation of 'autotools').

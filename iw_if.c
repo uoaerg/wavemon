@@ -640,8 +640,10 @@ void dump_parameters(void)
 	}
 
 	printf("       encryption: ");
-	if (info.nkeys == 0)
+	if (!info.nkeys && has_net_admin_capability())
 		printf("no information available\n");
+	else if (!info.nkeys)
+		printf("n/a (requires CAP_NET_ADMIN permissions)\n");
 	for (i = 0; i < info.nkeys; i++) {
 		if (i)
 			printf("                   ");

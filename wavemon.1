@@ -70,6 +70,10 @@ release.
 The associated function key will immediately exit
 .B wavemon.
 An alternative keyboard shortcut for quitting is 'q'.
+.LP
+Note that some operations, such as displaying encryption information or performing scans, require
+\fBCAP_NET_ADMIN\fR privileges (see \fBcapabilities\fR(7)). For non-root users, these can be
+enabled by installing \fIwavemon\fR setuid-root.
 .SH OPTIONS
 .IP -h
 print a short explanation of the command line arguments and exit.

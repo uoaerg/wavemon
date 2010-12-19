@@ -271,6 +271,7 @@ extern int end_timer(struct timer *t);
 /*
  *	Error handling
  */
+extern bool has_net_admin_capability(void);
 extern void err_msg(const char *format, ...);
 extern void err_quit(const char *format, ...);
 extern void err_sys(const char *format, ...);

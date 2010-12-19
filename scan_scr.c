@@ -86,7 +86,7 @@ static void display_aplist(WINDOW *w_aplst)
 	head = get_scan_list(skfd, conf.ifname, range.we_version_compiled);
 	if (head) {
 		;
-	} else if (errno == EPERM) {
+	} else if (errno == EPERM || !has_net_admin_capability()) {
 		/*
 		 * Don't try to read leftover results, it does not work reliably
 		 */

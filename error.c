@@ -19,6 +19,31 @@
  */
 #include "wavemon.h"
 #include <stdarg.h>
+#if HAVE_LIBCAP
+#include <sys/capability.h>
+
+static bool has_capability(cap_value_t cap)
+{
+	cap_t cap_proc = cap_get_proc();
+	cap_flag_value_t cur_val;
+
+	if (cap_get_flag(cap_proc, cap, CAP_EFFECTIVE, &cur_val))
+		err_sys("cap_get_flag(CAP_EFFECTIVE)");
+	cap_free(cap_proc);
+
+	return cur_val == CAP_SET;
+}
+
+bool has_net_admin_capability(void)
+{
+	return has_capability(CAP_NET_ADMIN);
+}
+#else	/* !HAVE_LIBCAP */
+bool has_net_admin_capability(void)
+{
+	return geteuid() == 0;
+}
+#endif
 
 /*
  * For displaying warning messages that are unrelated to system calls,
