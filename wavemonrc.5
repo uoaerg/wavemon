@@ -1,131 +1,138 @@
-.TH WAVEMON 1 "JANUARY 2009" Linux "User Manuals"
+.TH wavemonrc 5 "December 2010" Linux "User Manuals"
 .SH NAME
-wavemonrc \- wavemon configuration file
-.SH SYNOPSIS
-.B wavemon [-h] [-i
-.I ifname
-.B ] [-l] [-r] [-v]
+$HOME/.wavemonrc \- wavemon configuration file
 .SH DESCRIPTION
-.B wavemon
-stores its configuration parameters within the file ~/.wavemonrc in every user's home directory. This manpage provides an in-depth description of the available options. Every setting corresponds to a configuration item you'll find on the preferences screen within the program (F7 key).
+\fIwavemonrc\fR is the per-user configuration file for \fBwavemon\fR(1).
+This page describes its individual configuration options.  Each corresponds
+to a configuration item of the \fIPreferences\fR screen (F7 key), whose
+on-screen name is shown in parentheses.
 .P
 .B interface = <ifname>
 .RS
 .RE
-.B (Interface)
+.R (Interface)
 .RS
-This parameter specifies, you guessed it, the name of the interface wavemon uses for operation. Only valid identifiers of existing wireless network devices are allowed, otherwise the program launch will fail.
+Selects the wireless interface to use.
 .P
 .RE
 .B stat_updates = <n>
 .RS
 .RE
-.B (Statistics updates)
+.R (Statistics updates)
 .RS
-This controls the intervals between updates of the statistics data. Range: 10..4000ms.
+Time interval for polling new statistics. Range: 10..4000ms.
 .P
 .RE
 .B lhist_slot_size = <n>
 .RS
 .RE
-.B (Histogram update cycles)
+.R (Histogram update cycles)
 .RS
-This determines how many obtained statistics values are averaged into one level histogram slot. So, if your statistics update interval is 50ms and your histogram slot size is 4, the histogram is moved one slot further every 2 seconds. Range: 1..64.
+Number of samples used per each histogram slot. For example, if the stat_updates
+interval is 500ms and the histogram slot size is 4, the histogram is moved
+one slot further every 2 seconds. Range: 1..64.
 .P
 .RE
 .B meter_smoothness = <n>
 .RS
 .RE
-.B (Level meter smoothness)
+.R (Level meter smoothness)
 .RS
-Determines the responsiveness of level meters, tracking the moving average rather than following each new sample. The given value specifies the percentage of the history (the 'inertia') of preceding samples. A value of 0 disables this option. Range: 0..99%.
+Determines the responsiveness of level meters, tracking the moving average
+rather than following each new sample. The given value specifies the percentage
+of the history (the 'inertia') of preceding samples. A value of 0 disables
+this option. Range: 0..99%.
 .P
 .RE
 .B info_updates = <n>
 .RS
 .RE
-.B (Dynamic info updates)
+.R (Dynamic info updates)
 .RS
-This controls the refresh rate for updating dynamic device parameters (e.g. the bitrate) and the wait interval for the scan window (F3). Range: 1..60s.
+Sets refresh rate for dynamic device parameters (e.g. bitrate) and the
+refresh interval for the Scan window (F3). Range: 1..60s.
 .P
 .RE
 .B override_auto_scale = (enabled|disabled)
 .RS
 .RE
-.B (Override scale autodetect)
+.R (Override scale autodetect)
 .RS
-Setting this parameter to "enabled" overrides the auto-detection of the bar graph and histogram scale boundaries, allowing you to specify your own scales.
+Override the auto-scaling of the bar graphs and histogram, allowing you to set your own scales.
 .P
 .RE
 .B min_signal_level, max_signal_level = <n>
 .RS
 .RE
-.B (Minimum signal level, Maximum signal level)
+.R (Minimum signal level, Maximum signal level)
 .RS
-These parameters allow you to set the left and right boundaries of the signal level scales. Ranges: -128..-60dBm (minimum), -59..120dBm (maximum).
+Set the left and right boundaries of the signal level scales. Ranges: -128..-60dBm (minimum) and -59..120dBm (maximum).
 .P
 .RE
 .B min_noise_level, max_noise_level = <n>
 .RS
 .RE
-.B (Minimum noise level, Maximum noise level)
+.R (Minimum noise level, Maximum noise level)
 .RS
-These work similar to the signal boundary settings. Ranges: -128..-60dBm (minimum), -60..120dBm (maximum).
+These work similar to the signal boundary settings. Ranges: -128..-60dBm
+(minimum) and -60..120dBm (maximum).
 .P
 .RE
 .B random = (enabled|disabled)
 .RS
 .RE
-.B (Random signals)
+.R (Random signals)
 .RS
-This switch controls a fancy random generator you can use for testing functions and scales.
+Switches on a fancy random generator for testing.
 .P
 .RE
 .B lo_threshold_action = (disabled|beep|flash|beep+flash)
 .RS
 .RE
-.B (Low threshold action)
+.R (Low threshold action)
 .RS
-This function allows you to assign a warning facility to a defineable threshold at the lower end of the signal scale. It is meant for alarming you when a signal appears at the receiver.
+Issue a warning  at a given threshold at the lower end of the signal
+scale. It is meant for alarming you when a signal appears at the receiver.
 .P
 .RE
 .B lo_threshold = <n>
 .RS
 .RE
-.B (Low threshold)
+.R (Low threshold)
 .RS
-This defines the low threshold. Makes only sense when the above setting is active. Range: -120..-60dBm.
+Sets the threshold value for the 'Low threshold action'.
+Range: -120..-60dBm.
 .P
 .RE
 .B hi_threshold_action = (disabled|beep|flash|beep+flash)
 .RS
 .RE
-.B (High threshold action)
+.R (High threshold action)
 .RS
-This is similar to lo_threshold_action, only this time the threshold is at the upper end of the scale and the action is performed when the signal level drops below it. The acoustic signal is also different in order to be easily distinguishable from the lower one. Correctly adjusted, this little fellow will tell you when you should move closer to the base station.
+Analogous to lo_threshold_action, only this time the threshold is at
+the upper end of the scale and the action is performed when the signal level
+drops below it. The acoustic signal is also different in order to be easily
+distinguishable from the lower one. Correctly adjusted, this little fellow
+will tell you when you should move closer to the base station.
 .P
 .RE
 .B hi_threshold = <n>
 .RS
 .RE
-.B (High threshold)
+.R (High threshold)
 .RS
-This defines the high threshold. Makes only sense when the above setting is active. Range: -59..120dBm.
+Sets the threshold for the 'High threshold action'. Range: -59..120dBm.
 .P
 .RE
-.B startup_screen = (info|histogram|access points)
+.B startup_screen = (info|histogram|scan window)
 .RS
 .RE
-.B (Startup screen)
+.R (Startup screen)
 .RS
-This setting determines which of the screens will be shown at program startup.
-.SH AUTHOR
-Jan Morgenstern <jan@jm-music.de>
-.P
-The current maintainer is Gerrit Renker <gerrit@erg.abdn.ac.uk>
-.SH COPYRIGHT
-wavemon is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2, or (at your option) any later version.
-.LP
-wavemon is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-.LP
-You should have received a copy of the GNU General Public License along with wavemon; see the file COPYING.  If not, write to the Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+Which of the screens appears at program startup.
+.SH "AUTHOR"
+Written by Jan Morgenstern <jan@jm-music.de>.
+.SH "REPORTING BUGS"
+Send bug reports and/or suggestions to Gerrit Renker <gerrit@erg.abdn.ac.uk>.
+.SH "COPYRIGHT"
+This is free software with ABSOLUTELY NO WARRANTY. See file COPYING for details.

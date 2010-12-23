@@ -1,110 +1,131 @@
-.TH WAVEMON 1 "SEPTEMBER 2010" Linux "User Manuals"
+.TH wavemon 1 "December 2010" Linux "User Manuals"
 .SH NAME
-wavemon \- a wireless network monitor application
+wavemon \- a wireless network monitor
 .SH SYNOPSIS
 .B wavemon [-h] [-i
 .I ifname
 .B ] [-l] [-r] [-v]
 .SH DESCRIPTION
-.B wavemon
-is a ncurses-based monitoring application for wireless network devices. It displays continuously updated information about signal levels as well as wireless-specific and general network information. Currently, wavemon can be used for monitoring devices supported by the wireless extensions by Jean Tourrilhes <jt@hpl.hp.com>, included in kernels version 2.4 and higher.
+\fIwavemon\fR is a ncurses-based monitoring application for wireless network
+devices. It plots levels in real-time as well as showing wireless and network
+related device information. Currently, wavemon is still based on the wireless
+extensions by Jean Tourrilhes <jt@hpl.hp.com>.
 
-The wavemon interface is separated into several different sections, hereby referred to as "screens". Every screen displays information about distinct parameter types and/or in a special manner. For example, the "info" screen shows the current signal and noise levels as bargraphs, while the level histogram shows the exact same values as a level plot, so their development over time can be seen.
-On startup, you'll see one of the different monitor screens (which of the screens will actually be displayed depends on your configuration). On the bottom, you'll see a bar showing the available screens along with function key strokes.
-.LP
-These screens are currently implemented:
+The \fIwavemon\fR interface splits into different "screens".
+Each screen presents information in a specific manner. For example, the
+"info" screen shows current levels as bargraphs, whereas the "level" screen
+represents the same levels as a moving histogram.
+
+On startup, you'll see (depending on configuration) one of the different
+monitor screens. At the bottom, you'll find a \fImenu-bar\fR listing the
+screens and their function key names.  The following screens can be selected:
 .TP
 .B Info (F1)
-This is the most "conclusive" of the monitor screens. It displays a condensed overview of all available wireless-specific parameters and network statistics, as well as bar graphs of the current signal and noise levels. There are several sub-sections to further separate the information.
+This is the most comprehensive screen. It displays a condensed overview of
+wireless-specific parameters and network statistics, as well as bar graphs.
+The layout is arranged into several sub-sections.
 
-At the
+The
 .B Interface
-section, the name, ESSID and nickname of the current wireless interface are shown.
+section at the top shows information about the monitoring interface,
+including interface name, type, ESSID, and available encryption formats.
 
-Below, at the
+Below, in the
 .B Levels
-section, you can see four bargraphs showing the quality of the link to the next station (if established), the level of the received signal, the current receiver's noise level and the signal-to-noise ration, which gives a good approximation of the overall signal quality. The colour of the signal level bargraph changes from red to yellow and green at fixed levels, while the colour of the noise level graph is adapted to the current signal level (it turns red when the signal-to-noise-ratio gets below 0dB). If the thresholds are associated with any actions, two arrows on the signal level graph will show the positions of the current thresholds. More on this topic later.
+section, you can see up to four bargraphs showing (1) relative signal quality
+and (2) signal level in dBm. If the wireless driver also supports noise level
+information, additionally (3) noise level in dBm and (4) Signal-Noise-Ratio
+(SNR) in dB are shown.  The colour of the signal level bargraph changes
+from red to yellow and green at fixed levels. If thresholds have been set,
+two arrows on the signal level graph will show the positions of the current
+thresholds.
 
 The
 .B Statistics
-section displays packet and byte counters. The first four values, preceded RX and TX, show the current total number of packets received and transceived since the initialization of the interface. The following three values display the number of packets that were discarded from the interface because of invalid network ids, wrong encryption keys and other errors.
+section displays packet and byte counters and a few other packet-related
+statistics.
 
-Below, at the
+The subsequent
 .B Info
-subsection, various wireless-specific parameters of the interface are displayed. What parameters are actually shown may vary and depends on the capabilities and the operation mode of your network device. The top line shows the current frequency the interface operates on, the sensitivity threshold of the receiver and the transmission power. Below, the operation mode of the interface (managed, ad-hoc...) and, if appropriate, the MAC address of the current access point are displayed. The third line shows the current data transfer speed in Mbit/s and the retransmission and fragmentation thresholds. Whether or not the details about encryption show up in the next line depends on the permissions of the user. Finally, the last line displays the power management parameters, if this feature is available and active.
+subsection lists the current operational mode and configuration of the
+wireless interface. What parameters are actually shown depends on the
+capabilities and selected mode of your network device.
 
-The last section, titled
+Lastly, the
 .B Network,
-shows - you guessed it - network parameters, such as the interface name and hardware address as well as the interface, netmask and broadcast IP addresses. These parameters are not wireless-related.
+section is concerned with IP-level and MAC-level parameters.
 
-Another keyboard shortcut for this screen is 'i'.
+Another keyboard shortcut for this screen is '\fIi\fR'.
 .TP
 .B Level histogram (F2)
-This is a full-screen histogram plot of the signal/noise levels and the signal-to-noise levels. It shows the level changes with time. Below the plot, the key is shown. If available, the terminfo scanline chars are used in order to enhance the precision of the level plots, i.e. this screen will particularly look nifty in a xterm.
+This is a full-screen histogram plot showing the evolution of levels with time.
+The screen is partitioned into a grid, with dBm levels shown in green at
+the right hand side (depending on configuration).  At the very minimum,
+the evolution of the signal-level is shown. If the wireless driver also
+supports noise-level information, additionally a noise graph and associated
+SNR graph appear.
 .TP
 .B Scan window (F3)
-This screen provides a ranked list of access points and other wireless clients within range.
-The list is sorted in descending order of signal quality. Entries consist of a coloured header
-and a line with signal/channel information. A green/red header indicates an (un-)encrypted
-access point; the colour changes to yellow for non-access points (in this case the mode is
-shown in the subsequent line). The subsequent information line contains relative and absolute
-signal strength, channel, frequency and the mode if the entry is not an access point.
+A periodically updated network scan, showing access points and other
+wireless clients in descending order of signal quality. Entries consist of a
+coloured header and a line with signal/channel information. A green/red header
+indicates an (un-)encrypted access point, the colour changes to yellow for
+non-access points (in this case the mode is shown in the subsequent line). The
+uncoloured information line below lists relative and absolute signal strengths,
+channel, frequency, and the mode if the node is not an access point.
 
-Scan results are refreshed periodically, depending on the 'Dynamic info updates' configuration.
 Please note that gathering meaningful scan data can take several seconds.
+The refresh interval is set by 'Dynamic info updates' value.
+
 .TP
 .B Preferences (F7)
-This screen allows you to change all program options such as interface and level scale parameters, and to save the new settings to the configuration file. Select a parameter with <up> and <down>, then change the value with <left> and <right>. Please refer to the
-.B wavemonrc
-man page for an in-depth description of all available settings.
+This screen allows you to change all program options such as interface and
+level scale parameters, and to save the new settings to the configuration
+file. Select a parameter with <up> and <down>, then change the value with
+<left> and <right>. Please refer to \fBwavemonrc\fR(5) for an in-depth
+description of applicable settings.
 .TP
 .B Help (F8)
-This page will show an online-help in the near future; it is currently not implemented.
+This page might show an online-help.
 .TP
 .B About (F9)
-This screen contains information about the current
-.B wavemon
-release.
+Release information and contact URLs.
 .TP
-.B Quit (F10)
-The associated function key will immediately exit
-.B wavemon.
-An alternative keyboard shortcut for quitting is 'q'.
+\fBQuit (F10)
+Exit \fIwavemon\fR. An alternative shortcut for quitting is '\fIq\fR'.
 .LP
-Note that some operations, such as displaying encryption information or performing scans, require
+\fBNote:\fR some operations, such as displaying encryption information or performing scans, require
 \fBCAP_NET_ADMIN\fR privileges (see \fBcapabilities\fR(7)). For non-root users, these can be
 enabled by installing \fIwavemon\fR setuid-root.
-.SH OPTIONS
-.IP -h
-print a short explanation of the command line arguments and exit.
-.IP "-i interface"
-override autodetection and use the specified interface.
-.IP -r
+.SH "OPTIONS"
+.IP "\fB\-i \fIinterface\fR\fR"
+override autodetection and use the specified \fIinterface\fR.
+.IP "\fB\-d\fR"
+dump interface parameters to stdout and exit.
+.IP "\fB\-r\fR"
 generate random levels (for testing purposes).
-.IP -v
-dump the version number to stdout and exit.
+.IP "\fB\-h\fR"
+print help and exit.
+.IP "\fB\-v\fR"
+print version information and exit.
 
-.SH ENVIRONMENT VARIABLES
+.SH "ENVIRONMENT VARIABLES"
 .IP "LC_NUMERIC"
-Influences the grouping of numbers if set. See also
-.BR locale (1).
-
+Influences the grouping of numbers if set. See also \fBlocale\fR(1).
 .SH FILES
-.I ~/.wavemonrc
-is the local configuration file for the user. Refer to the
-.B wavemonrc
-man page for an in-depth explanation of available settings.
-.SH BUGS
-While each release has been tested, bugs are sometimes inevitable.
-Please help to further improve the state of wavemon by sending all bug reports,
-and any suggestions or comments, to <gerrit@erg.abdn.ac.uk>. Thanks!
-.SH AUTHOR
-The original author of wavemon is Jan Morgenstern <jan@jm-music.de>
-.LP
-The current maintainer is Gerrit Renker <gerrit@erg.abdn.ac.uk>
-.SH COPYRIGHT
-wavemon is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2, or (at your option) any later version.
-.LP
-wavemon is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-.LP
-You should have received a copy of the GNU General Public License along with wavemon; see the file COPYING.  If not, write to the Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+.I $HOME/.wavemonrc
+\   the local per-user configuration file.
+.br
+.I /proc/net/wireless
+\ wireless extensions /proc interface
+.SH "AUTHOR"
+Written by Jan Morgenstern <jan@jm-music.de>.
+.SH "REPORTING BUGS"
+Send bug reports and/or suggestions to Gerrit Renker <gerrit@erg.abdn.ac.uk>.
+.SH "COPYRIGHT"
+This is free software with ABSOLUTELY NO WARRANTY. See file COPYING for details.
+.SH "SEE ALSO"
+.BR wavemonrc (5),
+.BR wireless (7),
+.BR locale (1),
+.BR capabilities (7)
