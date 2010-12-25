@@ -108,7 +108,6 @@ struct iw_dyn_info {
 			cap_nickname:1,
 			cap_freq:1,
 			cap_sens:1,
-			cap_bitrate:1,
 			cap_txpower:1,
 			cap_retry:1,
 			cap_rts:1,

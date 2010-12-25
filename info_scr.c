@@ -311,7 +311,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	if (! (info.mode >= IW_MODE_MASTER && info.mode <= IW_MODE_MONITOR)) {
 		waddstr(w_info, ",  bitrate: ");
-		if (info.cap_bitrate) {
+		if (info.bitrate) {
 			sprintf(tmp, "%g Mbit/s", info.bitrate / 1.0e6);
 			waddstr_b(w_info, tmp);
 		} else

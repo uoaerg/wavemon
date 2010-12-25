@@ -183,10 +183,8 @@ void dyn_info_get(struct iw_dyn_info *info, char *ifname, struct iw_range *ir)
 		info->sens     = iwr.u.sens.value;
 	}
 
-	if (ioctl(skfd, SIOCGIWRATE, &iwr) >= 0) {
-		info->cap_bitrate = 1;
-		info->bitrate     = iwr.u.bitrate.value;
-	}
+	if (ioctl(skfd, SIOCGIWRATE, &iwr) >= 0)
+		info->bitrate = iwr.u.bitrate.value;
 
 	if (ioctl(skfd, SIOCGIWTXPOW, &iwr) >= 0) {
 		info->cap_txpower = 1;
@@ -607,7 +605,7 @@ void dump_parameters(void)
 	if (info.mode != 1 && info.cap_ap)
 		printf("     access point: %s\n", format_bssid(&info.ap_addr));
 
-	if (info.cap_bitrate)
+	if (info.bitrate)
 		printf("          bitrate: %g Mbit/s\n", info.bitrate / 1.0e6);
 	else
 		printf("          bitrate: n/a\n");
