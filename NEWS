@@ -2,6 +2,25 @@ NEWS
 ====
 
 --------------------
+0.7.1 (2010-12-24)
+--------------------
+  * Scan window:
+    - improved and more consistent formatting of entries
+    - better responsiveness by running scan operation as child process
+  * Security capabilities:
+    - display capabilities supported by the driver
+    - display current and available key sizes
+    - decode relevant IE information
+  * check and warn about insufficient permissions (CAP_NET_ADMIN) that
+    are required for several wireless operations (e.g. scanning)
+  * Bug Fixes:
+    - avoid triggering assertion on large screens
+    - require minimum version (18) of the wireless extensions
+    - better clearing of info screen
+    - various cleanups
+  * overhaul of manpages
+
+--------------------
 0.7.0 (2010-10-18)
 --------------------
   * NEW Scan Window: this replaces the old access point screen. It displays

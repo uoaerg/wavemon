@@ -1,6 +1,6 @@
 Many people contribute to wavemon by reporting problems, suggesting various
 improvements, or submitting actual code. Here is a list of these people. Help
-me (gerrit@erg.abdn.ac.uk) keep it complete and exempt of errors.
+me (gerrit@erg.abdn.ac.uk) keep it complete and accurate.
 
 Christoph J. Thompson (cjsthompson@gmail.com) provided DESTDIR support for
 the installation process and contributed a Slackware build script, found in
@@ -18,6 +18,9 @@ parser backward-compatible (0.6.7).
 
 Jonathan Lovelace  provided a patch to enable build on Gentoo (0.6.10).
 Hanno Boeck supplied a patch to improve the linking process (0.6.10).
+
+Sean Muir helped improve the overall design through several really useful
+suggestions (histogram levels, scan window) leading up to 0.7.0.
 
 Jean Tourrilhes helped with the scan window in 0.7.0 (most of the code to
 extract the scan data is from wireless tools 30) and also kindly provided
