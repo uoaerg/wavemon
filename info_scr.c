@@ -442,16 +442,20 @@ static void display_netinfo(WINDOW *w_net)
 	if_getinf(conf.ifname, &info);
 
 	mvwaddstr(w_net, 1, 1, "ip: ");
-	sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
-			      prefix_len(&info.netmask));
-	waddstr_b(w_net, tmp);
+	if (!info.addr.s_addr) {
+		waddstr(w_net, "no address");
+	} else {
+		sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
+				      prefix_len(&info.netmask));
+		waddstr_b(w_net, tmp);
 
-	/* only show bcast address if it is not set to the obvious default */
-	if (info.bcast.s_addr != (info.addr.s_addr | ~info.netmask.s_addr)) {
-		waddstr(w_net, ",  bcast: ");
-		waddstr_b(w_net, inet_ntoa(info.bcast));
+		/* only show bcast address if not set to the obvious default */
+		if (info.bcast.s_addr !=
+		    (info.addr.s_addr | ~info.netmask.s_addr)) {
+			waddstr(w_net, ",  bcast: ");
+			waddstr_b(w_net, inet_ntoa(info.bcast));
+		}
 	}
-
 	waddstr(w_net, ",  mac: ");
 	waddstr_b(w_net, ether_lookup(&info.hwaddr));
 
