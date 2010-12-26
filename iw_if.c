@@ -54,6 +54,9 @@ void if_getinf(char *ifname, struct if_info *info)
 	memset(&ifr, 0, sizeof(struct ifreq));
 	memset(info, 0, sizeof(struct if_info));
 
+	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+	if (ioctl(skfd, SIOCGIFMTU, &ifr) == 0)
+		info->mtu = ifr.ifr_mtu;
 	/* Copy the 6 byte Ethernet address and the 4 byte struct in_addrs */
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCGIFHWADDR, &ifr) >= 0)

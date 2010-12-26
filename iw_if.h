@@ -55,6 +55,7 @@
  * @addr:		IPv4 interface address
  * @netmask:		IPv4 interface netmask
  * @bcast:		IPv4 interface broadcast address
+ * @mtu:		interface MTU
  * See also netdevice(7)
  */
 struct if_info {
@@ -62,6 +63,7 @@ struct if_info {
 	struct in_addr		addr,
 				netmask,
 				bcast;
+	uint16_t		mtu;
 };
 extern bool if_is_up(char *ifname);
 extern void if_getinf(char *ifname, struct if_info *info);

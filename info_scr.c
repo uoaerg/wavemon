@@ -456,6 +456,14 @@ static void display_netinfo(WINDOW *w_net)
 			waddstr_b(w_net, inet_ntoa(info.bcast));
 		}
 	}
+
+	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
+	if (info.mtu && info.mtu != ETH_DATA_LEN) {
+		waddstr(w_net, ",  mtu: ");
+		sprintf(tmp, "%u", info.mtu);
+		waddstr_b(w_net, tmp);
+	}
+
 	waddstr(w_net, ",  mac: ");
 	waddstr_b(w_net, ether_lookup(&info.hwaddr));
 

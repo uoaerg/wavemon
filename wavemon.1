@@ -58,7 +58,8 @@ section shows network-level parameters. The MAC-address is resolved from
 \fIaddress\fR\fB/\fR\fIprefix_len\fR format). Since often those two values
 also determine the broadcast address (last 32 \- \fIprefix_len\fR bits set
 to 1), that address is shown only if it does not derive from the interface
-address and prefix length.
+address and prefix length. Likewise, the interface MTU is shown only if it
+differs from the default Ethernet MTU of 1500 bytes.
 
 Another keyboard shortcut for this screen is '\fIi\fR'.
 .TP
