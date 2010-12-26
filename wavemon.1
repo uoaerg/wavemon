@@ -52,8 +52,13 @@ wireless interface. What parameters are actually shown depends on the
 capabilities and selected mode of your network device.
 
 Lastly, the
-.B Network,
-section is concerned with IP-level and MAC-level parameters.
+.B Network
+section shows network-level parameters. The MAC-address is resolved from
+\fBethers\fR(5). The IPv4 address is shown in CIDR notation (RFC\ 4632
+\fIaddress\fR\fB/\fR\fIprefix_len\fR format). Since often those two values
+also determine the broadcast address (last 32 \- \fIprefix_len\fR bits set
+to 1), that address is shown only if it does not derive from the interface
+address and prefix length.
 
 Another keyboard shortcut for this screen is '\fIi\fR'.
 .TP
@@ -76,7 +81,6 @@ channel, frequency, and the mode if the node is not an access point.
 
 Please note that gathering meaningful scan data can take several seconds.
 The refresh interval is set by 'Dynamic info updates' value.
-
 .TP
 .B Preferences (F7)
 This screen allows you to change all program options such as interface and
@@ -127,5 +131,6 @@ This is free software with ABSOLUTELY NO WARRANTY. See file COPYING for details.
 .SH "SEE ALSO"
 .BR wavemonrc (5),
 .BR wireless (7),
+.BR ethers (5),
 .BR locale (1),
 .BR capabilities (7)

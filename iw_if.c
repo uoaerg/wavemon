@@ -56,10 +56,10 @@ void if_getinf(char *ifname, struct if_info *info)
 
 	/* Copy the 6 byte Ethernet address and the 4 byte struct in_addrs */
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
-	if (ioctl(skfd, SIOCGIFADDR, &ifr) >= 0)
-		memcpy(&info->addr, &ifr.ifr_addr.sa_data[2], 4);
 	if (ioctl(skfd, SIOCGIFHWADDR, &ifr) >= 0)
 		memcpy(&info->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
+	if (ioctl(skfd, SIOCGIFADDR, &ifr) >= 0)
+		memcpy(&info->addr, &ifr.ifr_addr.sa_data[2], 4);
 	if (ioctl(skfd, SIOCGIFNETMASK, &ifr) >= 0)
 		memcpy(&info->netmask, &ifr.ifr_netmask.sa_data[2], 4);
 	if (ioctl(skfd, SIOCGIFBRDADDR, &ifr) >= 0)

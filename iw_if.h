@@ -49,8 +49,15 @@
  */
 #define NOISE_DBM_SANE_MIN	-127
 
-/* Static network interface information - see netdevice(7) */
-struct if_info {		/* modified ifreq */
+/**
+ * struct if_info  -  wireless interface network information
+ * @hwaddr:		MAC address
+ * @addr:		IPv4 interface address
+ * @netmask:		IPv4 interface netmask
+ * @bcast:		IPv4 interface broadcast address
+ * See also netdevice(7)
+ */
+struct if_info {
 	struct ether_addr	hwaddr;
 	struct in_addr		addr,
 				netmask,

@@ -446,8 +446,11 @@ static void display_netinfo(WINDOW *w_net)
 			      prefix_len(&info.netmask));
 	waddstr_b(w_net, tmp);
 
-	waddstr(w_net, ",  bcast: ");
-	waddstr_b(w_net, inet_ntoa(info.bcast));
+	/* only show bcast address if it is not set to the obvious default */
+	if (info.bcast.s_addr != (info.addr.s_addr | ~info.netmask.s_addr)) {
+		waddstr(w_net, ",  bcast: ");
+		waddstr_b(w_net, inet_ntoa(info.bcast));
+	}
 
 	waddstr(w_net, ",  mac: ");
 	waddstr_b(w_net, ether_lookup(&info.hwaddr));
