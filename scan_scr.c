@@ -94,8 +94,14 @@ static void display_aplist(WINDOW *w_aplst)
 	} else if (errno == EINTR || errno == EAGAIN || errno == EBUSY) {
 		/* Ignore temporary errors */
 		goto done;
-	} else if (!if_is_up(conf.ifname)) {
-		sprintf(s, "Interface '%s' is down - can not scan", conf.ifname);
+	} else if (!if_is_up(skfd, conf.ifname)) {
+			sprintf(s, "Interface '%s' is down ", conf.ifname);
+		if (has_net_admin_capability()) {
+			if_set_up(skfd, conf.ifname);
+			strcat(s, "- setting it up ...");
+		} else {
+			strcat(s, "- can not scan");
+		}
 	} else if (errno) {
 		sprintf(s, "No scan on %s: %s", conf.ifname, strerror(errno));
 	} else {

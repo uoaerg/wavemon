@@ -22,24 +22,39 @@
 /*
  * Obtain network device information
  */
-
-/* Return true if @ifname is known to be up */
-bool if_is_up(char *ifname)
+int if_get_flags(int skfd, const char *ifname)
 {
 	struct ifreq ifr;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
 
 	memset(&ifr, 0, sizeof(struct ifreq));
 	strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
 
 	if (ioctl(skfd, SIOCGIFFLAGS, &ifr) < 0)
-		err_sys("can not check interface %s", ifname);
-	close(skfd);
+		err_sys("can not get interface flags for %s", ifname);
+	return ifr.ifr_flags;
+}
 
-	return ifr.ifr_flags & IFF_UP;
+/* Return true if @ifname is known to be up */
+bool if_is_up(int skfd, const char *ifname)
+{
+	return if_get_flags(skfd, ifname) & IFF_UP;
+}
+
+/* Bring @ifname up if not already up. */
+void if_set_up(int skfd, const char *ifname)
+{
+	struct ifreq ifr;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
+
+	ifr.ifr_flags = if_get_flags(skfd, ifname);
+	if (ifr.ifr_flags & IFF_UP)
+		return;
+
+	ifr.ifr_flags |= IFF_UP;
+	if (ioctl(skfd, SIOCSIFFLAGS, &ifr) < 0)
+		err_sys("can not set interface flags for %s", ifname);
 }
 
 /* Interface information */

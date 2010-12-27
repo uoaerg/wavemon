@@ -65,7 +65,8 @@ struct if_info {
 				bcast;
 	uint16_t		mtu;
 };
-extern bool if_is_up(char *ifname);
+extern bool if_is_up(int skfd, const char *ifname);
+extern void if_set_up(int skfd, const char *ifname);
 extern void if_getinf(char *ifname, struct if_info *info);
 
 /**
