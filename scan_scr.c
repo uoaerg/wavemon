@@ -148,6 +148,16 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 	struct timer t1;
 	int key = 0;
 	pid_t pid;
+	void (*sig_tstp)(int) = signal(SIGTSTP, SIG_IGN);
+	/*
+	 * Both parent and child process write to the terminal, updating 
+	 * different areas of the screen. Suspending wavemon brings the 
+	 * terminal state out of order, messing up the screen. The choice
+	 * is between a more  complicated (sophisticated) handling of
+	 * signals, and to keep it simple by not allowing to suspend.
+	 */
+	if (sig_tstp == SIG_ERR)
+		err_sys("can not block suspend signal in scan window");
 
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 
@@ -179,6 +189,7 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 
 	kill(pid, SIGTERM);
 	delwin(w_aplst);
+	signal(SIGTSTP, sig_tstp);
 
 	return key - KEY_F(1);
 }

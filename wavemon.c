@@ -65,8 +65,10 @@ int main(int argc, char *argv[])
 
 	getconf(argc, argv);
 
+	if (!isatty(STDIN_FILENO))
+		errx(1, "input is not from a terminal");
+
 	if (signal(SIGWINCH, sig_winch) == SIG_ERR	||
-	    signal(SIGTSTP, SIG_IGN) == SIG_ERR		||
 	    signal(SIGCHLD, SIG_IGN) == SIG_ERR)
 		err(1, "cannot install signal handlers");
 
