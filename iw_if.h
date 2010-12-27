@@ -56,6 +56,8 @@
  * @netmask:		IPv4 interface netmask
  * @bcast:		IPv4 interface broadcast address
  * @mtu:		interface MTU
+ * @txqlen:		tx queue length
+ * @flags:		interface flags
  * See also netdevice(7)
  */
 struct if_info {
@@ -64,6 +66,8 @@ struct if_info {
 				netmask,
 				bcast;
 	uint16_t		mtu;
+	short			txqlen;
+	short			flags;
 };
 extern bool if_is_up(int skfd, const char *ifname);
 extern void if_set_up(int skfd, const char *ifname);

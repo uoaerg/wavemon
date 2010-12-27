@@ -441,9 +441,62 @@ static void display_netinfo(WINDOW *w_net)
 
 	if_getinf(conf.ifname, &info);
 
-	mvwaddstr(w_net, 1, 1, "ip: ");
+	wmove(w_net, 1, 1);
+	if (getmaxy(w_net) == WH_NET_MAX) {
+		waddstr(w_net, conf.ifname);
+
+		waddstr_b(w_net, " (");
+		waddstr(w_net, info.flags & IFF_UP ? "UP" : "DOWN");
+		if (info.flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
+			waddstr(w_net, " RUNNING");
+#ifdef IFF_LOWER_UP	/* Linux 2.6.17 */
+		if (info.flags & IFF_LOWER_UP)		/* Driver signals L1 up		*/
+			waddstr(w_net, " LOWER_UP");
+#endif
+#ifdef IFF_DORMANT	/* Linux 2.6.17 */
+		if (info.flags & IFF_DORMANT)		/* Driver signals dormant	*/
+			waddstr(w_net, " DORMANT");
+#endif
+		if (info.flags & IFF_MASTER)		/* Master of a load balancer 	*/
+			waddstr(w_net, " MASTER");
+		if (info.flags & IFF_SLAVE)		/* Slave of a load balancer 	*/
+			waddstr(w_net, " SLAVE");
+		if (info.flags & IFF_POINTOPOINT)	/* Is a point-to-point link	*/
+			waddstr(w_net, " POINTOPOINT");
+		if (info.flags & IFF_DYNAMIC)		/* Address is volatile		*/
+			waddstr(w_net, " DYNAMIC");
+		if (info.flags & IFF_BROADCAST)		/* Valid broadcast address set	*/
+			waddstr(w_net, " BROADCAST");
+		if (info.flags & IFF_MULTICAST)		/* Supports multicast		*/
+			waddstr(w_net, " MULTICAST");
+		if (info.flags & IFF_ALLMULTI)		/* Receive all mcast  packets	*/
+			waddstr(w_net, " ALLMULTI");
+		if (info.flags & IFF_NOARP)		/* No ARP protocol		*/
+			waddstr(w_net, " NOARP");
+		if (info.flags & IFF_NOTRAILERS)	/* Avoid use of trailers	*/
+			waddstr(w_net, " NOTRAILERS");
+		if (info.flags & IFF_PROMISC)		/* Is in promiscuous mode	*/
+			waddstr(w_net, " PROMISC");
+		if (info.flags & IFF_DEBUG)		/* Internal debugging flag	*/
+			waddstr(w_net, " DEBUG");
+		waddstr_b(w_net, ")");
+
+		wmove(w_net, 2, 1);
+	}
+	waddstr(w_net, "mac: ");
+	waddstr_b(w_net, ether_lookup(&info.hwaddr));
+
+	if (getmaxy(w_net) == WH_NET_MAX) {
+		waddstr(w_net, ", qlen: ");
+		sprintf(tmp, "%u", info.txqlen);
+		waddstr_b(w_net, tmp);
+
+		mvwaddstr(w_net, 3, 1, "ip: ");
+	} else {
+		waddstr(w_net, ", ip: ");
+	}
 	if (!info.addr.s_addr) {
-		waddstr(w_net, "no address");
+		waddstr_b(w_net, "n/a");
 	} else {
 		sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
 				      prefix_len(&info.netmask));
@@ -463,9 +516,6 @@ static void display_netinfo(WINDOW *w_net)
 		sprintf(tmp, "%u", info.mtu);
 		waddstr_b(w_net, tmp);
 	}
-
-	waddstr(w_net, ",  mac: ");
-	waddstr_b(w_net, ether_lookup(&info.hwaddr));
 
 	wclrtoborder(w_net);
 	wrefresh(w_net);
@@ -487,7 +537,10 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	line += WH_STATS;
 	w_info	 = newwin_title(line, WH_INFO_MIN, "Info", true);
 	line += WH_INFO_MIN;
-	w_net	 = newwin_title(line, WH_NET_MIN, "Network", false);
+	if (LINES >= WH_INFO_SCR_MIN + (WH_NET_MAX - WH_NET_MIN))
+		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
+	else
+		w_net = newwin_title(line, WH_NET_MIN, "Network", false);
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_info(w_if, w_info);

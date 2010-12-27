@@ -22,7 +22,7 @@
 /*
  * Obtain network device information
  */
-int if_get_flags(int skfd, const char *ifname)
+static int if_get_flags(int skfd, const char *ifname)
 {
 	struct ifreq ifr;
 
@@ -69,11 +69,16 @@ void if_getinf(char *ifname, struct if_info *info)
 	memset(&ifr, 0, sizeof(struct ifreq));
 	memset(info, 0, sizeof(struct if_info));
 
+	info->flags = if_get_flags(skfd, ifname);
+
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCGIFMTU, &ifr) == 0)
 		info->mtu = ifr.ifr_mtu;
+
+	if (ioctl(skfd, SIOCGIFTXQLEN, &ifr) >= 0)
+		info->txqlen = ifr.ifr_qlen;
+
 	/* Copy the 6 byte Ethernet address and the 4 byte struct in_addrs */
-	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCGIFHWADDR, &ifr) >= 0)
 		memcpy(&info->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
 	if (ioctl(skfd, SIOCGIFADDR, &ifr) >= 0)
