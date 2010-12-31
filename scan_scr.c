@@ -151,7 +151,6 @@ done:
 enum wavemon_screen scr_aplst(WINDOW *w_menu)
 {
 	WINDOW *w_aplst;
-	struct timer t1;
 	int key = 0;
 	pid_t pid;
 	void (*sig_tstp)(int) = signal(SIGTSTP, SIG_IGN);
@@ -182,8 +181,7 @@ enum wavemon_screen scr_aplst(WINDOW *w_menu)
 
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 
-		start_timer(&t1, conf.info_iv * 1000000);
-		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
+		while ((key = wgetch(w_menu)) <= 0)
 			usleep(5000);
 
 		/* Keyboard shortcuts */
