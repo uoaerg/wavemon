@@ -269,26 +269,18 @@ static inline const char *iw_opmode(const uint8_t mode)
 	return mode < ARRAY_SIZE(modes) ? modes[mode] : "Unknown/bug";
 }
 
-static inline bool is_zero_ether_addr(const uint8_t *mac)
-{
-	return ! (mac[0] | mac[1] | mac[2] | mac[3] | mac[4] | mac[5]);
-}
-
-static inline bool is_broadcast_ether_addr(const uint8_t *mac)
-{
-	return (mac[0] & mac[1] & mac[2] & mac[3] & mac[4] & mac[5]) == 0xff;
-}
-
 /* Print a mac-address, include leading zeroes (unlike ether_ntoa(3)) */
 static inline char *ether_addr(const struct ether_addr *ea)
 {
-	static char str[MAC_ADDR_MAX];
-
-	sprintf(str, "%02X:%02X:%02X:%02X:%02X:%02X",
-		ea->ether_addr_octet[0], ea->ether_addr_octet[1],
-		ea->ether_addr_octet[2], ea->ether_addr_octet[3],
-		ea->ether_addr_octet[4], ea->ether_addr_octet[5]);
-	return str;
+	static char mac[MAC_ADDR_MAX];
+	char *d = mac, *a = ether_ntoa(ea);
+next_chunk:
+	if (a[0] == '\0' || a[1] == '\0' || a[1] == ':')
+		*d++ = '0';
+	while ((*d++ = toupper(*a)))
+		if (*a++ == ':')
+			goto next_chunk;
+	return mac;
 }
 
 /* Print mac-address translation from /etc/ethers if available */
@@ -304,21 +296,20 @@ static inline char *ether_lookup(const struct ether_addr *ea)
 /* Format an Ethernet mac address */
 static inline char *mac_addr(const struct sockaddr *sa)
 {
-	struct ether_addr zero = { {0} };
-
 	if (sa->sa_family != ARPHRD_ETHER)
-		return ether_addr(&zero);
-	return ether_lookup((struct ether_addr *)sa->sa_data);
+		return "00:00:00:00:00:00";
+	return ether_lookup((const struct ether_addr *)sa->sa_data);
 }
 
 /* Format a (I)BSSID */
 static inline char *format_bssid(const struct sockaddr *ap)
 {
-	const struct ether_addr *bssid = (struct ether_addr *)ap->sa_data;
+	uint8_t bcast_addr[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+	uint8_t  zero_addr[ETH_ALEN] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-	if (is_zero_ether_addr(bssid->ether_addr_octet))
+	if (memcmp(ap->sa_data, zero_addr, ETH_ALEN) == 0)
 		return "Not-Associated";
-	if (is_broadcast_ether_addr(bssid->ether_addr_octet))
+	if (memcmp(ap->sa_data, bcast_addr, ETH_ALEN) == 0)
 		return "Invalid";
 	return mac_addr(ap);
 }
