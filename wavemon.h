@@ -104,6 +104,7 @@ static inline void threshold_action(enum threshold_action action)
  */
 extern struct wavemon_conf {
 	char	ifname[LISTVAL_MAX];
+	char	cisco_mac;		/* Cisco-style MAC addresses */
 
 	int	stat_iv,
 		info_iv;

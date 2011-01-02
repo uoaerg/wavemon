@@ -277,7 +277,7 @@ static inline char *ether_addr(const struct ether_addr *ea)
 next_chunk:
 	if (a[0] == '\0' || a[1] == '\0' || a[1] == ':')
 		*d++ = '0';
-	while ((*d++ = toupper(*a)))
+	while ((*d++ = conf.cisco_mac ? (*a == ':' ? '.' : *a) : toupper(*a)))
 		if (*a++ == ':')
 			goto next_chunk;
 	return mac;

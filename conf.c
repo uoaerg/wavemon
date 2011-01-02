@@ -312,6 +312,13 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Cisco-style MAC addresses");
+	item->cfname	= strdup("cisco_mac");
+	item->type	= t_switch;
+	item->v.b	= &conf.cisco_mac;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Statistics updates");
 	item->cfname	= strdup("stat_updates");
 	item->type	= t_int;
@@ -512,6 +519,8 @@ static void init_conf_items(void)
 static void set_defaults(void)
 {
 	strncpy(conf.ifname, ll_get(if_list, 0), sizeof(conf.ifname));
+
+	conf.cisco_mac		= false;
 
 	conf.stat_iv		= 100;
 	conf.info_iv		= 10;
