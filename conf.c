@@ -22,9 +22,32 @@
 #include <sys/types.h>
 
 /* GLOBALS */
-struct wavemon_conf conf;
 int conf_items;			/* index into array storing menu items */
 static int if_list;		/* index into array of WiFi interface names */
+
+struct wavemon_conf conf = {
+	.cisco_mac		= false,
+
+	.stat_iv		= 100,
+	.info_iv		= 10,
+	.slotsize		= 4,
+	.meter_decay		= 0,
+
+	.override_bounds	= false,
+	.random			= false,
+
+	.sig_min		= -102,
+	.sig_max		= 10,
+	.noise_min		= -102,
+	.noise_max		= 10,
+
+	.lthreshold_action	= TA_DISABLED,
+	.lthreshold		= -80,
+	.hthreshold_action	= TA_DISABLED,
+	.hthreshold		= -10,
+
+	.startup_scr		= 0,
+};
 
 static void version(void)
 {
@@ -516,38 +539,10 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 }
 
-static void set_defaults(void)
-{
-	strncpy(conf.ifname, ll_get(if_list, 0), sizeof(conf.ifname));
-
-	conf.cisco_mac		= false;
-
-	conf.stat_iv		= 100;
-	conf.info_iv		= 10;
-	conf.slotsize		= 4;
-	conf.meter_decay	= 0;
-
-	conf.override_bounds	= false;
-	conf.random		= false;
-
-	conf.sig_min		= -102;
-	conf.sig_max		= 10;
-	conf.noise_min		= -102;
-	conf.noise_max		= 10;
-
-
-	conf.lthreshold_action	= TA_DISABLED;
-	conf.lthreshold		= -80;
-	conf.hthreshold_action	= TA_DISABLED;
-	conf.hthreshold		= -10;
-
-	conf.startup_scr	= 0;
-}
-
 void getconf(int argc, char *argv[])
 {
 	if_list = iw_get_interface_list();
-	set_defaults();
+	strncpy(conf.ifname, ll_get(if_list, 0), sizeof(conf.ifname));
 	init_conf_items();
 	read_cf();
 	getargs(argc, argv);
