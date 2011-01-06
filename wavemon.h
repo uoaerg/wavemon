@@ -143,7 +143,6 @@ struct conf_item {
 
 	enum {			/* type of parameter */
 		t_int,
-		t_string,
 		t_listval,
 		t_switch,
 		t_list,
@@ -153,7 +152,7 @@ struct conf_item {
 
 	union {			/* type-dependent container for value */
 		int	*i;	/* t_int */
-		char	*s;	/* t_string, t_listval */
+		char	*s;	/* t_listval */
 		char	*b;	/*
 				 * t_switch: a boolean type
 				 * t_list: an enum type where 0 means "off"

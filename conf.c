@@ -185,12 +185,6 @@ static void read_cf(void)
 				*ci->v.i = v_int;
 			}
 			break;
-		case t_string:
-			if (strlen(rv) > ci->max)
-				err_quit("parse error in %s, line %d: argument too long (max %d chars)",
-					 cfname, lnum, ci->max);
-			strncpy(ci->v.s, rv, LISTVAL_MAX);
-			break;
 		case t_switch:
 			if (!strcasecmp(rv, "on") || !strcasecmp(rv, "yes") ||
 			    !strcasecmp(rv, "enabled") || !strcasecmp(rv, "1")) {
@@ -253,7 +247,6 @@ static void write_cf(void)
 			case t_int:
 				sprintf(rv, "%d", *ci->v.i);
 				break;
-			case t_string:	/* fall through */
 			case t_listval:
 				strcpy(rv, ci->v.s);
 				break;

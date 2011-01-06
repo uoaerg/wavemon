@@ -42,9 +42,6 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 		case t_int:
 			sprintf(s, "%d", *item->v.i);
 			break;
-		case t_string:
-			strncpy(s, item->v.s, item->max);
-			break;
 		case t_switch:
 			strcpy(s, *item->v.b ? "Enabled" : "Disabled");
 			break;
@@ -127,7 +124,6 @@ static void change_item(int inum, char sign)
 		strncpy(item->v.s, ll_get(item->list, tmp), LISTVAL_MAX);
 		break;
 		/* Dummy statements to pacify gcc -Wall */
-	case t_string:
 	case t_sep:
 	case t_func:
 		break;
