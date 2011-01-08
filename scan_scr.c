@@ -76,12 +76,6 @@ static void display_aplist(WINDOW *w_aplst)
 		err_sys("%s: can not open socket", __func__);
 
 	iw_getinf_range(conf.ifname, &range);
-	if (range.we_version_compiled < 14) {
-		mvwclrtoborder(w_aplst, START_LINE, 1);
-		sprintf(s, "%s does not support scanning", conf.ifname);
-		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
-		goto done;
-	}
 
 	head = get_scan_list(skfd, conf.ifname, range.we_version_compiled);
 	if (head) {

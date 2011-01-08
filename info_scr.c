@@ -176,14 +176,14 @@ static void display_stats(void)
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " crypt, ");
 
-	if (cur.range.we_version_compiled > 11) {
-		sprintf(tmp, "%'u", cur.stat.discard.fragment);
-		waddstr_b(w_stats, tmp);
-		waddstr(w_stats, " frag, ");
-	}
+	sprintf(tmp, "%'u", cur.stat.discard.fragment);
+	waddstr_b(w_stats, tmp);
+	waddstr(w_stats, " frag, ");
+
 	sprintf(tmp, "%'u", cur.stat.discard.misc);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " misc");
+
 	wclrtoborder(w_stats);
 
 	/*
@@ -195,15 +195,14 @@ static void display_stats(void)
 		byte_units(nstat.tx_bytes));
 	waddstr_b(w_stats, tmp);
 
-	if (cur.range.we_version_compiled > 11) {
-		waddstr(w_stats, ", mac retries: ");
-		sprintf(tmp, "%'u", cur.stat.discard.retries);
-		waddstr_b(w_stats, tmp);
+	waddstr(w_stats, ", mac retries: ");
+	sprintf(tmp, "%'u", cur.stat.discard.retries);
+	waddstr_b(w_stats, tmp);
 
-		waddstr(w_stats, ", missed beacons: ");
-		sprintf(tmp, "%'u", cur.stat.miss.beacon);
-		waddstr_b(w_stats, tmp);
-	}
+	waddstr(w_stats, ", missed beacons: ");
+	sprintf(tmp, "%'u", cur.stat.miss.beacon);
+	waddstr_b(w_stats, tmp);
+
 	wclrtoborder(w_stats);
 	wrefresh(w_stats);
 }

@@ -361,66 +361,7 @@ static void iw_getstat_random(struct iw_stat *iw)
 	iw->stat.qual.updated	= IW_QUAL_DBM;
 }
 
-/* Code in part taken from wireless extensions #30 */
-static void iw_getstat_old_style(struct iw_statistics *stat)
-{
-	char line[0x100], *lp;
-	int tmp;
-	FILE *fp = open_proc_net("wireless");
-
-	while (fgets(line, sizeof(line), fp)) {
-		for (lp = line; *lp && isspace(*lp); lp++)
-			;
-		if (strncmp(lp, conf.ifname, strlen(conf.ifname)) == 0 &&
-		    lp[strlen(conf.ifname)] == ':') {
-			lp += strlen(conf.ifname) + 1;
-
-			/* status */
-			lp = strtok(lp, " ");
-			sscanf(lp, "%X", &tmp);
-			stat->status = (unsigned short)tmp;
-
-			/* link quality */
-			lp = strtok(NULL, " ");
-			if (strchr(lp, '.') != NULL)
-				stat->qual.updated |= IW_QUAL_QUAL_UPDATED;
-			sscanf(lp, "%d", &tmp);
-			stat->qual.qual = (unsigned char)tmp;
-
-			/* signal level */
-			lp = strtok(NULL, " ");
-			if (strchr(lp, '.') != NULL)
-				stat->qual.updated |= IW_QUAL_LEVEL_UPDATED;
-			sscanf(lp, "%d", &tmp);
-			stat->qual.level = (unsigned char)tmp;
-
-			/* noise level */
-			lp = strtok(NULL, " ");
-			if (strchr(lp, '.') != NULL)
-				stat->qual.updated |= IW_QUAL_NOISE_UPDATED;
-			sscanf(lp, "%d", &tmp);
-			stat->qual.noise = (unsigned char)tmp;
-
-			/* # of packets w/ invalid nwid */
-			lp = strtok(NULL, " ");
-			sscanf(lp, "%u", &stat->discard.nwid);
-
-			/* # of packets w/ invalid key */
-			lp = strtok(NULL, " ");
-			sscanf(lp, "%u", &stat->discard.code);
-
-			/* # of packets w/ bad attitude */
-			lp = strtok(NULL, " ");
-			sscanf(lp, "%u", &stat->discard.misc);
-
-			/* each interface appears just once */
-			break;
-		}
-	}
-	fclose(fp);
-}
-
-static void iw_getstat_new_style(struct iw_statistics *stat)
+static void iw_getstat_real(struct iw_statistics *stat)
 {
 	struct iwreq wrq;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -513,10 +454,8 @@ void iw_getstat(struct iw_stat *iw)
 
 	if (conf.random)
 		iw_getstat_random(iw);
-	else if (iw->range.we_version_compiled > 11)
-		iw_getstat_new_style(&iw->stat);
 	else
-		iw_getstat_old_style(&iw->stat);
+		iw_getstat_real(&iw->stat);
 
 	iw_sanitize(&iw->range, &iw->stat.qual, &iw->dbm);
 }
@@ -683,17 +622,14 @@ void dump_parameters(void)
 	       byte_units(nstat.rx_bytes));
 	printf("     invalid nwid: %'u\n", iw.stat.discard.nwid);
 	printf("      invalid key: %'u\n", iw.stat.discard.code);
-	if (iw.range.we_version_compiled > 11) {
-		printf("   invalid fragm.: %'u\n", iw.stat.discard.fragment);
-		printf("   missed beacons: %'u\n", iw.stat.miss.beacon);
-	}
+	printf("   invalid fragm.: %'u\n", iw.stat.discard.fragment);
+	printf("   missed beacons: %'u\n", iw.stat.miss.beacon);
 	printf("      misc errors: %'u\n", iw.stat.discard.misc);
 
 	/* TX stats */
 	printf("         TX total: %'llu packets (%s)\n", nstat.tx_packets,
 	       byte_units(nstat.tx_bytes));
-	if (iw.range.we_version_compiled > 11)
-		printf(" exc. MAC retries: %'u\n", iw.stat.discard.retries);
+	printf(" exc. MAC retries: %'u\n", iw.stat.discard.retries);
 
 	printf("\n");
 	dyn_info_cleanup(&info);
