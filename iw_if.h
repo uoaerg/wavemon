@@ -331,6 +331,16 @@ static inline uint8_t prefix_len(const struct in_addr *netmask)
 	return bit_count(netmask->s_addr);
 }
 
+/* Absolute power measurement in dBm (IW_QUAL_DBM): map into -192 .. 63 range */
+static inline int u8_to_dbm(const int power)
+{
+	return power > 63 ? power - 0x100 : power;
+}
+static inline uint8_t dbm_to_u8(const int dbm)
+{
+	return dbm < 0 ? dbm + 0x100 : dbm;
+}
+
 /* Convert log dBm values to linear mW */
 static inline double dbm2mw(const double in)
 {

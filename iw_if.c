@@ -19,6 +19,11 @@
  */
 #include "iw_if.h"
 
+/* Determine the artificial spreading of random samples (best: 1..10) */
+#define WAVE_RAND_SPREAD	1
+/* Fallback maximum quality level when using random samples. */
+#define WAVE_RAND_QUAL_MAX	100
+
 /*
  * Obtain network device information
  */
@@ -315,59 +320,45 @@ void iw_getinf_range(char *ifname, struct iw_range *range)
 /*
  *	Obtain periodic IW statistics
  */
-static int rnd_signal(int min, int max)
+static int rand_wave(float *rlvl, float *step, float *rlvl_next, float range)
 {
-	static float rlvl, rlvl_next;
-	static float step = 1.0;
 	int i;
 
-	for (i = 0; i < 1; i++)
-		if (rlvl < rlvl_next) {
-			if (rlvl_next - rlvl < step)
-				step /= 2;
-			rlvl += step;
-		} else if (rlvl > rlvl_next) {
-			if (rlvl - rlvl_next < step)
-				step /= 2;
-			rlvl -= step;
+	for (i = 0; i < WAVE_RAND_SPREAD; i++)
+		if (*rlvl < *rlvl_next) {
+			if (*rlvl_next - *rlvl < *step)
+				*step /= 2.0;
+			*rlvl += *step;
+		} else if (*rlvl > *rlvl_next) {
+			if (*rlvl - *rlvl_next < *step)
+				*step /= 2.0;
+			*rlvl -= *step;
 		}
-	step += (rand() / (float)RAND_MAX) - 0.5;
-	if ((rlvl == rlvl_next) || (step < 0.05)) {
-		rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
-		step = rand() / (float)RAND_MAX;
+	*step += (random() / (float)RAND_MAX) - 0.5;
+	if (*rlvl == *rlvl_next || *step < 0.05) {
+		*rlvl_next = (range * random()) / RAND_MAX;
+		*step      = random() / (float)RAND_MAX;
 	}
-	return rlvl;
+	return *rlvl;
 }
 
-static int rnd_noise(int min, int max)
+/* Random signal/noise/quality levels */
+static void iw_getstat_random(struct iw_stat *iw)
 {
-	static float rlvl, rlvl_next;
-	static float step = 1.0;
-	int i;
+	static float rnd_sig, snext, sstep = 1.0, rnd_noise, nnext, nstep = 1.0;
+	uint8_t smin = dbm_to_u8(conf.sig_min), smax = dbm_to_u8(conf.sig_max);
 
-	for (i = 0; i < 1; i++)
-		if (rlvl < rlvl_next) {
-			if (rlvl_next - rlvl < step)
-				step /= 2;
-			rlvl += step;
-		} else if (rlvl > rlvl_next) {
-			if (rlvl - rlvl_next < step)
-				step /= 2;
-			rlvl -= step;
-		}
-	step += (rand() / (float)RAND_MAX) - 0.5;
-	if ((rlvl == rlvl_next) || (step < 0.05)) {
-		rlvl_next = (rand() / (float)RAND_MAX) * (max - min) + min;
-		step = rand() / (float)RAND_MAX;
-	}
-	return rlvl;
-}
+	rand_wave(&rnd_sig, &sstep, &snext, conf.sig_max - conf.sig_min);
+	rand_wave(&rnd_noise, &nstep, &nnext, conf.noise_max - conf.noise_min);
 
-/* Random signal/noise */
-static void iw_getstat_random(struct iw_statistics *stat)
-{
-	stat->qual.level = rnd_signal(-102, 10);
-	stat->qual.noise = rnd_noise(-102, -30);
+	if (iw->range.max_qual.qual == 0)
+		iw->range.max_qual.qual = WAVE_RAND_QUAL_MAX;
+
+	iw->stat.qual.level	= smin + rnd_sig;
+	iw->stat.qual.noise	= dbm_to_u8(conf.noise_min) + rnd_noise;
+	iw->stat.qual.qual	= map_range(iw->stat.qual.level, smin, smax,
+					    0, iw->range.max_qual.qual);
+	iw->stat.qual.updated	= IW_QUAL_DBM;
 }
 
 /* Code in part taken from wireless extensions #30 */
@@ -480,22 +471,11 @@ void iw_sanitize(struct iw_range *range, struct iw_quality *qual,
 				dbm->noise  = (double)(qual->noise / 2.0) - 110.0;
 
 		} else if ((qual->updated & IW_QUAL_DBM) ||
-			/*
-			 * Statistics in dBm (absolute power measurement)
-			 * These are encoded in the range -192 .. 63
-			 */
 			   qual->level > range->max_qual.level) {
-
-			if (!(qual->updated & IW_QUAL_LEVEL_INVALID)) {
-				dbm->signal = qual->level;
-				if (qual->level >= 64)
-					dbm->signal -= 0x100;
-			}
-			if (!(qual->updated & IW_QUAL_NOISE_INVALID)) {
-				dbm->noise = qual->noise;
-				if (qual->noise >= 64)
-					dbm->noise -= 0x100;
-			}
+			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
+				dbm->signal = u8_to_dbm(qual->level);
+			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
+				dbm->noise  = u8_to_dbm(qual->noise);
 		} else {
 			/*
 			 * Relative values (0 -> max)
@@ -532,7 +512,7 @@ void iw_getstat(struct iw_stat *iw)
 	memset(&iw->stat, 0, sizeof(iw->stat));
 
 	if (conf.random)
-		iw_getstat_random(&iw->stat);
+		iw_getstat_random(iw);
 	else if (iw->range.we_version_compiled > 11)
 		iw_getstat_new_style(&iw->stat);
 	else
