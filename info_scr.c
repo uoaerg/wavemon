@@ -23,42 +23,26 @@
 static WINDOW *w_levels, *w_stats;
 
 static struct iw_stat cur;
-void (*iw_stat_redraw) (void);
 
-/*
- * Statistics handler for period polling
- */
-static void sampling_handler(int signum)
-{
-	iw_getstat(&cur);
-	iw_cache_update(&cur);
-
-	if (iw_stat_redraw)
-		iw_stat_redraw();
-}
-
-static void init_stat_iv(void)
+void sampling_init(void (*sampling_handler)(int))
 {
 	struct itimerval i;
 	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
 
+	signal(SIGALRM, SIG_IGN);
+	iw_getinf_range(conf.ifname, &cur.range);
 	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
 	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
-
-	setitimer(ITIMER_REAL, &i, NULL);
-
 	signal(SIGALRM, sampling_handler);
+
+	(*sampling_handler)(0);
+	setitimer(ITIMER_REAL, &i, NULL);
 }
 
-void reinit_on_changes(void)
+void sampling_do_poll(void)
 {
-	static int stat_iv = 0;
-
-	if (conf.stat_iv != stat_iv) {
-		iw_getinf_range(conf.ifname, &cur.range);
-		init_stat_iv();
-		stat_iv = conf.stat_iv;
-	}
+	iw_getstat(&cur);
+	iw_cache_update(&cur);
 }
 
 static void display_levels(void)
@@ -205,12 +189,6 @@ static void display_stats(void)
 
 	wclrtoborder(w_stats);
 	wrefresh(w_stats);
-}
-
-static void redraw_stats(void)
-{
-	display_levels();
-	display_stats();
 }
 
 static void display_info(WINDOW *w_if, WINDOW *w_info)
@@ -520,13 +498,18 @@ static void display_netinfo(WINDOW *w_net)
 	wrefresh(w_net);
 }
 
+static void redraw_stat_levels(int signum)
+{
+	sampling_do_poll();
+	display_levels();
+	display_stats();
+}
+
 enum wavemon_screen scr_info(WINDOW *w_menu)
 {
 	WINDOW *w_if, *w_info, *w_net;
 	struct timer t1;
 	int key = 0, line = 0;
-
-	iw_stat_redraw = NULL;
 
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
@@ -541,10 +524,13 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 	else
 		w_net = newwin_title(line, WH_NET_MIN, "Network", false);
 
+	display_info(w_if, w_info);
+	display_netinfo(w_net);
+	sampling_init(redraw_stat_levels);
+
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		display_info(w_if, w_info);
 		display_netinfo(w_net);
-		iw_stat_redraw = redraw_stats;
 
 		start_timer(&t1, conf.info_iv * 1000000);
 		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
@@ -556,8 +542,7 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 		else if (key == 'i')
 			key = KEY_F(1);
 	}
-
-	iw_stat_redraw = NULL;
+	sampling_stop();
 
 	delwin(w_if);
 	delwin(w_levels);

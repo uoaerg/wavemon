@@ -129,14 +129,11 @@ extern struct wavemon_conf {
 } conf;
 
 /*
- * Initialisation & Configuration functions
+ * Initialisation & Configuration
  */
 extern void getconf(int argc, char *argv[]);
-extern void reinit_on_changes(void);
 
-/*
- * Configuration items to manipulate the current configuration
- */
+/* Configuration items to manipulate the current configuration */
 struct conf_item {
 	char	*name,		/* name for preferences screen */
 		*cfname;	/* name for ~/.wavemonrc */
@@ -171,11 +168,6 @@ struct conf_item {
 
 	char	*unit;		/* name of units to display */
 };
-
-/*
- * Handling of Configuration Items
- */
-extern int  conf_items;
 
 /*
  *	Screen functions

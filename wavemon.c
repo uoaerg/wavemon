@@ -119,7 +119,6 @@ int main(int argc, char *argv[])
 		if (screens[next].screen_func != NULL)
 			cur = next;
 
-		reinit_on_changes();
 		update_menubar(w_menu, cur);
 		next = (*screens[cur].screen_func)(w_menu);
 

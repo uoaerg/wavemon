@@ -19,6 +19,9 @@
  */
 #include "wavemon.h"
 
+/* GLOBALS */
+extern int conf_items;		/* index into array storing menu items */
+
 /* Make configuration screen fit into half of minimum screen width */
 #define CONF_SCREEN_WIDTH	(MIN_SCREEN_COLS / 2)
 /*

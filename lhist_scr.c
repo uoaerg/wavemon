@@ -19,8 +19,6 @@
  */
 #include "iw_if.h"
 
-/* CONSTANTS */
-
 /* Number of lines in the key window at the bottom */
 #define KEY_WIN_HEIGHT	3
 
@@ -306,10 +304,11 @@ static void display_key(WINDOW *w_key)
 	wrefresh(w_key);
 }
 
-static void redraw_lhist(void)
+static void redraw_lhist(int signum)
 {
 	static int vcount = 1;
 
+	sampling_do_poll();
 	if (!--vcount) {
 		vcount = conf.slotsize;
 		display_lhist();
@@ -327,10 +326,10 @@ enum wavemon_screen scr_lhist(WINDOW *w_menu)
 	init_extrema(&e_signal);
 	init_extrema(&e_noise);
 	init_extrema(&e_snr);
+	sampling_init(redraw_lhist);
 
 	display_key(w_key);
 
-	iw_stat_redraw = redraw_lhist;
 	while (key < KEY_F(1) || key > KEY_F(10)) {
 		while ((key = wgetch(w_menu)) <= 0)
 			usleep(5000);
@@ -341,7 +340,7 @@ enum wavemon_screen scr_lhist(WINDOW *w_menu)
 		else if (key == 'i')
 			key = KEY_F(1);
 	}
-	iw_stat_redraw = NULL;
+	sampling_stop();
 
 	delwin(w_lhist);
 	delwin(w_key);

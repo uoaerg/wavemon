@@ -200,6 +200,7 @@ struct iw_levelstat {
 };
 #define IW_LSTAT_INIT { 0, 0, IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID }
 
+extern void iw_getinf_range(char *ifname, struct iw_range *range);
 extern void iw_sanitize(struct iw_range *range,
 			struct iw_quality *qual,
 			struct iw_levelstat *dbm);
@@ -216,12 +217,15 @@ struct iw_stat {
 	struct iw_levelstat	dbm;
 };
 
+/*
+ * 	Periodic sampling of wireless statistics via timer alarm
+ */
 extern void iw_getstat(struct iw_stat *stat);
 extern void iw_cache_update(struct iw_stat *stat);
 
-extern void iw_getinf_range(char *ifname, struct iw_range *range);
-
-extern void (*iw_stat_redraw) (void);
+extern void sampling_init(void (*sampling_handler)(int));
+extern void sampling_do_poll(void);
+static inline void sampling_stop(void)	{ alarm(0); }
 
 /**
  * struct scan_result  -  Ranked list of scan results
