@@ -23,7 +23,23 @@
 
 /* GLOBALS */
 int conf_items;			/* index into array storing menu items */
-static int if_list;		/* index into array of WiFi interface names */
+static char **if_list;		/* array of WiFi interface names */
+
+static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
+static char *action_items[] = {
+	[TA_DISABLED]	= "Disabled",
+	[TA_BEEP]	= "Beep",
+	[TA_FLASH]	= "Flash",
+	[TA_BEEP_FLASH]	= "Beep+Flash",
+	NULL
+};
+
+static char *screen_names[] = {
+	[SCR_INFO]	= "Info screen",
+	[SCR_LHIST]	= "Histogram",
+	[SCR_APLIST]	= "Scan window",
+	NULL
+};
 
 struct wavemon_conf conf = {
 	.cisco_mac		= false,
@@ -78,8 +94,8 @@ static void getargs(int argc, char *argv[])
 			usage();
 			exit(EXIT_SUCCESS);
 		case 'i':
-			if ((tmp = ll_scan(if_list, "S", optarg)) >= 0) {
-				strncpy(conf.ifname, ll_get(if_list, tmp),
+			if ((tmp = argv_find(if_list, optarg)) >= 0) {
+				strncpy(conf.ifname, if_list[tmp],
 					sizeof(conf.ifname));
 				break;
 			}
@@ -185,31 +201,19 @@ static void read_cf(void)
 				*ci->v.i = v_int;
 			}
 			break;
-		case t_switch:
-			if (!strcasecmp(rv, "on") || !strcasecmp(rv, "yes") ||
-			    !strcasecmp(rv, "enabled") || !strcasecmp(rv, "1")) {
-				*(ci->v.b) = 1;
-			} else if (!strcasecmp(rv, "off") || !strcasecmp(rv, "no") ||
-				   !strcasecmp(rv, "disabled") || !strcasecmp(rv, "0")) {
-				*(ci->v.b) = 0;
-			} else {
-				err_quit("parse error in %s, line %d: boolean expected, '%s' found instead",
-					 cfname, lnum, rv);
-			}
-			break;
 		case t_list:
-			v_int = ll_scan(ci->list, "S", rv);
+			v_int = argv_find(ci->list, rv);
 			if (v_int < 0)
 				err_quit("parse error in %s, line %d: '%s' is not a valid argument here",
 					 cfname, lnum, rv);
-			*ci->v.b = v_int;
+			*ci->v.i = v_int;
 			break;
 		case t_listval:
-			v_int = ll_scan(ci->list, "S", rv);
+			v_int = argv_find(ci->list, rv);
 			if (v_int < 0)
 				err_quit("parse error in %s, line %d: '%s' is not a valid argument here",
 					 cfname, lnum, rv);
-			strncpy(ci->v.s, ll_get(ci->list, v_int), LISTVAL_MAX);
+			strncpy(ci->v.s, ci->list[v_int], LISTVAL_MAX);
 			break;
 		case t_sep:	/* These two cases are missing from the enum, they are not handled */
 		case t_func:	/* To pacify gcc -Wall, fall through here */
@@ -250,11 +254,8 @@ static void write_cf(void)
 			case t_listval:
 				strcpy(rv, ci->v.s);
 				break;
-			case t_switch:
-				sprintf(rv, "%s", *ci->v.b ? "on" : "off");
-				break;
 			case t_list:
-				sprintf(rv, "%s", (char *)ll_get(ci->list, *ci->v.b));
+				sprintf(rv, "%s", ci->list[*ci->v.i]);
 				str_tolower(rv);
 				break;
 				/* Fall through, the rest are dummy statements to pacify gcc -Wall */
@@ -330,8 +331,9 @@ static void init_conf_items(void)
 	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Cisco-style MAC addresses");
 	item->cfname	= strdup("cisco_mac");
-	item->type	= t_switch;
-	item->v.b	= &conf.cisco_mac;
+	item->type	= t_list;
+	item->v.i	= &conf.cisco_mac;
+	item->list	= on_off_names;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
@@ -390,8 +392,9 @@ static void init_conf_items(void)
 	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Override scale autodetect");
 	item->cfname	= strdup("override_auto_scale");
-	item->type	= t_switch;
-	item->v.b	= &conf.override_bounds;
+	item->type	= t_list;
+	item->v.i	= &conf.override_bounds;
+	item->list	= on_off_names;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
@@ -445,8 +448,9 @@ static void init_conf_items(void)
 	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Random signals");
 	item->cfname	= strdup("random");
-	item->type	= t_switch;
-	item->v.b	= &conf.random;
+	item->type	= t_list;
+	item->v.i	= &conf.random;
+	item->list	= on_off_names;
 	ll_push(conf_items, "*", item);
 
 	/* thresholds */
@@ -454,12 +458,8 @@ static void init_conf_items(void)
 	item->name	= strdup("Low threshold action");
 	item->cfname	= strdup("lo_threshold_action");
 	item->type	= t_list;
-	item->v.b	= &conf.lthreshold_action;
-	item->list	= ll_create();
-	ll_push(item->list, "s", "Disabled");
-	ll_push(item->list, "s", "Beep");
-	ll_push(item->list, "s", "Flash");
-	ll_push(item->list, "s", "Beep+Flash");
+	item->v.i	= &conf.lthreshold_action;
+	item->list	= action_items;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
@@ -478,12 +478,8 @@ static void init_conf_items(void)
 	item->name	= strdup("High threshold action");
 	item->cfname	= strdup("hi_threshold_action");
 	item->type	= t_list;
-	item->v.b	= &conf.hthreshold_action;
-	item->list	= ll_create();
-	ll_push(item->list, "s", "Disabled");
-	ll_push(item->list, "s", "Beep");
-	ll_push(item->list, "s", "Flash");
-	ll_push(item->list, "s", "Beep+Flash");
+	item->v.i	= &conf.hthreshold_action;
+	item->list	= action_items;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
@@ -512,11 +508,8 @@ static void init_conf_items(void)
 	item->name	= strdup("Startup screen");
 	item->cfname	= strdup("startup_screen");
 	item->type	= t_list;
-	item->v.b	= &conf.startup_scr;
-	item->list	= ll_create();
-	ll_push(item->list, "s", "Info");
-	ll_push(item->list, "s", "Histogram");
-	ll_push(item->list, "s", "Scan window");
+	item->v.i	= &conf.startup_scr;
+	item->list	= screen_names;
 	ll_push(conf_items, "*", item);
 
 	/* separator (dummy entry) */
@@ -535,7 +528,7 @@ static void init_conf_items(void)
 void getconf(int argc, char *argv[])
 {
 	if_list = iw_get_interface_list();
-	strncpy(conf.ifname, ll_get(if_list, 0), sizeof(conf.ifname));
+	strncpy(conf.ifname, if_list[0], sizeof(conf.ifname));
 	init_conf_items();
 	read_cf();
 	getargs(argc, argv);

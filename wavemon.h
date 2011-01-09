@@ -104,7 +104,6 @@ static inline void threshold_action(enum threshold_action action)
  */
 extern struct wavemon_conf {
 	char	ifname[LISTVAL_MAX];
-	char	cisco_mac;		/* Cisco-style MAC addresses */
 
 	int	stat_iv,
 		info_iv;
@@ -118,14 +117,15 @@ extern struct wavemon_conf {
 	int	slotsize,
 		meter_decay;
 
-	/* Boolean values which are 'char' for consistency with item->dep */
-	char	random,
-		override_bounds;
+	/* Boolean values */
+	int	cisco_mac,		/* Cisco-style MAC addresses */
+		random,			/* random signals */
+		override_bounds;	/* override autodetection */
 
-	char	lthreshold_action,	/* disabled|beep|flash|beep+flash */
-		hthreshold_action;
-
-	char	startup_scr;		/* info|histogram|aplist */
+	/* Enumerated values */
+	int	lthreshold_action,	/* disabled|beep|flash|beep+flash */
+		hthreshold_action,	/* disabled|beep|flash|beep+flash */
+		startup_scr;		/* info|histogram|aplist */
 } conf;
 
 /*
@@ -141,7 +141,6 @@ struct conf_item {
 	enum {			/* type of parameter */
 		t_int,
 		t_listval,
-		t_switch,
 		t_list,
 		t_sep,		/* dummy */
 		t_func		/* void (*fp) (void) */
@@ -150,17 +149,11 @@ struct conf_item {
 	union {			/* type-dependent container for value */
 		int	*i;	/* t_int */
 		char	*s;	/* t_listval */
-		char	*b;	/*
-				 * t_switch: a boolean type
-				 * t_list: an enum type where 0 means "off"
-				 * A pointer is needed to propagate the changes. See
-				 * the 'char' types in the above wavemon_conf struct.
-				 */
 		void (*fp)();	/* t_func */
 	} v;
 
-	int	list;		/* list of available settings (for t_list) */
-	char	*dep;		/* dependency (must be t_switch) */
+	char	**list;		/* t_list: NULL-terminated array of strings */
+	int	*dep;		/* dependency */
 
 	double	min,		/* value boundaries */
 		max,
@@ -247,7 +240,7 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
 /*
  *	Wireless interfaces
  */
-extern int iw_get_interface_list(void);
+extern char **iw_get_interface_list(void);
 extern void dump_parameters(void);
 
 /*
@@ -273,6 +266,27 @@ extern void err_sys(const char *format, ...);
  *	Helper functions
  */
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+static inline size_t argv_count(char **argv)
+{
+	int cnt = 0;
+
+	assert(argv != NULL);
+	while (*argv++)
+		cnt++;
+	return cnt;
+}
+
+static inline int argv_find(char **argv, const char *what)
+{
+	int cnt = argv_count(argv), len, i;
+
+	assert(what != NULL);
+	for (i = 0, len = strlen(what); i < cnt; i++)
+		if (strncasecmp(argv[i], what, len) == 0)
+			return i;
+	return -1;
+}
 
 static inline void str_tolower(char *s)
 {

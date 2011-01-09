@@ -111,26 +111,28 @@ static FILE *open_proc_net(const char *filename)
 	return fp;
 }
 
-/*
- * Populate list of available wireless interfaces
- * Return index into array-of-lists ld.
- */
-int iw_get_interface_list(void)
+/* Fetch NULL-terminated array of available wireless interfaces */
+char **iw_get_interface_list(void)
 {
 	char *lp, tmp[LISTVAL_MAX];
-	int ld = ll_create();
+	char **ifs = NULL;
+	size_t nifs = 1;	/* ifs[nifs-1] = NULL */
 	FILE *fp = open_proc_net("wireless");
 
 	while (fgets(tmp, LISTVAL_MAX, fp))
 		if ((lp = strchr(tmp, ':'))) {
 			*lp = '\0';
-			ll_push(ld, "s", tmp + strspn(tmp, " "));
+			ifs = realloc(ifs, sizeof(ifs[0]) * (nifs + 1));
+			if (ifs == NULL)
+				err_sys("realloc");
+			ifs[nifs-1] = strdup(tmp + strspn(tmp, " "));
+			ifs[nifs++] = NULL;
 		}
 	fclose(fp);
 
-	if (ll_size(ld) == 0)
+	if (ifs == NULL)
 		err_quit("no wireless interfaces found!");
-	return ld;
+	return ifs;
 }
 
 void if_getstat(char *ifname, struct if_stat *stat)
