@@ -75,9 +75,9 @@ static void display_aplist(WINDOW *w_aplst)
 	if (skfd < 0)
 		err_sys("%s: can not open socket", __func__);
 
-	iw_getinf_range(conf.ifname, &range);
+	iw_getinf_range(if_list[conf.if_idx], &range);
 
-	head = get_scan_list(skfd, conf.ifname, range.we_version_compiled);
+	head = get_scan_list(skfd, if_list[conf.if_idx], range.we_version_compiled);
 	if (head) {
 		;
 	} else if (errno == EPERM || !has_net_admin_capability()) {
@@ -88,18 +88,18 @@ static void display_aplist(WINDOW *w_aplst)
 	} else if (errno == EINTR || errno == EAGAIN || errno == EBUSY) {
 		/* Ignore temporary errors */
 		goto done;
-	} else if (!if_is_up(skfd, conf.ifname)) {
-			sprintf(s, "Interface '%s' is down ", conf.ifname);
+	} else if (!if_is_up(skfd, if_list[conf.if_idx])) {
+			sprintf(s, "Interface '%s' is down ", if_list[conf.if_idx]);
 		if (has_net_admin_capability()) {
-			if_set_up(skfd, conf.ifname);
+			if_set_up(skfd, if_list[conf.if_idx]);
 			strcat(s, "- setting it up ...");
 		} else {
 			strcat(s, "- can not scan");
 		}
 	} else if (errno) {
-		sprintf(s, "No scan on %s: %s", conf.ifname, strerror(errno));
+		sprintf(s, "No scan on %s: %s", if_list[conf.if_idx], strerror(errno));
 	} else {
-		sprintf(s, "No scan results on %s", conf.ifname);
+		sprintf(s, "No scan results on %s", if_list[conf.if_idx]);
 	}
 
 	for (i = 1; i <= MAXYLEN; i++)

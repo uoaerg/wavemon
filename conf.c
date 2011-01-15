@@ -23,7 +23,6 @@
 
 /* GLOBALS */
 int conf_items;			/* index into array storing menu items */
-static char **if_list;		/* array of WiFi interface names */
 
 static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
 static char *action_items[] = {
@@ -42,13 +41,14 @@ static char *screen_names[] = {
 };
 
 struct wavemon_conf conf = {
-	.cisco_mac		= false,
+	.if_idx			= 0,
 
 	.stat_iv		= 100,
 	.info_iv		= 10,
 	.slotsize		= 4,
 	.meter_decay		= 0,
 
+	.cisco_mac		= false,
 	.override_bounds	= false,
 	.random			= false,
 
@@ -83,7 +83,7 @@ static void usage(void)
 
 static void getargs(int argc, char *argv[])
 {
-	int arg, tmp;
+	int arg;
 
 	while ((arg = getopt(argc, argv, "dhi:rv")) >= 0)
 		switch (arg) {
@@ -94,12 +94,11 @@ static void getargs(int argc, char *argv[])
 			usage();
 			exit(EXIT_SUCCESS);
 		case 'i':
-			if ((tmp = argv_find(if_list, optarg)) >= 0) {
-				strncpy(conf.ifname, if_list[tmp],
-					sizeof(conf.ifname));
-				break;
-			}
-			err_quit("no wireless extensions found on '%s'", optarg);
+			conf.if_idx = argv_find(if_list, optarg);
+			if (conf.if_idx < 0)
+				err_quit("no wireless extensions found on '%s'",
+					 optarg);
+			break;
 		case 'r':
 			conf.random = true;
 			break;
@@ -204,17 +203,10 @@ static void read_cf(void)
 		case t_list:
 			v_int = argv_find(ci->list, rv);
 			if (v_int < 0)
-				err_quit("parse error in %s, line %d: '%s' is not a valid argument here",
-					 cfname, lnum, rv);
-			*ci->v.i = v_int;
-			break;
-		case t_listval:
-			v_int = argv_find(ci->list, rv);
-			if (v_int < 0)
-				err_quit("parse error in %s, line %d: '%s' is not a valid argument here",
-					 cfname, lnum, rv);
-			strncpy(ci->v.s, ci->list[v_int], LISTVAL_MAX);
-			break;
+				err_msg("%s, line %d: '%s = %s' is not valid - using defaults",
+					 cfname, lnum, lv, rv);
+			else
+				*ci->v.i = v_int;
 		case t_sep:	/* These two cases are missing from the enum, they are not handled */
 		case t_func:	/* To pacify gcc -Wall, fall through here */
 			break;
@@ -250,9 +242,6 @@ static void write_cf(void)
 			switch (ci->type) {
 			case t_int:
 				sprintf(rv, "%d", *ci->v.i);
-				break;
-			case t_listval:
-				strcpy(rv, ci->v.s);
 				break;
 			case t_list:
 				sprintf(rv, "%s", ci->list[*ci->v.i]);
@@ -322,9 +311,8 @@ static void init_conf_items(void)
 	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Interface");
 	item->cfname	= strdup("interface");
-	item->type	= t_listval;
-	item->v.s	= conf.ifname;
-	item->max	= 10;
+	item->type	= t_list;
+	item->v.i	= &conf.if_idx;
 	item->list	= if_list;
 	ll_push(conf_items, "*", item);
 
@@ -527,8 +515,7 @@ static void init_conf_items(void)
 
 void getconf(int argc, char *argv[])
 {
-	if_list = iw_get_interface_list();
-	strncpy(conf.ifname, if_list[0], sizeof(conf.ifname));
+	iw_get_interface_list();
 	init_conf_items();
 	read_cf();
 	getargs(argc, argv);

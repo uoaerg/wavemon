@@ -30,7 +30,7 @@ void sampling_init(void (*sampling_handler)(int))
 	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
 
 	signal(SIGALRM, SIG_IGN);
-	iw_getinf_range(conf.ifname, &cur.range);
+	iw_getinf_range(if_list[conf.if_idx], &cur.range);
 	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
 	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
 	signal(SIGALRM, sampling_handler);
@@ -139,7 +139,7 @@ static void display_stats(void)
 	struct if_stat nstat;
 	char tmp[0x100];
 
-	if_getstat(conf.ifname, &nstat);
+	if_getstat(if_list[conf.if_idx], &nstat);
 
 	/*
 	 * Interface RX stats
@@ -197,10 +197,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	char tmp[0x100];
 	int i;
 
-	dyn_info_get(&info, conf.ifname, &cur.range);
+	dyn_info_get(&info, if_list[conf.if_idx], &cur.range);
 
 	wmove(w_if, 1, 1);
-	waddstr_b(w_if, conf.ifname);
+	waddstr_b(w_if, if_list[conf.if_idx]);
 	if (cur.range.enc_capa & IW_WPA_MASK)
 		sprintf(tmp, " (%s, %s)", info.name, format_wpa(&cur.range));
 	else
@@ -416,11 +416,11 @@ static void display_netinfo(WINDOW *w_net)
 	struct if_info info;
 	char tmp[0x40];
 
-	if_getinf(conf.ifname, &info);
+	if_getinf(if_list[conf.if_idx], &info);
 
 	wmove(w_net, 1, 1);
 	if (getmaxy(w_net) == WH_NET_MAX) {
-		waddstr(w_net, conf.ifname);
+		waddstr(w_net, if_list[conf.if_idx]);
 
 		waddstr_b(w_net, " (");
 		waddstr(w_net, info.flags & IFF_UP ? "UP" : "DOWN");

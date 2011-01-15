@@ -48,9 +48,6 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 		case t_list:
 			assert(item->list && item->list[*item->v.i]);
 			strncpy(s, item->list[*item->v.i], sizeof(s));
-			break;
-		case t_listval:
-			strncpy(s, item->v.s, sizeof(s));
 			/* Fall through, dummy statements to pacify gcc -Wall */
 		case t_sep:
 		case t_func:
@@ -107,23 +104,7 @@ static void change_item(int inum, char sign)
 			*item->v.i = 0;
 		else if (*item->v.i < 0)
 			*item->v.i = tmp - 1;
-		break;
-	case t_listval:
-		tmp = argv_find(item->list, item->v.s);
-		if (tmp == -1) {
-			tmp = 0;
-		} else {
-			int len = argv_count(item->list);
-
-			tmp += sign;
-			if (tmp >= len)
-				tmp = 0;
-			else if (tmp < 0)
-				tmp = len - 1;
-		}
-		strncpy(item->v.s, item->list[tmp], LISTVAL_MAX);
-		break;
-		/* Dummy statements to pacify gcc -Wall */
+		/* Fall through, dummy statements to pacify gcc -Wall */
 	case t_sep:
 	case t_func:
 		break;
@@ -180,6 +161,7 @@ enum wavemon_screen scr_conf(WINDOW *w_menu)
 	int key = 0;
 	struct conf_item *item;
 
+	iw_get_interface_list();	/* may have changed in the meantime */
 	w_conf    = newwin_title(0, WAV_HEIGHT, "Preferences", false);
 	w_confpad = newpad(num_items + 1, CONF_SCREEN_WIDTH);
 
