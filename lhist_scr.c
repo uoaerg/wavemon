@@ -316,10 +316,8 @@ static void redraw_lhist(int signum)
 	}
 }
 
-enum wavemon_screen scr_lhist(WINDOW *w_menu)
+void scr_lhist_init(void)
 {
-	int key = 0;
-
 	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level histogram", true);
 	w_key   = newwin_title(HIST_MAXYLEN + 1, KEY_WIN_HEIGHT, "Key", false);
 
@@ -329,21 +327,16 @@ enum wavemon_screen scr_lhist(WINDOW *w_menu)
 	sampling_init(redraw_lhist);
 
 	display_key(w_key);
+}
 
-	while (key < KEY_F(1) || key > KEY_F(10)) {
-		while ((key = wgetch(w_menu)) <= 0)
-			usleep(5000);
+int scr_lhist_loop(WINDOW *w_menu)
+{
+	return wgetch(w_menu);
+}
 
-		/* Keyboard shortcuts */
-		if (key == 'q')
-			key = KEY_F(10);
-		else if (key == 'i')
-			key = KEY_F(1);
-	}
+void scr_lhist_fini(void)
+{
 	sampling_stop();
-
 	delwin(w_lhist);
 	delwin(w_key);
-
-	return key - KEY_F(1);
 }

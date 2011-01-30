@@ -19,29 +19,22 @@
  */
 #include "wavemon.h"
 
-enum wavemon_screen scr_help(WINDOW *w_menu)
+/* GLOBALS */
+static WINDOW *w_help;
+
+void scr_help_init(void)
 {
-	WINDOW *w_help;
-	int key = 0;
-
 	w_help = newwin_title(0, WAV_HEIGHT, "Help", false);
-
 	waddstr_center(w_help, WAV_HEIGHT/2 - 1, "don't panic.");
-
 	wrefresh(w_help);
+}
 
-	while (key < KEY_F(1) || key > KEY_F(10)) {
-		while ((key = wgetch(w_menu)) <= 0)
-			usleep(5000);
+int scr_help_loop(WINDOW *w_menu)
+{
+	return wgetch(w_menu);
+}
 
-		/* Keyboard shortcuts */
-		if (key == 'q')
-			key = KEY_F(10);
-		else if (key == 'i')
-			key = KEY_F(1);
-	}
-
+void scr_help_fini(void)
+{
 	delwin(w_help);
-
-	return key - KEY_F(1);
 }

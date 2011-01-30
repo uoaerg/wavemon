@@ -21,20 +21,68 @@
 #include <locale.h>
 
 /* GLOBALS */
+
+/**
+ * screen switching table
+ * @key_name:	name under which the screen appears in the menu bar
+ * @init:	screen initialisation function pointer
+ * @loop:	screen update function pointer (connected to menu)
+ * @fini:	screen cleanup function pointer
+ */
 static const struct {
-	char key_name[6];
-	enum wavemon_screen (*screen_func)(WINDOW *);
+	const char *const	key_name;
+	void		 	(*init)(void);
+	int			(*loop)(WINDOW *);
+	void			(*fini)(void);
 } screens[] = {
-	[SCR_INFO]	= { "info",	scr_info  },
-	[SCR_LHIST]	= { "lhist",	scr_lhist },
-	[SCR_APLIST]	= { "scan",	scr_aplst },
-	[SCR_EMPTY_F4]	= { "",		NULL	  },
-	[SCR_EMPTY_F5]	= { "",		NULL	  },
-	[SCR_EMPTY_F6]	= { "",		NULL	  },
-	[SCR_CONF]	= { "prefs",	scr_conf  },
-	[SCR_HELP]	= { "help",	scr_help  },
-	[SCR_ABOUT]	= { "about",	scr_about },
-	[SCR_QUIT]	= { "quit",	NULL	  }
+	[SCR_INFO]	= {
+		.key_name = "info",
+		.init	  = scr_info_init,
+		.loop	  = scr_info_loop,
+		.fini	  = scr_info_fini
+	},
+	[SCR_LHIST]	= {
+		.key_name = "lhist",
+		.init	  = scr_lhist_init,
+		.loop	  = scr_lhist_loop,
+		.fini	  = scr_lhist_fini
+	},
+	[SCR_APLIST]	= {
+		.key_name = "scan",
+		.init	  = scr_aplst_init,
+		.loop	  = scr_aplst_loop,
+		.fini	  = scr_aplst_fini
+	},
+	[SCR_EMPTY_F4]	= {
+		.key_name = "",
+	},
+	[SCR_EMPTY_F5]	= {
+		.key_name = "",
+	},
+	[SCR_EMPTY_F6]	= {
+		.key_name = "",
+	},
+	[SCR_CONF]	= {
+		.key_name = "prefs",
+		.init	  = scr_conf_init,
+		.loop	  = scr_conf_loop,
+		.fini	  = scr_conf_fini
+	},
+	[SCR_HELP]	= {
+		.key_name = "help",
+		.init	  = scr_help_init,
+		.loop	  = scr_help_loop,
+		.fini	  = scr_help_fini
+	},
+	[SCR_ABOUT]	= {
+		.key_name = "about",
+		.init	  = scr_about_init,
+		.loop	  = scr_about_loop,
+		.fini	  = scr_about_fini
+	},
+	[SCR_QUIT]	= {
+		.key_name = "quit",
+	}
 };
 
 static void update_menubar(WINDOW *menu, const enum wavemon_screen active)
@@ -110,18 +158,45 @@ int main(int argc, char *argv[])
 	init_pair(CP_SCAN_UNENC,  COLOR_GREEN,	COLOR_BLACK);
 	init_pair(CP_SCAN_NON_AP, COLOR_YELLOW, COLOR_BLACK);
 
-	w_menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
-	nodelay(w_menu, TRUE);
-	keypad(w_menu, TRUE);
+	for (cur = next = conf.startup_scr; next != SCR_QUIT; cur = next) {
 
-	for (cur = SCR_HELP, next = conf.startup_scr; next != SCR_QUIT; ) {
-
-		if (screens[next].screen_func != NULL)
-			cur = next;
+		w_menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
+		nodelay(w_menu, TRUE);
+		keypad(w_menu, TRUE);
 
 		update_menubar(w_menu, cur);
-		next = (*screens[cur].screen_func)(w_menu);
+		(*screens[cur].init)();
+		do {
+			int key = (*screens[cur].loop)(w_menu);
 
+			if (key <= 0)
+				usleep(5000);
+			switch (key) {
+			case KEY_F(1):
+			case KEY_F(2):
+			case KEY_F(3):
+			case KEY_F(7):
+			case KEY_F(8):
+			case KEY_F(9):
+			case KEY_F(10):
+				next = key - KEY_F(1);
+				break;
+			case 'i':
+				next = SCR_INFO;
+				break;
+			case 'q':
+				next = SCR_QUIT;
+				break;
+			case KEY_F(4):
+			case KEY_F(5):
+			case KEY_F(6):
+			default:
+				next = cur;
+			}
+		} while (next == cur);
+
+		delwin(w_menu);
+		(*screens[cur].fini)();
 		clear();
 		refresh();
 	}

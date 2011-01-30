@@ -20,6 +20,8 @@
 #include "wavemon.h"
 
 /* GLOBALS */
+static WINDOW *w_about;
+
 static char *about_lines[] = {
 	"wavemon - status monitor for wireless network devices",
 	"version " PACKAGE_VERSION " (built " BUILD_DATE ")",
@@ -36,11 +38,11 @@ static char *about_lines[] = {
 	PACKAGE_URL
 };
 
-static int *linecd[ARRAY_SIZE(about_lines)];
+static int *linecd[ARRAY_SIZE(about_lines)], i, j;
 
-static void init_scramble(void)
+void scr_about_init(void)
 {
-	int i, j;
+	w_about = newwin_title(0, WAV_HEIGHT, "About", false);
 
 	for (i = 0; i < ARRAY_SIZE(about_lines); i++) {
 		linecd[i] = malloc(strlen(about_lines[i]) * sizeof(int));
@@ -49,17 +51,8 @@ static void init_scramble(void)
 	}
 }
 
-static void free_scramble(void)
+int scr_about_loop(WINDOW *w_menu)
 {
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(about_lines); i++)
-		free(linecd[i]);
-}
-
-static void draw_lines(WINDOW *w_about)
-{
-	int i, j;
 	char buf[0x100];
 
 	for (i = 0; i < ARRAY_SIZE(about_lines); i++) {
@@ -78,33 +71,12 @@ static void draw_lines(WINDOW *w_about)
 		waddstr_center(w_about, (WAV_HEIGHT - ARRAY_SIZE(about_lines))/2 + i, buf);
 	}
 	wrefresh(w_about);
+	return wgetch(w_menu);
 }
 
-enum wavemon_screen scr_about(WINDOW *w_menu)
+void scr_about_fini(void)
 {
-	WINDOW *w_about;
-	int key = 0;
-
-	w_about = newwin_title(0, WAV_HEIGHT, "About", false);
-
-	init_scramble();
-
-	while (key < KEY_F(1) || key > KEY_F(10)) {
-		do {
-			draw_lines(w_about);
-			key = wgetch(w_menu);
-			usleep(5000);
-		} while (key <= 0);
-
-		/* Keyboard shortcuts */
-		if (key == 'q')
-			key = KEY_F(10);
-		else if (key == 'i')
-			key = KEY_F(1);
-	}
-
-	free_scramble();
 	delwin(w_about);
-
-	return key - KEY_F(1);
+	for (i = 0; i < ARRAY_SIZE(about_lines); i++)
+		free(linecd[i]);
 }

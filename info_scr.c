@@ -20,8 +20,8 @@
 #include "iw_if.h"
 
 /* GLOBALS */
-static WINDOW *w_levels, *w_stats;
-
+static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
+static struct timer dyn_updates;
 static struct iw_stat cur;
 
 void sampling_init(void (*sampling_handler)(int))
@@ -505,11 +505,9 @@ static void redraw_stat_levels(int signum)
 	display_stats();
 }
 
-enum wavemon_screen scr_info(WINDOW *w_menu)
+void scr_info_init(void)
 {
-	WINDOW *w_if, *w_info, *w_net;
-	struct timer t1;
-	int key = 0, line = 0;
+	int line = 0;
 
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
@@ -526,29 +524,27 @@ enum wavemon_screen scr_info(WINDOW *w_menu)
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);
+	start_timer(&dyn_updates, conf.info_iv * 1000000);
 	sampling_init(redraw_stat_levels);
+}
 
-	while (key < KEY_F(1) || key > KEY_F(10)) {
+int scr_info_loop(WINDOW *w_menu)
+{
+	if (end_timer(&dyn_updates)) {
 		display_info(w_if, w_info);
 		display_netinfo(w_net);
-
-		start_timer(&t1, conf.info_iv * 1000000);
-		while (!end_timer(&t1) && (key = wgetch(w_menu)) <= 0)
-			sleep(1);
-
-		/* Keyboard shortcuts */
-		if (key == 'q')
-			key = KEY_F(10);
-		else if (key == 'i')
-			key = KEY_F(1);
+		start_timer(&dyn_updates, conf.info_iv * 1000000);
 	}
+	return wgetch(w_menu);
+}
+
+void scr_info_fini(void)
+{
 	sampling_stop();
 
-	delwin(w_if);
-	delwin(w_levels);
-	delwin(w_stats);
-	delwin(w_info);
 	delwin(w_net);
-
-	return key - KEY_F(1);
+	delwin(w_info);
+	delwin(w_stats);
+	delwin(w_levels);
+	delwin(w_if);
 }

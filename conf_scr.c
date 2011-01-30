@@ -19,9 +19,6 @@
  */
 #include "wavemon.h"
 
-/* GLOBALS */
-extern int conf_items;		/* index into array storing menu items */
-
 /* Make configuration screen fit into half of minimum screen width */
 #define CONF_SCREEN_WIDTH	(MIN_SCREEN_COLS / 2)
 /*
@@ -29,6 +26,14 @@ extern int conf_items;		/* index into array storing menu items */
  * border, this is one less than the maximum vertical number of rows.
  */
 #define MAX_NUM_CONF_ROWS	(MAXYLEN - 1)
+
+/* GLOBALS */
+extern int conf_items;		/* index into array storing menu items */
+
+static WINDOW *w_conf, *w_confpad;
+static int first_item, active_item;
+static int num_items, list_offset;
+static struct conf_item *item;
 
 static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
@@ -152,69 +157,62 @@ static int m_pref(WINDOW *w_conf, int list_offset, int active_item, int num_item
 	return list_offset;
 }
 
-enum wavemon_screen scr_conf(WINDOW *w_menu)
+void scr_conf_init(void)
 {
-	WINDOW *w_conf, *w_confpad;
-	int first_item, active_item = 0;
-	int num_items = ll_size(conf_items);
-	int list_offset = 0;
-	int key = 0;
-	struct conf_item *item;
-
 	iw_get_interface_list();	/* may have changed in the meantime */
+
+	num_items = ll_size(conf_items);
 	w_conf    = newwin_title(0, WAV_HEIGHT, "Preferences", false);
 	w_confpad = newpad(num_items + 1, CONF_SCREEN_WIDTH);
 
 	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep)
 		active_item++;
 	first_item = active_item;
+}
 
-	while (key < KEY_F(1) || key > KEY_F(10)) {
-		list_offset = m_pref(w_confpad, list_offset, active_item, num_items);
+int scr_conf_loop(WINDOW *w_menu)
+{
+	int key;
 
-		prefresh(w_confpad, list_offset, 0,
-			 1,       (WAV_WIDTH - CONF_SCREEN_WIDTH)/2,
-			 MAXYLEN, (WAV_WIDTH + CONF_SCREEN_WIDTH)/2);
-		wrefresh(w_conf);
+	list_offset = m_pref(w_confpad, list_offset, active_item, num_items);
 
-		key = wgetch(w_menu);
-		switch (key) {
-		case KEY_DOWN:
-			active_item = select_item(active_item, 1);
-			if (active_item >= num_items) {
-				active_item = first_item;
-				list_offset = 0;
-			}
-			break;
-		case KEY_UP:
-			active_item = select_item(active_item, -1);
-			if (active_item < first_item)
-				active_item = num_items - 1;
-			break;
-		case KEY_LEFT:
-			change_item(active_item, -1);
-			break;
-		case KEY_RIGHT:
-			change_item(active_item, 1);
-			break;
-		case '\r':
-			item = ll_get(conf_items, active_item);
-			if (item->type == t_func) {
-				flash();
-				(*item->v.fp)();
-			}
-			break;
-			/* Keyboard shortcuts */
-		case 'q':
-			key = KEY_F(10);
-			break;
-		case 'i':
-			key = KEY_F(1);
+	prefresh(w_confpad, list_offset, 0,
+		 1,       (WAV_WIDTH - CONF_SCREEN_WIDTH)/2,
+		 MAXYLEN, (WAV_WIDTH + CONF_SCREEN_WIDTH)/2);
+	wrefresh(w_conf);
+
+	key = wgetch(w_menu);
+	switch (key) {
+	case KEY_DOWN:
+		active_item = select_item(active_item, 1);
+		if (active_item >= num_items) {
+			active_item = first_item;
+			list_offset = 0;
+		}
+		break;
+	case KEY_UP:
+		active_item = select_item(active_item, -1);
+		if (active_item < first_item)
+			active_item = num_items - 1;
+		break;
+	case KEY_LEFT:
+		change_item(active_item, -1);
+		break;
+	case KEY_RIGHT:
+		change_item(active_item, 1);
+		break;
+	case '\r':
+		item = ll_get(conf_items, active_item);
+		if (item->type == t_func) {
+			flash();
+			(*item->v.fp)();
 		}
 	}
+	return key;
+}
 
+void scr_conf_fini(void)
+{
 	delwin(w_conf);
 	delwin(w_confpad);
-
-	return key - KEY_F(1);
 }
