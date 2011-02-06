@@ -283,6 +283,15 @@ extern void err_sys(const char *format, ...);
  */
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+static inline void (*xsignal(int signo, void (*handler)(int)))(int)
+{
+	struct sigaction old_sa, sa = { .sa_handler = handler, .sa_flags = 0 };
+
+	if (sigemptyset(&sa.sa_mask) < 0 || sigaction(signo, &sa, &old_sa) < 0)
+		err_sys("xsignal(%d) failed", signo);
+	return old_sa.sa_handler;
+}
+
 static inline size_t argv_count(char **argv)
 {
 	int cnt = 0;

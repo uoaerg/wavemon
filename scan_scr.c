@@ -157,9 +157,7 @@ void scr_aplst_init(void)
 	 * is between a more  complicated (sophisticated) handling of
 	 * signals, and to keep it simple by not allowing to suspend.
 	 */
-	sig_tstp = signal(SIGTSTP, SIG_IGN);
-	if (sig_tstp == SIG_ERR)
-		err_sys("can not block suspend signal in scan window");
+	sig_tstp = xsignal(SIGTSTP, SIG_IGN);
 
 	/* Gathering scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
@@ -184,5 +182,5 @@ void scr_aplst_fini(void)
 {
 	kill(pid, SIGTERM);
 	delwin(w_aplst);
-	signal(SIGTSTP, sig_tstp);
+	xsignal(SIGTSTP, sig_tstp);
 }

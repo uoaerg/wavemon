@@ -29,11 +29,11 @@ void sampling_init(void (*sampling_handler)(int))
 	struct itimerval i;
 	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
 
-	signal(SIGALRM, SIG_IGN);
+	xsignal(SIGALRM, SIG_IGN);
 	iw_getinf_range(if_list[conf.if_idx], &cur.range);
 	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
 	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
-	signal(SIGALRM, sampling_handler);
+	xsignal(SIGALRM, sampling_handler);
 
 	(*sampling_handler)(0);
 	setitimer(ITIMER_REAL, &i, NULL);

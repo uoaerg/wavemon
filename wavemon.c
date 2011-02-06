@@ -116,9 +116,8 @@ int main(int argc, char *argv[])
 	if (!isatty(STDIN_FILENO))
 		errx(1, "input is not from a terminal");
 
-	if (signal(SIGWINCH, sig_winch) == SIG_ERR	||
-	    signal(SIGCHLD, SIG_IGN) == SIG_ERR)
-		err(1, "cannot install signal handlers");
+	xsignal(SIGWINCH, sig_winch);
+	xsignal(SIGCHLD, SIG_IGN);
 
 	/* honour numeric separators if the environment defines them */
 	setlocale(LC_NUMERIC, "");
