@@ -48,6 +48,7 @@ struct wavemon_conf conf = {
 	.slotsize		= 4,
 	.meter_decay		= 0,
 
+	.check_geometry		= false,
 	.cisco_mac		= false,
 	.override_bounds	= false,
 	.random			= false,
@@ -75,6 +76,7 @@ static void usage(void)
 {
 	printf("Usage: wavemon [ -dhlrv ] [ -i ifname ]\n\n");
 	printf("  -d            Dump the current device status to stdout and exit\n");
+	printf("  -g            Ensure screen is sufficiently dimensioned\n");
 	printf("  -h            This help screen\n");
 	printf("  -i <ifname>   Use specified network interface (default: auto)\n");
 	printf("  -r            Generate random levels (for testing purposes)\n");
@@ -85,11 +87,14 @@ static void getargs(int argc, char *argv[])
 {
 	int arg;
 
-	while ((arg = getopt(argc, argv, "dhi:rv")) >= 0)
+	while ((arg = getopt(argc, argv, "dghi:rv")) >= 0)
 		switch (arg) {
 		case 'd':
 			dump_parameters();
 			exit(EXIT_SUCCESS);
+		case 'g':
+			conf.check_geometry = true;
+			break;
 		case 'h':
 			usage();
 			exit(EXIT_SUCCESS);

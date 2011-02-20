@@ -1,4 +1,4 @@
-.TH wavemon 1 "December 2010" Linux "User Manuals"
+.TH wavemon 1 "February 2011" Linux "User Manuals"
 .SH NAME
 wavemon \- a wireless network monitor
 .SH SYNOPSIS
@@ -108,6 +108,10 @@ enabled by installing \fIwavemon\fR setuid-root.
 override autodetection and use the specified \fIinterface\fR.
 .IP "\fB\-d\fR"
 dump interface parameters to stdout and exit.
+.IP "\fB\-g\fR"
+check screen \fIgeometry\fR: a minimum size is required for proper display; this flag
+adds a check to ensure it is sufficiently large. Enable this if window does not display
+properly.
 .IP "\fB\-r\fR"
 generate random levels (for testing purposes).
 .IP "\fB\-h\fR"

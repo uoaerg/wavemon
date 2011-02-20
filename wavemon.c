@@ -123,7 +123,8 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 
 static void check_geometry(void)
 {
-	if (LINES < MIN_SCREEN_LINES || COLS < MIN_SCREEN_COLS)
+	if (conf.check_geometry &&
+	    (LINES < MIN_SCREEN_LINES || COLS < MIN_SCREEN_COLS))
 		err_quit("need at least a screen of %ux%u, have only %ux%u",
 			    MIN_SCREEN_LINES, MIN_SCREEN_COLS, LINES, COLS);
 }

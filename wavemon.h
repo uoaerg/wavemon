@@ -118,7 +118,8 @@ extern struct wavemon_conf {
 		meter_decay;
 
 	/* Boolean values */
-	int	cisco_mac,		/* Cisco-style MAC addresses */
+	int	check_geometry,		/* ensure window is large enough */
+		cisco_mac,		/* Cisco-style MAC addresses */
 		random,			/* random signals */
 		override_bounds;	/* override autodetection */
 
