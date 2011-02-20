@@ -19,6 +19,7 @@
  */
 #include "wavemon.h"
 #include <locale.h>
+#include <setjmp.h>
 
 /* GLOBALS */
 
@@ -85,11 +86,29 @@ static const struct {
 	}
 };
 
-static void update_menubar(WINDOW *menu, const enum wavemon_screen active)
+/*
+ * SIGWINCH handling with buffer synchronisation variable
+ */
+static sigjmp_buf		env_winch;
+static volatile sig_atomic_t	env_winch_ready;
+
+static void sig_winch(int signo)
 {
+	if (env_winch_ready) {
+		env_winch_ready = false;
+		siglongjmp(env_winch, 1);
+	}
+}
+
+static WINDOW *init_menubar(const enum wavemon_screen active)
+{
+	WINDOW *menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
 	enum wavemon_screen cur;
 
-	for (cur = SCR_INFO, wmove(menu, 0, 0); cur <= SCR_QUIT; cur++) {
+	nodelay(menu, TRUE);
+	keypad(menu, TRUE);
+	wmove(menu, 0, 0);
+	for (cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
 		wattrset(menu, A_REVERSE | A_BOLD);
 		wprintw(menu, "F%d", cur + 1);
 
@@ -98,35 +117,34 @@ static void update_menubar(WINDOW *menu, const enum wavemon_screen active)
 		wprintw(menu, "%-6s", screens[cur].key_name);
 	}
 	wrefresh(menu);
+
+	return menu;
 }
 
-static void sig_winch(int signo)
+static void check_geometry(void)
 {
-	endwin();
-	errx(1, "under the pain of death, thou shaltst not resize thyne window");
+	if (LINES < MIN_SCREEN_LINES || COLS < MIN_SCREEN_COLS)
+		err_quit("need at least a screen of %ux%u, have only %ux%u",
+			    MIN_SCREEN_LINES, MIN_SCREEN_COLS, LINES, COLS);
 }
 
 int main(int argc, char *argv[])
 {
 	WINDOW *w_menu;
 	enum wavemon_screen cur, next;
+	sigset_t blockmask, oldmask;
 
 	getconf(argc, argv);
 
 	if (!isatty(STDIN_FILENO))
 		errx(1, "input is not from a terminal");
 
-	xsignal(SIGWINCH, sig_winch);
-	xsignal(SIGCHLD, SIG_IGN);
-
 	/* honour numeric separators if the environment defines them */
 	setlocale(LC_NUMERIC, "");
 
 	/* initialize the ncurses interface */
 	initscr();
-	if (LINES < MIN_SCREEN_LINES || COLS < MIN_SCREEN_COLS)
-		err_quit("need at least a screen of %ux%u, have only %ux%u",
-			    MIN_SCREEN_LINES, MIN_SCREEN_COLS, LINES, COLS);
+	check_geometry();
 	cbreak();
 	noecho();
 	nonl();
@@ -157,45 +175,70 @@ int main(int argc, char *argv[])
 	init_pair(CP_SCAN_UNENC,  COLOR_GREEN,	COLOR_BLACK);
 	init_pair(CP_SCAN_NON_AP, COLOR_YELLOW, COLOR_BLACK);
 
-	for (cur = next = conf.startup_scr; next != SCR_QUIT; cur = next) {
+	/* Override signal handlers installed during ncurses initialisation. */
+	xsignal(SIGCHLD, SIG_IGN);
+	xsignal(SIGWINCH, sig_winch);	/* triggers only when env_winch_ready */
+	sigemptyset(&blockmask);
+	sigaddset(&blockmask, SIGWINCH);
 
-		w_menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
-		nodelay(w_menu, TRUE);
-		keypad(w_menu, TRUE);
+	for (cur = conf.startup_scr; cur != SCR_QUIT; cur = next) {
 
-		update_menubar(w_menu, cur);
+		if (sigprocmask(SIG_BLOCK, &blockmask, &oldmask) < 0)
+			err_sys("cannot block SIGWINCH");
+
+		next = cur;
+		w_menu = init_menubar(cur);
 		(*screens[cur].init)();
-		do {
-			int key = (*screens[cur].loop)(w_menu);
 
-			if (key <= 0)
-				usleep(5000);
-			switch (key) {
-			case KEY_F(1):
-			case KEY_F(2):
-			case KEY_F(3):
-			case KEY_F(7):
-			case KEY_F(8):
-			case KEY_F(9):
-			case KEY_F(10):
-				next = key - KEY_F(1);
-				break;
-			case 'i':
-				next = SCR_INFO;
-				break;
-			case 'q':
-				next = SCR_QUIT;
-				break;
-			case KEY_F(4):
-			case KEY_F(5):
-			case KEY_F(6):
-			default:
-				next = cur;
-			}
-		} while (next == cur);
+		if (sigprocmask(SIG_SETMASK, &oldmask, NULL) < 0)
+			err_sys("cannot unblock SIGWINCH");
+
+		if (sigsetjmp(env_winch, true) == 0) {
+			env_winch_ready = true;
+
+			do {
+				int key = (*screens[cur].loop)(w_menu);
+
+				if (key <= 0)
+					usleep(5000);
+				switch (key) {
+				case KEY_F(1):
+				case KEY_F(2):
+				case KEY_F(3):
+				case KEY_F(7):
+				case KEY_F(8):
+				case KEY_F(9):
+				case KEY_F(10):
+					next = key - KEY_F(1);
+					break;
+				case 'i':
+					next = SCR_INFO;
+					break;
+				case 'q':
+					next = SCR_QUIT;
+					break;
+				default:
+					continue;
+				}
+			} while (next == cur);
+		}
 
 		delwin(w_menu);
 		(*screens[cur].fini)();
+
+		/*
+		 * next = cur is set in the protected critical section before
+		 * sigsetjmp. Due to the loop condition, it can not occur when
+		 * no SIGWINCH occurred, hence it indicates a resizing event.
+		 */
+		if (next == cur) {
+			struct winsize size;
+
+			if (ioctl(STDIN_FILENO, TIOCGWINSZ, &size) < 0)
+				err_sys("can not determine terminal size");
+			resizeterm(size.ws_row, size.ws_col);
+			check_geometry();
+		}
 		clear();
 		refresh();
 	}

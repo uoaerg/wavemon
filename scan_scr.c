@@ -102,6 +102,13 @@ static void display_aplist(WINDOW *w_aplst)
 				if_list[conf.if_idx], strerror(errno));
 		else
 			strcat(s, "- setting it up ...");
+	} else if (errno == EFAULT) {
+		/*
+		 * EFAULT can occur after a window resizing event and is temporary.
+		 * It may also occur when the interface is down, hence we need to
+		 * test the interface status first.
+		 */
+		goto done;
 	} else if (errno) {
 		sprintf(s, "No scan on %s: %s", if_list[conf.if_idx], strerror(errno));
 	} else {
