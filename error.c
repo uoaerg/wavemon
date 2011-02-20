@@ -69,8 +69,10 @@ void err_quit(const char *format, ...)
 	endwin();
 
 	va_start(argp, format);
-	verrx(EXIT_FAILURE, format, argp);
+	vwarnx(format, argp);
 	va_end(argp);
+	/* Exit via kill to terminate any child processes. */
+	kill(0, SIGTERM);
 }
 
 /*
@@ -83,6 +85,7 @@ void err_sys(const char *format, ...)
 	endwin();
 
 	va_start(argp, format);
-	verr(EXIT_FAILURE, format, argp);
+	vwarn(format, argp);
 	va_end(argp);
+	kill(0, SIGTERM);
 }
