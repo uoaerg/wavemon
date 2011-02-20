@@ -115,13 +115,13 @@ static FILE *open_proc_net(const char *filename)
 }
 
 /**
- * iw_get_interface_list  -  Populate array of wireless interfaces.
+ * iw_get_interface_list  -  Populate NULL-terminated array of WiFi interfaces.
  * Rebuild if already set, exit if no interfaces present.
  */
 void iw_get_interface_list(void)
 {
-	char *lp, tmp[IFNAMSIZ], *old_if = NULL;
-	int idx, nifs = 1;		/* if_list[nifs-1] = NULL */
+	char *p, tmp[IFNAMSIZ], *old_if = NULL;
+	int idx, nifs;
 	FILE *fp = open_proc_net("wireless");
 
 	if (if_list) {
@@ -132,20 +132,29 @@ void iw_get_interface_list(void)
 				free(if_list[idx]);
 		free(if_list);
 	}
-	for (if_list = NULL, conf.if_idx = 0; fgets(tmp, sizeof(tmp), fp); )
-		if ((lp = strchr(tmp, ':'))) {
-			*lp = '\0';
-			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
-			if_list[nifs-1] = strdup(tmp + strspn(tmp, " "));
-			if (old_if && strcmp(if_list[nifs-1], old_if) == 0)
-				conf.if_idx = nifs - 1;
-			if_list[nifs++] = NULL;
-		}
-	if (if_list == NULL)
+
+	for (nifs = 0; fgets(tmp, sizeof(tmp), fp); )
+		nifs += strchr(tmp, ':') != NULL;
+	if (!nifs)
 		err_quit("no wireless interfaces found!");
-	if (old_if)
-		free(old_if);
+	rewind(fp);
+
+	if_list = calloc(nifs + 1, sizeof(*if_list));
+	if (if_list == NULL)
+		err_sys("unable to memorize %d interfaces", nifs);
+
+	for (conf.if_idx = idx = 0; fgets(tmp, sizeof(tmp), fp); ) {
+		if ((p = strchr(tmp, ':'))) {
+			for (*p = '\0', p = tmp; isspace(*p); )
+				p++;
+			if (old_if && strcmp(old_if, p) == 0)
+				conf.if_idx = idx;
+			if_list[idx++] = strdup(p);
+		}
+	}
+	assert(idx == nifs);
 	fclose(fp);
+	free(old_if);
 }
 
 void if_getstat(char *ifname, struct if_stat *stat)
@@ -191,7 +200,7 @@ void dyn_info_get(struct iw_dyn_info *info, char *ifname, struct iw_range *ir)
 	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
 
 	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
-		err_sys("can not open device '%s'", iwr.u.name);
+		err_sys("can not open device '%s'", ifname);
 	strncpy(info->name, iwr.u.name, IFNAMSIZ);
 
 	iwr.u.essid.pointer = (caddr_t) info->essid;

@@ -565,6 +565,9 @@ struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
 	 */
 	char scan_buf[0xffff];
 
+	/* We are checking errno when returning NULL, so reset it here */
+	errno = 0;
+
 	memset(&wrq, 0, sizeof(wrq));
 	strncpy(wrq.ifr_ifrn.ifrn_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCSIWSCAN, &wrq) < 0)
@@ -659,4 +662,3 @@ void free_scan_result(struct scan_result *head)
 		free(head);
 	}
 }
-
