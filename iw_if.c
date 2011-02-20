@@ -48,8 +48,8 @@ bool if_is_up(int skfd, const char *ifname)
 	return if_get_flags(skfd, ifname) & IFF_UP;
 }
 
-/* Bring @ifname up if not already up. */
-void if_set_up(int skfd, const char *ifname)
+/** Bring @ifname up if not already up. Return 0 if ok, < 0 on error. */
+int if_set_up(int skfd, const char *ifname)
 {
 	struct ifreq ifr;
 
@@ -58,11 +58,10 @@ void if_set_up(int skfd, const char *ifname)
 
 	ifr.ifr_flags = if_get_flags(skfd, ifname);
 	if (ifr.ifr_flags & IFF_UP)
-		return;
+		return 0;
 
 	ifr.ifr_flags |= IFF_UP;
-	if (ioctl(skfd, SIOCSIFFLAGS, &ifr) < 0)
-		err_sys("can not set interface flags for %s", ifname);
+	return ioctl(skfd, SIOCSIFFLAGS, &ifr);
 }
 
 /* Interface information */

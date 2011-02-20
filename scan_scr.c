@@ -94,13 +94,14 @@ static void display_aplist(WINDOW *w_aplst)
 		/* Ignore temporary errors */
 		goto done;
 	} else if (!if_is_up(skfd, if_list[conf.if_idx])) {
-			sprintf(s, "Interface '%s' is down ", if_list[conf.if_idx]);
-		if (has_net_admin_capability()) {
-			if_set_up(skfd, if_list[conf.if_idx]);
-			strcat(s, "- setting it up ...");
-		} else {
+		sprintf(s, "Interface '%s' is down ", if_list[conf.if_idx]);
+		if (!has_net_admin_capability())
 			strcat(s, "- can not scan");
-		}
+		else if (if_set_up(skfd, if_list[conf.if_idx]) < 0)
+			sprintf(s, "Can not bring up '%s' for scanning: %s",
+				if_list[conf.if_idx], strerror(errno));
+		else
+			strcat(s, "- setting it up ...");
 	} else if (errno) {
 		sprintf(s, "No scan on %s: %s", if_list[conf.if_idx], strerror(errno));
 	} else {

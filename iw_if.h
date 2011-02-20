@@ -70,7 +70,7 @@ struct if_info {
 	short			flags;
 };
 extern bool if_is_up(int skfd, const char *ifname);
-extern void if_set_up(int skfd, const char *ifname);
+extern int  if_set_up(int skfd, const char *ifname);
 extern void if_getinf(char *ifname, struct if_info *info);
 
 /**
