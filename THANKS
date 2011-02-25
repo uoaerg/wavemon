@@ -27,3 +27,6 @@ extract the scan data is from wireless tools 30) and also kindly provided
 an earlier wavemon prototype with scanning support.
 
 Thanks to Matt who helped fixing several bugs in 0.7.0.
+
+Robert M. Stockmann and Koniu helped with bug fixes in 0.7.1; thanks to Koniu
+support for window resizing got started.

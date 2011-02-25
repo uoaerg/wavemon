@@ -2,6 +2,34 @@ NEWS
 ====
 
 --------------------
+0.7.2 (2011-02-25)
+--------------------
+  * General:
+    - support SIGWINCH for resizing (thanks to Koniu)
+    - reorganized screen handling to support resizing
+    - make geometry checking optional and off by default
+    - allow suspending wavemon (CTRL-Z) on most screens
+  * Info screen:
+    - suppress obvious broadcast address (deriving from prefix)
+    - special case for "no interface address assigned"
+    - display interface MTU if different from the default value
+    - show interface flags and TX queue length if enough space
+  * Scan window:
+    - set up enable interface if it is down (otherwise no scan)
+    - drop support for wireless extensions < 18 (minimum requirement)
+    - clean up child scan process on error (avoid garbled screen)
+  * Configuration screen:
+    - support 'Cisco-style' MAC addresses (dots rather than colons)
+  * Fixes:
+    - do not report zero bitrates (Info screen, 802.11n interface)
+    - remove unused timer in Scan window (data sampling is now
+      confined to info/histogram screens)
+    - fixed various compiler warnings
+    - fixed several problems in and improved the random generator
+    - use sigaction() rather than signal()
+    - miscellaneous reorganization of the configuration menu code
+
+--------------------
 0.7.1 (2010-12-24)
 --------------------
   * Scan window:
