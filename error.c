@@ -59,6 +59,34 @@ void err_msg(const char *format, ...)
 	sleep(WARN_DISPLAY_DELAY);
 }
 
+/**
+ * terminate_all_processes  -  terminate wavemon and reset screen
+ * @fmt:     printf-like format string
+ * @strerr:  set to non-0 if termination is due to failed system call
+ * @ap:	     argument list for @fmt
+ */
+static void terminate_all_processes(const char *fmt, int strerr, va_list ap)
+{
+	int saved_errno = strerr ? errno : 0;
+	/*
+	 * wavemon runs in its own process group. Block TERM in this process,
+	 * but send to all others (parent or child), which by default do not
+	 * block TERM.
+	 */
+	xsignal(SIGTERM, SIG_IGN);
+	endwin();
+	kill(0, SIGTERM);
+	reset_shell_mode();
+	if (saved_errno) {
+		errno = saved_errno;
+		vwarn(fmt, ap);
+	} else {
+		vwarnx(fmt, ap);
+	}
+	va_end(ap);
+	exit(EXIT_FAILURE);
+}
+
 /*
  * Abort on fatal error unrelated to system call.
  */
@@ -66,13 +94,8 @@ void err_quit(const char *format, ...)
 {
 	va_list argp;
 
-	endwin();
-
 	va_start(argp, format);
-	vwarnx(format, argp);
-	va_end(argp);
-	/* Exit via kill to terminate any child processes. */
-	kill(0, SIGTERM);
+	terminate_all_processes(format, false, argp);
 }
 
 /*
@@ -82,10 +105,6 @@ void err_sys(const char *format, ...)
 {
 	va_list argp;
 
-	endwin();
-
 	va_start(argp, format);
-	vwarn(format, argp);
-	va_end(argp);
-	kill(0, SIGTERM);
+	terminate_all_processes(format, true, argp);
 }
