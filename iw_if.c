@@ -369,7 +369,6 @@ static int rand_wave(float *rlvl, float *step, float *rlvl_next, float range)
 static void iw_getstat_random(struct iw_stat *iw)
 {
 	static float rnd_sig, snext, sstep = 1.0, rnd_noise, nnext, nstep = 1.0;
-	uint8_t smin = dbm_to_u8(conf.sig_min), smax = dbm_to_u8(conf.sig_max);
 
 	rand_wave(&rnd_sig, &sstep, &snext, conf.sig_max - conf.sig_min);
 	rand_wave(&rnd_noise, &nstep, &nnext, conf.noise_max - conf.noise_min);
@@ -377,11 +376,12 @@ static void iw_getstat_random(struct iw_stat *iw)
 	if (iw->range.max_qual.qual == 0)
 		iw->range.max_qual.qual = WAVE_RAND_QUAL_MAX;
 
-	iw->stat.qual.level	= smin + rnd_sig;
-	iw->stat.qual.noise	= dbm_to_u8(conf.noise_min) + rnd_noise;
-	iw->stat.qual.qual	= map_range(iw->stat.qual.level, smin, smax,
-					    0, iw->range.max_qual.qual);
+	iw->stat.qual.level	= dbm_to_u8(conf.sig_min + rnd_sig);
+	iw->stat.qual.noise	= dbm_to_u8(conf.noise_min + rnd_noise);
 	iw->stat.qual.updated	= IW_QUAL_DBM;
+	iw->stat.qual.qual	= map_range(conf.sig_min + rnd_sig,
+					    conf.sig_min, conf.sig_max,
+					    0, iw->range.max_qual.qual);
 }
 
 static void iw_getstat_real(struct iw_statistics *stat)
