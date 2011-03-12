@@ -165,9 +165,11 @@ void scr_conf_init(void)
 	w_conf    = newwin_title(0, WAV_HEIGHT, "Preferences", false);
 	w_confpad = newpad(num_items + 1, CONF_SCREEN_WIDTH);
 
-	while ((item = ll_get(conf_items, active_item)) && item->type == t_sep)
-		active_item++;
-	first_item = active_item;
+	if (first_item)			/* already initialized */
+		return;
+	while ((item = ll_get(conf_items, first_item)) && item->type == t_sep)
+		first_item++;
+	active_item = first_item;
 }
 
 int scr_conf_loop(WINDOW *w_menu)
