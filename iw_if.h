@@ -71,7 +71,7 @@ struct if_info {
 };
 extern bool if_is_up(int skfd, const char *ifname);
 extern int  if_set_up(int skfd, const char *ifname);
-extern void if_getinf(char *ifname, struct if_info *info);
+extern void if_getinf(const char *ifname, struct if_info *info);
 
 /**
  * struct iw_key  -  Encoding information
@@ -174,7 +174,8 @@ static inline uint8_t dyn_info_wep_keys(struct iw_dyn_info *info)
 				   info->keys[i].size == 13;
 	return num_wep;
 }
-extern void dyn_info_get(struct iw_dyn_info *, char *ifname, struct iw_range *);
+extern void dyn_info_get(struct iw_dyn_info *info,
+			 const char *ifname, struct iw_range *ir);
 extern void dyn_info_cleanup(struct iw_dyn_info *info);
 
 
@@ -188,7 +189,7 @@ struct if_stat {
 				tx_bytes;
 };
 
-extern void if_getstat(char *ifname, struct if_stat *stat);
+extern void if_getstat(const char *ifname, struct if_stat *stat);
 
 /*
  *	 Structs to communicate WiFi statistics
@@ -200,7 +201,7 @@ struct iw_levelstat {
 };
 #define IW_LSTAT_INIT { 0, 0, IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID }
 
-extern void iw_getinf_range(char *ifname, struct iw_range *range);
+extern void iw_getinf_range(const char *ifname, struct iw_range *range);
 extern void iw_sanitize(struct iw_range *range,
 			struct iw_quality *qual,
 			struct iw_levelstat *dbm);
@@ -250,7 +251,7 @@ struct scan_result {
 
 	struct scan_result *next;
 };
-extern struct scan_result *get_scan_list(int skfd, char *ifname, int weversion);
+extern struct scan_result *get_scan_list(int skfd, const char *ifname, int ver);
 extern void free_scan_result(struct scan_result *head);
 
 

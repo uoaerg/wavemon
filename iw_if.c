@@ -24,9 +24,6 @@
 /* Fallback maximum quality level when using random samples. */
 #define WAVE_RAND_QUAL_MAX	100
 
-/* GLOBALS */
-char **if_list = NULL;		/* array of WiFi interface names */
-
 /*
  * Obtain network device information
  */
@@ -65,7 +62,7 @@ int if_set_up(int skfd, const char *ifname)
 }
 
 /* Interface information */
-void if_getinf(char *ifname, struct if_info *info)
+void if_getinf(const char *ifname, struct if_info *info)
 {
 	struct ifreq ifr;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -114,49 +111,27 @@ static FILE *open_proc_net(const char *filename)
 }
 
 /**
- * iw_get_interface_list  -  Populate NULL-terminated array of WiFi interfaces.
- * Rebuild if already set, exit if no interfaces present.
+ * iw_get_interface_list  -  Return NULL-terminated array of WiFi interfaces.
  */
-void iw_get_interface_list(void)
+char **iw_get_interface_list(void)
 {
-	char *p, tmp[IFNAMSIZ], *old_if = NULL;
-	int idx, nifs;
+	char **if_list = NULL, *p, tmp[BUFSIZ];
+	int  nifs = 1;		/* if_list[nifs-1] = NULL */
 	FILE *fp = open_proc_net("wireless");
 
-	if (if_list) {
-		for (idx = 0; if_list[idx]; idx++)
-			if (idx == conf.if_idx)
-				old_if = if_list[idx];
-			else
-				free(if_list[idx]);
-		free(if_list);
-	}
-
-	for (nifs = 0; fgets(tmp, sizeof(tmp), fp); )
-		nifs += strchr(tmp, ':') != NULL;
-	if (!nifs)
-		err_quit("no wireless interfaces found!");
-	rewind(fp);
-
-	if_list = calloc(nifs + 1, sizeof(*if_list));
-	if (if_list == NULL)
-		err_sys("unable to memorize %d interfaces", nifs);
-
-	for (conf.if_idx = idx = 0; fgets(tmp, sizeof(tmp), fp); ) {
+	while (fgets(tmp, sizeof(tmp), fp))
 		if ((p = strchr(tmp, ':'))) {
+			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
 			for (*p = '\0', p = tmp; isspace(*p); )
 				p++;
-			if (old_if && strcmp(old_if, p) == 0)
-				conf.if_idx = idx;
-			if_list[idx++] = strdup(p);
+			if_list[nifs-1] = strdup(p);
+			if_list[nifs++] = NULL;
 		}
-	}
-	assert(idx == nifs);
 	fclose(fp);
-	free(old_if);
+	return if_list;
 }
 
-void if_getstat(char *ifname, struct if_stat *stat)
+void if_getstat(const char *ifname, struct if_stat *stat)
 {
 	char line[0x100];
 	unsigned long d;
@@ -187,7 +162,8 @@ void if_getstat(char *ifname, struct if_stat *stat)
  * @ifname: interface name
  * @if:	    range information to use (number of encryption keys)
  */
-void dyn_info_get(struct iw_dyn_info *info, char *ifname, struct iw_range *ir)
+void dyn_info_get(struct iw_dyn_info *info,
+		  const char *ifname, struct iw_range *ir)
 {
 	struct iwreq iwr;
 	int i, skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -321,7 +297,7 @@ void dyn_info_cleanup(struct iw_dyn_info *info)
 /*
  * get range information
  */
-void iw_getinf_range(char *ifname, struct iw_range *range)
+void iw_getinf_range(const char *ifname, struct iw_range *range)
 {
 	struct iwreq iwr;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -395,7 +371,7 @@ static void iw_getstat_real(struct iw_statistics *stat)
 	wrq.u.data.pointer = (caddr_t) stat;
 	wrq.u.data.length  = sizeof(*stat);
 	wrq.u.data.flags   = 0;
-	strncpy(wrq.ifr_name, if_list[conf.if_idx], IFNAMSIZ);
+	strncpy(wrq.ifr_name, conf_ifname(), IFNAMSIZ);
 
 	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0) {
 		/*
@@ -490,13 +466,13 @@ void dump_parameters(void)
 	struct if_stat nstat;
 	int i;
 
-	iw_getinf_range(if_list[conf.if_idx], &iw.range);
-	dyn_info_get(&info, if_list[conf.if_idx], &iw.range);
+	iw_getinf_range(conf_ifname(), &iw.range);
+	dyn_info_get(&info, conf_ifname(), &iw.range);
 	iw_getstat(&iw);
-	if_getstat(if_list[conf.if_idx], &nstat);
+	if_getstat(conf_ifname(), &nstat);
 
 	printf("\n");
-	printf("Configured device: %s (%s)\n", if_list[conf.if_idx], info.name);
+	printf("Configured device: %s (%s)\n", conf_ifname(), info.name);
 	printf("         Security: %s\n", iw.range.enc_capa ?
 			format_enc_capab(iw.range.enc_capa, ", ") : "WEP");
 	if (iw.range.num_encoding_sizes &&

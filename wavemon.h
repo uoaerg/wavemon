@@ -103,7 +103,7 @@ static inline void threshold_action(enum threshold_action action)
  * Global in-memory representation of current wavemon configuration state
  */
 extern struct wavemon_conf {
-	int	if_idx;			/* Index into if_list */
+	int	if_idx;			/* Index into interface list */
 
 	int	stat_iv,
 		info_iv;
@@ -256,8 +256,9 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
 /*
  *	Wireless interfaces
  */
-extern char **if_list;
-extern void iw_get_interface_list(void);
+extern const char *conf_ifname(void);
+extern void conf_get_interface_list(void);
+extern char **iw_get_interface_list(void);
 extern void dump_parameters(void);
 
 /*

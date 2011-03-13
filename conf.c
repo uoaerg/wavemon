@@ -22,6 +22,7 @@
 #include <sys/types.h>
 
 /* GLOBALS */
+static char **if_list;		/* array of WiFi interface names */
 int conf_items;			/* index into array storing menu items */
 
 static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
@@ -114,6 +115,39 @@ static void getargs(int argc, char *argv[])
 			/* bad argument. bad bad */
 			exit(EXIT_FAILURE);
 		}
+}
+
+/** Populate interface list */
+void conf_get_interface_list(void)
+{
+	char *old_if = NULL;
+	int idx;
+
+	if (if_list) {
+		for (idx = 0; if_list[idx]; idx++)
+			if (idx == conf.if_idx)
+				old_if = if_list[idx];
+			else
+				free(if_list[idx]);
+		free(if_list);
+	}
+	if_list = iw_get_interface_list();
+	if (if_list == NULL)
+		err_quit("no wireless interfaces found!");
+
+	conf.if_idx = 0;
+	if (old_if) {
+		idx = argv_find(if_list, old_if);
+		if (idx > 0)
+			conf.if_idx = idx;
+		free(old_if);
+	}
+}
+
+/** Return currently selected interface name */
+const char *conf_ifname(void)
+{
+	return if_list ? if_list[conf.if_idx] : "(none)";
 }
 
 /* Return full path of rcfile. Allocates string which must bee free()-d. */
@@ -520,7 +554,7 @@ static void init_conf_items(void)
 
 void getconf(int argc, char *argv[])
 {
-	iw_get_interface_list();
+	conf_get_interface_list();
 	init_conf_items();
 	read_cf();
 	getargs(argc, argv);

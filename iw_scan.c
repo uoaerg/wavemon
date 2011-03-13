@@ -553,7 +553,7 @@ static int cmp_scan_sig(struct scan_result *a, struct scan_result *b)
 	return a->qual.level - b->qual.level;
 }
 
-struct scan_result *get_scan_list(int skfd, char *ifname, int we_version)
+struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 {
 	struct scan_result *head = NULL;
 	struct iwreq wrq;
