@@ -139,7 +139,6 @@ int main(int argc, char *argv[])
 
 	if (!isatty(STDIN_FILENO))
 		errx(1, "input is not from a terminal");
-	setpgid(0, 0);
 
 	/* honour numeric separators if the environment defines them */
 	setlocale(LC_NUMERIC, "");
