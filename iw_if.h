@@ -483,7 +483,7 @@ static inline int freq_to_channel(double freq, const struct iw_range *range)
 static inline char *format_key(const struct iw_key *const iwk)
 {
 	static char buf[128];
-	int i, is_printable, len = 0;
+	int i, is_printable = 0, len = 0;
 
 	/* Over-estimate key size: 2 chars per hex digit plus '-' */
 	assert(iwk != NULL && iwk->size * 3 < sizeof(buf));
