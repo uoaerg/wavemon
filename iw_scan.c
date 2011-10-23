@@ -547,10 +547,16 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_result *sr)
 }
 /*----------------- End of code copied from iwlib -----------------------*/
 
-/* Return >= 0 if a's signal >= b's signal, < 0 otherwise */
-static int cmp_scan_sig(struct scan_result *a, struct scan_result *b)
+/* Order by descending signal strength. */
+static int cmp_sig(const struct scan_result *a, const struct scan_result *b)
 {
 	return a->qual.level - b->qual.level;
+}
+
+/* Order by ascending frequency first, then by descending signal strength. */
+static int cmp_freq_sig(const struct scan_result *a, const struct scan_result *b)
+{
+	return a->freq == b->freq ? cmp_sig(a, b) : a->freq < b->freq;
 }
 
 struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
@@ -558,6 +564,8 @@ struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 	struct scan_result *head = NULL;
 	struct iwreq wrq;
 	int wait, waited = 0;
+	scan_cmp_func cmp_scan_result = cmp_freq_sig;
+
 	/*
 	 * Some drivers may return very large scan results, either because there
 	 * are many cells, or there are many large elements. Do not bother to
@@ -641,8 +649,7 @@ struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 
 				f = 0;
 
-				/* Sort in descending order of signal strength */
-				while (cur && cmp_scan_sig(cur, new) > 0)
+				while (cur && cmp_scan_result(cur, new) > 0)
 					prev = &cur->next, cur = cur->next;
 
 				*prev     = new;

@@ -254,6 +254,7 @@ struct scan_result {
 extern struct scan_result *get_scan_list(int skfd, const char *ifname, int ver);
 extern void free_scan_result(struct scan_result *head);
 
+typedef int (*scan_cmp_func)(const struct scan_result *, const struct scan_result *);
 
 /*
  *	Helper routines
