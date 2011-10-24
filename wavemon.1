@@ -74,12 +74,13 @@ SNR graph appear.
 .B Scan window (F3)
 A periodically updated network scan, showing access points and other
 wireless clients, ordered by frequency and then descending order of signal
-quality. Entries consist of a coloured header and a line with signal/channel
-information. A green/red header indicates an (un-)encrypted access point,
-the colour changes to yellow for non-access points (in this case the mode
-is shown in the subsequent line). The uncoloured information line below
-lists relative and absolute signal strengths, channel, frequency, and the
-mode if the node is not an access point.
+quality. Each entry starts with the ESSID, followed by the colour-coded MAC
+address and the signal/channel information. A green/red MAC address indicates
+an (un-)encrypted access point, the colour changes to yellow for non-access
+points (in this case the mode is shown at the end of the line). The
+uncoloured information following the MAC address lists relative and
+absolute signal strengths, channel, frequency, and the mode if the node
+is not an access point.
 
 Please note that gathering meaningful scan data can take several seconds. Partly
 for this reason, the Scan window is the only screen that can not be suspended

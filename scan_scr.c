@@ -36,7 +36,7 @@ static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
 	iw_sanitize(iw_range, &cur->qual, &dbm);
 
 	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
-		len += snprintf(buf + len, buflen - len, "%.0f%%, %.0f dBm",
+		len += snprintf(buf + len, buflen - len, "%3.0f%%, %.0f dBm",
 				1E2 * cur->qual.qual / iw_range->max_qual.qual,
 				dbm.signal);
 	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
@@ -71,7 +71,8 @@ static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
 
 static void display_aplist(WINDOW *w_aplst)
 {
-	char s[0x100];
+	char s[IW_ESSID_MAX_SIZE << 3];
+	int max_essid_len = 0;
 	int i, line = START_LINE;
 	struct iw_range range;
 	struct scan_result *head, *cur;
@@ -121,6 +122,12 @@ static void display_aplist(WINDOW *w_aplst)
 	if (!head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 
+	for (cur = head; cur; cur = cur->next) {
+		if (str_is_ascii(cur->essid))
+			max_essid_len = clamp(strlen(cur->essid),
+					      max_essid_len, IW_ESSID_MAX_SIZE);
+	}
+
 	/* Truncate overly long access point lists to match screen height */
 	for (cur = head; cur && line < MAXYLEN; line++, cur = cur->next) {
 		int col = CP_SCAN_NON_AP;
@@ -128,25 +135,26 @@ static void display_aplist(WINDOW *w_aplst)
 		if (cur->mode == IW_MODE_MASTER)
 			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
 
-		wattron(w_aplst, COLOR_PAIR(col));
-		mvwaddstr(w_aplst, line++, 1, " ");
-
-		waddstr(w_aplst, ether_addr(&cur->ap_addr));
-		waddstr_b(w_aplst, "  ");
-
+		wmove(w_aplst, line, 1);
 		if (!*cur->essid) {
-			waddstr(w_aplst, "<hidden ESSID>");
+			sprintf(s, "%-*s ", max_essid_len, "<hidden ESSID>");
+			wattron(w_aplst, COLOR_PAIR(col));
+			waddstr(w_aplst, s);
 		} else if (str_is_ascii(cur->essid)) {
-			wattroff(w_aplst, COLOR_PAIR(col));
-			waddstr_b(w_aplst, cur->essid);
+			sprintf(s, "%-*s ", max_essid_len, cur->essid);
+			waddstr_b(w_aplst, s);
 			wattron(w_aplst, COLOR_PAIR(col));
 		} else {
-			waddstr(w_aplst, "<cryptic ESSID>");
+			sprintf(s, "%-*s ", max_essid_len, "<cryptic ESSID>");
+			wattron(w_aplst, COLOR_PAIR(col));
+			waddstr(w_aplst, s);
 		}
+		waddstr(w_aplst, ether_addr(&cur->ap_addr));
+
 		wattroff(w_aplst, COLOR_PAIR(col));
 
 		fmt_scan_result(cur, &range, s, sizeof(s));
-		mvwaddstr(w_aplst, line, 1, "   ");
+		waddstr(w_aplst, " ");
 		waddstr(w_aplst, s);
 	}
 	free_scan_result(head);
