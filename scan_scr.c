@@ -184,7 +184,7 @@ void scr_aplst_init(void)
 		err_sys("could not fork scan process");
 	} else if (pid == 0) {
 		do display_aplist(w_aplst);
-		while (usleep(200000) == 0);
+		while (usleep(conf.stat_iv * 1000) == 0);
 		exit(EXIT_SUCCESS);
 	}
 }
