@@ -419,6 +419,7 @@ static void display_netinfo(WINDOW *w_net)
 	if_getinf(conf_ifname(), &info);
 
 	wmove(w_net, 1, 1);
+	wclrtoborder(w_net);
 	if (getmaxy(w_net) == WH_NET_MAX) {
 		waddstr(w_net, conf_ifname());
 
@@ -459,6 +460,7 @@ static void display_netinfo(WINDOW *w_net)
 		waddstr_b(w_net, ")");
 
 		wmove(w_net, 2, 1);
+		wclrtoborder(w_net);
 	}
 	waddstr(w_net, "mac: ");
 	waddstr_b(w_net, ether_lookup(&info.hwaddr));
@@ -468,10 +470,13 @@ static void display_netinfo(WINDOW *w_net)
 		sprintf(tmp, "%u", info.txqlen);
 		waddstr_b(w_net, tmp);
 
-		mvwaddstr(w_net, 3, 1, "ip: ");
+		wmove(w_net, 3, 1);
+		wclrtoborder(w_net);
 	} else {
-		waddstr(w_net, ", ip: ");
+		waddstr(w_net, ", ");
 	}
+	waddstr(w_net, "ip: ");
+
 	if (!info.addr.s_addr) {
 		waddstr_b(w_net, "n/a");
 	} else {
@@ -494,7 +499,6 @@ static void display_netinfo(WINDOW *w_net)
 		waddstr_b(w_net, tmp);
 	}
 
-	wclrtoborder(w_net);
 	wrefresh(w_net);
 }
 
