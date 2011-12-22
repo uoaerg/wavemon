@@ -2,6 +2,23 @@ NEWS
 ====
 
 --------------------
+0.7.3 (2011-12-22)
+--------------------
+  * Scan window:
+    - items are now sorted first by channel (ascending) then by signal
+      strength (descending), as before
+    - using one line per entry doubled the capacity of the scan window
+    - refresh interval is made configurable (via 'Statistics updates')
+  * Configuration screen:
+    - memorizes the last-changed item to ease longer configuration tasks
+  * Fixes:
+    - better (cleaner) termination on error
+    - fixed clear-line refresh in info screen
+    - fixed bug in generator for random link quality (causing negative values)
+    - reverted using separate process group (problems when running under sudo)
+    - miscellaneous code reordering to decouple functional units
+
+--------------------
 0.7.2 (2011-02-25)
 --------------------
   * General:
