@@ -83,7 +83,8 @@ static void display_aplist(WINDOW *w_aplst)
 
 	iw_getinf_range(conf_ifname(), &range);
 
-	head = get_scan_list(skfd, conf_ifname(), range.we_version_compiled);
+	head = get_scan_list(skfd, conf_ifname(),
+			     range.we_version_compiled, cmp_freq_sig);
 	if (head) {
 		;
 	} else if (errno == EPERM || !has_net_admin_capability()) {

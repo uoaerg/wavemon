@@ -548,23 +548,23 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_result *sr)
 /*----------------- End of code copied from iwlib -----------------------*/
 
 /* Order by descending signal strength. */
-static int cmp_sig(const struct scan_result *a, const struct scan_result *b)
+extern int cmp_sig(const struct scan_result *a, const struct scan_result *b)
 {
 	return a->qual.level - b->qual.level;
 }
 
 /* Order by ascending frequency first, then by descending signal strength. */
-static int cmp_freq_sig(const struct scan_result *a, const struct scan_result *b)
+extern int cmp_freq_sig(const struct scan_result *a, const struct scan_result *b)
 {
 	return a->freq == b->freq ? cmp_sig(a, b) : a->freq < b->freq;
 }
 
-struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
+struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version,
+				  scan_cmp_func cmp_scan_result)
 {
 	struct scan_result *head = NULL;
 	struct iwreq wrq;
 	int wait, waited = 0;
-	scan_cmp_func cmp_scan_result = cmp_freq_sig;
 
 	/*
 	 * Some drivers may return very large scan results, either because there

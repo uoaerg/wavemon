@@ -228,6 +228,9 @@ extern void sampling_init(void (*sampling_handler)(int));
 extern void sampling_do_poll(void);
 static inline void sampling_stop(void)	{ alarm(0); }
 
+/*
+ *	Organization of scan results
+ */
 /**
  * struct scan_result  -  Ranked list of scan results
  * @ap_addr:	MAC address
@@ -251,13 +254,17 @@ struct scan_result {
 
 	struct scan_result *next;
 };
-extern struct scan_result *get_scan_list(int skfd, const char *ifname, int ver);
-extern void free_scan_result(struct scan_result *head);
 
 typedef int (*scan_cmp_func)(const struct scan_result *, const struct scan_result *);
+extern int      cmp_sig(const struct scan_result *a, const struct scan_result *b);
+extern int cmp_freq_sig(const struct scan_result *a, const struct scan_result *b);
+
+extern struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version,
+					 scan_cmp_func cmp_scan_result);
+extern void free_scan_result(struct scan_result *head);
 
 /*
- *	Helper routines
+ *	General helper routines
  */
 static inline const char *iw_opmode(const uint8_t mode)
 {
