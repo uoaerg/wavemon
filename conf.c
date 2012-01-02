@@ -67,58 +67,8 @@ struct wavemon_conf conf = {
 	.startup_scr		= 0,
 };
 
-static void version(void)
-{
-	printf("wavemon wireless monitor %s\n", PACKAGE_VERSION);
-	printf("Distributed under the terms of the GPLv3.\n");
-}
-
-static void usage(void)
-{
-	printf("Usage: wavemon [ -dhlrv ] [ -i ifname ]\n\n");
-	printf("  -d            Dump the current device status to stdout and exit\n");
-	printf("  -g            Ensure screen is sufficiently dimensioned\n");
-	printf("  -h            This help screen\n");
-	printf("  -i <ifname>   Use specified network interface (default: auto)\n");
-	printf("  -r            Generate random levels (for testing purposes)\n");
-	printf("  -v            Print version number and exit\n\n");
-}
-
-static void getargs(int argc, char *argv[])
-{
-	int arg;
-
-	while ((arg = getopt(argc, argv, "dghi:rv")) >= 0)
-		switch (arg) {
-		case 'd':
-			dump_parameters();
-			exit(EXIT_SUCCESS);
-		case 'g':
-			conf.check_geometry = true;
-			break;
-		case 'h':
-			usage();
-			exit(EXIT_SUCCESS);
-		case 'i':
-			conf.if_idx = argv_find(if_list, optarg);
-			if (conf.if_idx < 0)
-				err_quit("no wireless extensions found on '%s'",
-					 optarg);
-			break;
-		case 'r':
-			conf.random = true;
-			break;
-		case 'v':
-			version();
-			exit(EXIT_SUCCESS);
-		default:
-			/* bad argument. bad bad */
-			exit(EXIT_FAILURE);
-		}
-}
-
 /** Populate interface list */
-void conf_get_interface_list(void)
+void conf_get_interface_list(bool init)
 {
 	char *old_if = NULL;
 	int idx;
@@ -132,7 +82,7 @@ void conf_get_interface_list(void)
 		free(if_list);
 	}
 	if_list = iw_get_interface_list();
-	if (if_list == NULL)
+	if (if_list == NULL && !init)
 		err_quit("no wireless interfaces found!");
 
 	conf.if_idx = 0;
@@ -554,8 +504,66 @@ static void init_conf_items(void)
 
 void getconf(int argc, char *argv[])
 {
-	conf_get_interface_list();
-	init_conf_items();
-	read_cf();
-	getargs(argc, argv);
+	int arg, dump = 0, help = 0, version = 0;
+	bool supports_wext = access(WEXT_PROC_PATH, F_OK) == 0;
+
+	if (supports_wext) {
+		conf_get_interface_list(true);
+		init_conf_items();
+		read_cf();
+	}
+
+	while ((arg = getopt(argc, argv, "dghi:rv")) >= 0) {
+		switch (arg) {
+		case 'd':
+			if (if_list)
+				dump++;
+			break;
+		case 'g':
+			conf.check_geometry = true;
+			break;
+		case 'h':
+			help++;
+			break;
+		case 'i':
+			conf.if_idx = if_list ? argv_find(if_list, optarg) : 0;
+			if (conf.if_idx < 0)
+				err_quit("no wireless extensions found on '%s'",
+					 optarg);
+			break;
+		case 'r':
+			conf.random = true;
+			break;
+		case 'v':
+			version++;
+			break;
+		default:
+			/* bad argument. bad bad */
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (!supports_wext)
+		err_quit("no %s - please use a kernel with wireless extensions.", WEXT_PROC_PATH);
+	else if (if_list == NULL)
+		err_quit("no supported wireless interfaces found - check %s", WEXT_PROC_PATH);
+
+	if (version) {
+		printf("wavemon wireless monitor %s\n", PACKAGE_VERSION);
+		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
+	}
+	if (help) {
+		printf("usage: wavemon [ -dhlrv ] [ -i ifname ]\n");
+		printf("  -d            Dump the current device status to stdout and exit\n");
+		printf("  -g            Ensure screen is sufficiently dimensioned\n");
+		printf("  -h            This help screen\n");
+		printf("  -i <ifname>   Use specified network interface (default: auto)\n");
+		printf("  -r            Generate random levels (for testing purposes)\n");
+		printf("  -v            Print version number\n");
+	} else if (dump) {
+		dump_parameters();
+	}
+
+	if (version || help || dump)
+		exit(EXIT_SUCCESS);
 }

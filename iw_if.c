@@ -94,22 +94,6 @@ void if_getinf(const char *ifname, struct if_info *info)
 	close(skfd);
 }
 
-static FILE *open_proc_net(const char *filename)
-{
-	char path[128];
-	FILE *fp;
-
-	snprintf(path, sizeof(path), "/proc/net/%s", filename);
-	if (access(path, F_OK) != 0)
-		err_quit("'%s' not accessible - not compiled in?", path);
-
-	fp = fopen(path, "r");
-	if (fp == NULL)
-		err_sys("can not open %s", path);
-
-	return fp;
-}
-
 /**
  * iw_get_interface_list  -  Return NULL-terminated array of WiFi interfaces.
  */
@@ -117,7 +101,10 @@ char **iw_get_interface_list(void)
 {
 	char **if_list = NULL, *p, tmp[BUFSIZ];
 	int  nifs = 1;		/* if_list[nifs-1] = NULL */
-	FILE *fp = open_proc_net("wireless");
+	FILE *fp = fopen(WEXT_PROC_PATH, "r");
+
+	if (fp == NULL)
+		err_sys("can not open %s", WEXT_PROC_PATH);
 
 	while (fgets(tmp, sizeof(tmp), fp))
 		if ((p = strchr(tmp, ':'))) {
@@ -136,8 +123,11 @@ void if_getstat(const char *ifname, struct if_stat *stat)
 	char line[0x100];
 	unsigned long d;
 	char *lp;
-	FILE *fp = open_proc_net("dev");
+	const char path[] = "/proc/net/dev";
+	FILE *fp = fopen(path, "r");
 
+	if (fp == NULL)
+		err_sys("can not open %s", path);
 	/*
 	 * Inter-|   Receive                                                | Transmit
 	 *  face |bytes    packets errs drop fifo frame compressed multicast|bytes packets

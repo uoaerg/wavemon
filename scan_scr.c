@@ -168,8 +168,8 @@ void scr_aplst_init(void)
 {
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 	/*
-	 * Both parent and child process write to the terminal, updating 
-	 * different areas of the screen. Suspending wavemon brings the 
+	 * Both parent and child process write to the terminal, updating
+	 * different areas of the screen. Suspending wavemon brings the
 	 * terminal state out of order, messing up the screen. The choice
 	 * is between a more  complicated (sophisticated) handling of
 	 * signals, and to keep it simple by not allowing to suspend.

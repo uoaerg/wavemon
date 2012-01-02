@@ -33,13 +33,15 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
-
 #include <ncurses.h>
 
 #include "llist.h"
 
-#define CFNAME	".wavemonrc"
-/*
+/** Common pathnames */
+#define WEXT_PROC_PATH	"/proc/net/wireless"
+#define CFNAME		".wavemonrc"
+
+/**
  * Minimum screen dimensions.
  * The number of lines depends on the size requirements of scr_info(). The
  * number of columns comes from the menubar length (10 items of length 6
@@ -257,7 +259,7 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
  *	Wireless interfaces
  */
 extern const char *conf_ifname(void);
-extern void conf_get_interface_list(void);
+extern void conf_get_interface_list(bool init);
 extern char **iw_get_interface_list(void);
 extern void dump_parameters(void);
 
