@@ -10,7 +10,7 @@ on-screen name is shown in parentheses.
 .B interface = <ifname>
 .RS
 .RE
-.R (Interface)
+(Interface)
 .RS
 Selects the wireless interface to use.
 .P
@@ -18,7 +18,7 @@ Selects the wireless interface to use.
 .B cisco_mac = (on|off)
 .RS
 .RE
-.R (Cisco-style MAC addresses)
+(Cisco-style MAC addresses)
 .RS
 If enabled, display MAC addresses using lower-case hex digits separated by dots
 rather than colons.
@@ -27,7 +27,7 @@ rather than colons.
 .B stat_updates = <n>
 .RS
 .RE
-.R (Statistics updates)
+(Statistics updates)
 .RS
 Time interval for polling new statistics (including scan refresh). Range: 10..4000ms.
 .P
@@ -35,7 +35,7 @@ Time interval for polling new statistics (including scan refresh). Range: 10..40
 .B lhist_slot_size = <n>
 .RS
 .RE
-.R (Histogram update cycles)
+(Histogram update cycles)
 .RS
 Number of samples used per each histogram slot. For example, if the stat_updates
 interval is 500ms and the histogram slot size is 4, the histogram is moved
@@ -45,7 +45,7 @@ one slot further every 2 seconds. Range: 1..64.
 .B meter_smoothness = <n>
 .RS
 .RE
-.R (Level meter smoothness)
+(Level meter smoothness)
 .RS
 Determines the responsiveness of level meters, tracking the moving average
 rather than following each new sample. The given value specifies the percentage
@@ -56,7 +56,7 @@ this option. Range: 0..99%.
 .B info_updates = <n>
 .RS
 .RE
-.R (Dynamic info updates)
+(Dynamic info updates)
 .RS
 Sets refresh rate for dynamic device parameters (e.g. bitrate) and the
 refresh interval for the Scan window (F3). Range: 1..60s.
@@ -65,7 +65,7 @@ refresh interval for the Scan window (F3). Range: 1..60s.
 .B override_auto_scale = (on|off)
 .RS
 .RE
-.R (Override scale autodetect)
+(Override scale autodetect)
 .RS
 Override the auto-scaling of the bar graphs and histogram, allowing you to set your own scales.
 .P
@@ -73,24 +73,24 @@ Override the auto-scaling of the bar graphs and histogram, allowing you to set y
 .B min_signal_level, max_signal_level = <n>
 .RS
 .RE
-.R (Minimum signal level, Maximum signal level)
+(Minimum signal level, Maximum signal level)
 .RS
-Set the left and right boundaries of the signal level scales. Ranges: -128..-60dBm (minimum) and -59..120dBm (maximum).
+Set the left and right boundaries of the signal level scales. Ranges: \-128..\-60dBm (minimum) and \-59..120dBm (maximum).
 .P
 .RE
 .B min_noise_level, max_noise_level = <n>
 .RS
 .RE
-.R (Minimum noise level, Maximum noise level)
+(Minimum noise level, Maximum noise level)
 .RS
-These work similar to the signal boundary settings. Ranges: -128..-60dBm
-(minimum) and -60..120dBm (maximum).
+These work similar to the signal boundary settings. Ranges: \-128..\-60dBm
+(minimum) and \-60..120dBm (maximum).
 .P
 .RE
 .B random = (on|off)
 .RS
 .RE
-.R (Random signals)
+(Random signals)
 .RS
 Switches on a fancy random generator for testing.
 .P
@@ -98,7 +98,7 @@ Switches on a fancy random generator for testing.
 .B lo_threshold_action = (disabled|beep|flash|beep+flash)
 .RS
 .RE
-.R (Low threshold action)
+(Low threshold action)
 .RS
 Issue a warning  at a given threshold at the lower end of the signal
 scale. It is meant for alarming you when a signal appears at the receiver.
@@ -107,16 +107,16 @@ scale. It is meant for alarming you when a signal appears at the receiver.
 .B lo_threshold = <n>
 .RS
 .RE
-.R (Low threshold)
+(Low threshold)
 .RS
 Sets the threshold value for the 'Low threshold action'.
-Range: -120..-60dBm.
+Range: \-120..\-60dBm.
 .P
 .RE
 .B hi_threshold_action = (disabled|beep|flash|beep+flash)
 .RS
 .RE
-.R (High threshold action)
+(High threshold action)
 .RS
 Analogous to lo_threshold_action, only this time the threshold is at
 the upper end of the scale and the action is performed when the signal level
@@ -128,15 +128,15 @@ will tell you when you should move closer to the base station.
 .B hi_threshold = <n>
 .RS
 .RE
-.R (High threshold)
+(High threshold)
 .RS
-Sets the threshold for the 'High threshold action'. Range: -59..120dBm.
+Sets the threshold for the 'High threshold action'. Range: \-59..120dBm.
 .P
 .RE
 .B startup_screen = (info|histogram|scan window)
 .RS
 .RE
-.R (Startup screen)
+(Startup screen)
 .RS
 Which of the screens appears at program startup.
 .SH "AUTHOR"
