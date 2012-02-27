@@ -190,7 +190,7 @@ static void read_cf(void)
 			}
 			break;
 		case t_list:
-			v_int = argv_find(ci->list, rv);
+			v_int = ci->list ? argv_find(ci->list, rv) : -1;
 			if (v_int < 0)
 				err_msg("%s, line %d: '%s = %s' is not valid - using defaults",
 					 cfname, lnum, lv, rv);
