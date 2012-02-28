@@ -96,24 +96,46 @@ void if_getinf(const char *ifname, struct if_info *info)
 
 /**
  * iw_get_interface_list  -  Return NULL-terminated array of WiFi interfaces.
+ * Use the safe route of checking /proc/net/dev/ for wireless interfaces:
+ * - SIOCGIFCONF only returns running interfaces that have an IP address;
+ * - /proc/net/wireless may exist, but may not list all wireless interfaces.
  */
 char **iw_get_interface_list(void)
 {
 	char **if_list = NULL, *p, tmp[BUFSIZ];
 	int  nifs = 1;		/* if_list[nifs-1] = NULL */
-	FILE *fp = fopen(WEXT_PROC_PATH, "r");
+	struct iwreq wrq;
+	FILE *fp;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
+
+	fp = fopen("/proc/net/dev", "r");
 	if (fp == NULL)
-		err_sys("can not open %s", WEXT_PROC_PATH);
+		err_sys("can not open /proc/net/dev");
 
-	while (fgets(tmp, sizeof(tmp), fp))
+	while (fgets(tmp, sizeof(tmp), fp)) {
 		if ((p = strchr(tmp, ':'))) {
-			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
 			for (*p = '\0', p = tmp; isspace(*p); )
 				p++;
+			/*
+			 * Use SIOCGIWNAME as indicator: if interface does not
+			 * support this ioctl, it has no wireless extensions.
+			 */
+			strncpy(wrq.ifr_name, p, IFNAMSIZ);
+			if (ioctl(skfd, SIOCGIWNAME, &wrq) < 0) {
+				if (errno == EOPNOTSUPP)
+					continue;
+				err_sys("SIOCGIWNAME failed on %s", p);
+			}
+
+			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
 			if_list[nifs-1] = strdup(p);
 			if_list[nifs++] = NULL;
 		}
+	}
+	close(skfd);
 	fclose(fp);
 	return if_list;
 }
