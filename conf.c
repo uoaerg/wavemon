@@ -505,13 +505,10 @@ static void init_conf_items(void)
 void getconf(int argc, char *argv[])
 {
 	int arg, dump = 0, help = 0, version = 0;
-	bool supports_wext = access(WEXT_PROC_PATH, F_OK) == 0;
 
-	if (supports_wext) {
-		conf_get_interface_list(true);
-		init_conf_items();
-		read_cf();
-	}
+	conf_get_interface_list(true);
+	init_conf_items();
+	read_cf();
 
 	while ((arg = getopt(argc, argv, "dghi:rv")) >= 0) {
 		switch (arg) {
@@ -543,10 +540,8 @@ void getconf(int argc, char *argv[])
 		}
 	}
 
-	if (!supports_wext)
-		err_quit("no %s - please use a kernel with wireless extensions.", WEXT_PROC_PATH);
-	else if (if_list == NULL)
-		err_quit("no supported wireless interfaces found - check %s", WEXT_PROC_PATH);
+	if (if_list == NULL)
+		err_quit("no supported wireless interfaces found");
 
 	if (version) {
 		printf("wavemon wireless monitor %s\n", PACKAGE_VERSION);

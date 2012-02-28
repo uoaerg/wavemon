@@ -37,9 +37,7 @@
 
 #include "llist.h"
 
-/** Common pathnames */
-#define WEXT_PROC_PATH	"/proc/net/wireless"
-#define CFNAME		".wavemonrc"
+#define CFNAME	".wavemonrc"
 
 /**
  * Minimum screen dimensions.
