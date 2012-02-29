@@ -124,11 +124,8 @@ char **iw_get_interface_list(void)
 			 * support this ioctl, it has no wireless extensions.
 			 */
 			strncpy(wrq.ifr_name, p, IFNAMSIZ);
-			if (ioctl(skfd, SIOCGIWNAME, &wrq) < 0) {
-				if (errno == EOPNOTSUPP)
-					continue;
-				err_sys("SIOCGIWNAME failed on %s", p);
-			}
+			if (ioctl(skfd, SIOCGIWNAME, &wrq) < 0)
+				continue;
 
 			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
 			if_list[nifs-1] = strdup(p);
