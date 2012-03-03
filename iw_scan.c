@@ -547,25 +547,65 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_result *sr)
 }
 /*----------------- End of code copied from iwlib -----------------------*/
 
+/*
+ * Ordering functions for scan results
+ */
+/* Order by ascending frequency. */
+static int cmp_chan(const struct scan_result *a, const struct scan_result *b)
+{
+	return a->freq < b->freq;
+}
+
+static int cmp_chan_rev(const struct scan_result *a, const struct scan_result *b)
+{
+	return cmp_chan(b, a);
+}
+
 /* Order by descending signal strength. */
-extern int cmp_sig(const struct scan_result *a, const struct scan_result *b)
+static int cmp_sig(const struct scan_result *a, const struct scan_result *b)
 {
 	return a->qual.level - b->qual.level;
 }
 
 /* Order by ascending frequency first, then by descending signal strength. */
-extern int cmp_freq_sig(const struct scan_result *a, const struct scan_result *b)
+static int cmp_chan_sig(const struct scan_result *a, const struct scan_result *b)
 {
-	return a->freq == b->freq ? cmp_sig(a, b) : a->freq < b->freq;
+	return a->freq == b->freq ? cmp_sig(a, b) : cmp_chan(a, b);
 }
 
-struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version,
-				  scan_cmp_func cmp_scan_result)
+/* Show open access points first, ordered by mode. */
+static int cmp_open(const struct scan_result *a, const struct scan_result *b)
+{
+	return a->has_key > b->has_key;
+}
+
+/* Sort (open) access points by descending signal strength. */
+static int cmp_open_sig(const struct scan_result *a, const struct scan_result *b)
+{
+	return a->has_key == b->has_key ? cmp_sig(a, b) : cmp_open(a, b);
+}
+
+/* Sort (open) access points by ascending frequency, then by descending signal. */
+static int cmp_open_chan_sig(const struct scan_result *a, const struct scan_result *b)
+{
+	return a->has_key == b->has_key ? cmp_chan_sig(a, b) : cmp_open(a, b);
+}
+
+static int (*scan_cmp[])(const struct scan_result *, const struct scan_result *) = {
+	[SO_CHAN]	= cmp_chan,
+	[SO_CHAN_REV]	= cmp_chan_rev,
+	[SO_SIGNAL]	= cmp_sig,
+	[SO_OPEN]	= cmp_open,
+	[SO_CHAN_SIG]	= cmp_chan_sig,
+	[SO_OPEN_SIG]	= cmp_open_sig,
+	[SO_OPEN_CH_SI]	= cmp_open_chan_sig
+};
+
+struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 {
 	struct scan_result *head = NULL;
 	struct iwreq wrq;
 	int wait, waited = 0;
-
 	/*
 	 * Some drivers may return very large scan results, either because there
 	 * are many cells, or there are many large elements. Do not bother to
@@ -649,7 +689,7 @@ struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version,
 
 				f = 0;
 
-				while (cur && cmp_scan_result(cur, new) > 0)
+				while (cur && scan_cmp[conf.scan_sort_order](cur, new) > 0)
 					prev = &cur->next, cur = cur->next;
 
 				*prev     = new;

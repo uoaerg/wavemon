@@ -100,6 +100,19 @@ static inline void threshold_action(enum threshold_action action)
 }
 
 /*
+ * Symbolic names for scan sort order comparison.
+ */
+enum scan_sort_order {
+	SO_CHAN,
+	SO_CHAN_REV,
+	SO_SIGNAL,
+	SO_OPEN,
+	SO_CHAN_SIG,
+	SO_OPEN_SIG,
+	SO_OPEN_CH_SI
+};
+
+/*
  * Global in-memory representation of current wavemon configuration state
  */
 extern struct wavemon_conf {
@@ -124,7 +137,8 @@ extern struct wavemon_conf {
 		override_bounds;	/* override autodetection */
 
 	/* Enumerated values */
-	int	lthreshold_action,	/* disabled|beep|flash|beep+flash */
+	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */
+		lthreshold_action,	/* disabled|beep|flash|beep+flash */
 		hthreshold_action,	/* disabled|beep|flash|beep+flash */
 		startup_scr;		/* info|histogram|aplist */
 } conf;

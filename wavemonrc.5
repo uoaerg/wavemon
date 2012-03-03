@@ -24,6 +24,18 @@ If enabled, display MAC addresses using lower-case hex digits separated by dots
 rather than colons.
 .P
 .RE
+.B sort_order = (channel|rev channel|signal|open|chan/sig|open/sig|open/chan/sig)
+.RS
+.RE
+(Scan Sort Order)
+.RS
+Determines the ordering used in the scan window: (\fIrev\fR) \fIchannel\fR sorts in ascending
+(descending) order of channel number, \fIsignal\fR in descending order of signal strength, and
+\fIopen\fR in descending order of openness. The combined variants \fIchan/sig\fR and
+\fIopen/sig\fR sort first by channel/openness and then by signal strength; their combined
+functionality is provided by \fIopen/chan/sig\fR.
+.P
+.RE
 .B stat_updates = <n>
 .RS
 .RE

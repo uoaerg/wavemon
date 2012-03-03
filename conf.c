@@ -34,6 +34,17 @@ static char *action_items[] = {
 	NULL
 };
 
+static char *sort_order[] = {
+	[SO_CHAN]	= "Channel",
+	[SO_CHAN_REV]	= "Rev Channel",
+	[SO_SIGNAL]	= "Signal",
+	[SO_OPEN]	= "Open",
+	[SO_CHAN_SIG]	= "Chan/Sig",
+	[SO_OPEN_SIG]	= "Open/Sig",
+	[SO_OPEN_CH_SI]	= "Open/Chan/Sig",
+	NULL
+};
+
 static char *screen_names[] = {
 	[SCR_INFO]	= "Info screen",
 	[SCR_LHIST]	= "Histogram",
@@ -59,6 +70,7 @@ struct wavemon_conf conf = {
 	.noise_min		= -102,
 	.noise_max		= 10,
 
+	.scan_sort_order	= SO_CHAN,
 	.lthreshold_action	= TA_DISABLED,
 	.lthreshold		= -80,
 	.hthreshold_action	= TA_DISABLED,
@@ -311,6 +323,14 @@ static void init_conf_items(void)
 	item->type	= t_list;
 	item->v.i	= &conf.cisco_mac;
 	item->list	= on_off_names;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Scan sort order");
+	item->cfname	= strdup("sort_order");
+	item->type	= t_list;
+	item->v.i	= &conf.scan_sort_order;
+	item->list	= sort_order;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));

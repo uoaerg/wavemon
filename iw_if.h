@@ -255,12 +255,7 @@ struct scan_result {
 	struct scan_result *next;
 };
 
-typedef int (*scan_cmp_func)(const struct scan_result *, const struct scan_result *);
-extern int      cmp_sig(const struct scan_result *a, const struct scan_result *b);
-extern int cmp_freq_sig(const struct scan_result *a, const struct scan_result *b);
-
-extern struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version,
-					 scan_cmp_func cmp_scan_result);
+extern struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version);
 extern void free_scan_result(struct scan_result *head);
 
 /*
