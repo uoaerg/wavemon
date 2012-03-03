@@ -543,7 +543,7 @@ void getconf(int argc, char *argv[])
 			help++;
 			break;
 		case 'i':
-			conf.if_idx = if_list ? argv_find(if_list, optarg) : 0;
+			conf.if_idx = if_list ? argv_find(if_list, optarg) : -1;
 			if (conf.if_idx < 0)
 				err_quit("no wireless extensions found on '%s'",
 					 optarg);
@@ -559,9 +559,6 @@ void getconf(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	}
-
-	if (if_list == NULL)
-		err_quit("no supported wireless interfaces found");
 
 	if (version) {
 		printf("wavemon wireless monitor %s\n", PACKAGE_VERSION);
@@ -581,4 +578,6 @@ void getconf(int argc, char *argv[])
 
 	if (version || help || dump)
 		exit(EXIT_SUCCESS);
+	else if (if_list == NULL)
+		err_quit("no supported wireless interfaces found");
 }
