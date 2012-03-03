@@ -1,5 +1,21 @@
 NEWS
 ====
+--------------------
+0.7.4 (2012-02-03)
+--------------------
+  * General:
+    - deprecate reliance on /proc/net/wireless, since tests on Tiny Core Linux
+      showed that it no longer reliably lists available wireless interfaces,
+    - instead use safe route of using /proc/net/dev, probing each interface
+      in turn for wireless extensions;
+  * Scan window:
+    - configurable scan sort order (at runtime and via configuration file),
+    - can sort by (combinations of) channel, signal strength, and openness,
+    - visually distinguish 2.4GHz and 5.8GHz channels;
+  * Fixes:
+    - wavemonrc.5 manpage fixes thanks to Jonathan McCrohan,
+    - support common options (-v/-h) even if no interfaces found,
+    - but do not start operation unless at least 1 wireless interface exists.
 
 --------------------
 0.7.3 (2011-12-22)

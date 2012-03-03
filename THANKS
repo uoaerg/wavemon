@@ -30,3 +30,5 @@ Thanks to Matt who helped fixing several bugs in 0.7.0.
 
 Robert M. Stockmann and Koniu helped with bug fixes in 0.7.1; thanks to Koniu
 support for window resizing got started.
+
+Jonathan McCrohan fixed manpage compilation errors in 0.7.4.
