@@ -48,7 +48,7 @@ static char *sort_order[] = {
 static char *screen_names[] = {
 	[SCR_INFO]	= "Info screen",
 	[SCR_LHIST]	= "Histogram",
-	[SCR_APLIST]	= "Scan window",
+	[SCR_SCAN]	= "Scan window",
 	NULL
 };
 

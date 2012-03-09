@@ -181,11 +181,11 @@ struct conf_item {
 enum wavemon_screen {
 	SCR_INFO,	/* F1 */
 	SCR_LHIST,	/* F2 */
-	SCR_APLIST,	/* F3 */
+	SCR_SCAN,	/* F3 */
 	SCR_EMPTY_F4,	/* placeholder */
 	SCR_EMPTY_F5,	/* placeholder */
 	SCR_EMPTY_F6,	/* placeholder */
-	SCR_CONF,	/* F7 */
+	SCR_PREFS,	/* F7 */
 	SCR_HELP,	/* F8 */
 	SCR_ABOUT,	/* F9 */
 	SCR_QUIT	/* F10 */

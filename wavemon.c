@@ -48,7 +48,7 @@ static const struct {
 		.loop	  = scr_lhist_loop,
 		.fini	  = scr_lhist_fini
 	},
-	[SCR_APLIST]	= {
+	[SCR_SCAN]	= {
 		.key_name = "scan",
 		.init	  = scr_aplst_init,
 		.loop	  = scr_aplst_loop,
@@ -63,7 +63,7 @@ static const struct {
 	[SCR_EMPTY_F6]	= {
 		.key_name = "",
 	},
-	[SCR_CONF]	= {
+	[SCR_PREFS]	= {
 		.key_name = "prefs",
 		.init	  = scr_conf_init,
 		.loop	  = scr_conf_loop,
@@ -203,23 +203,34 @@ int main(int argc, char *argv[])
 				if (key <= 0)
 					usleep(5000);
 				switch (key) {
-				case KEY_F(1):
-				case KEY_F(2):
-				case KEY_F(3):
-				case KEY_F(7):
-				case KEY_F(8):
-				case KEY_F(9):
-				case KEY_F(10):
-					next = key - KEY_F(1);
-					break;
 				case 'i':
+				case KEY_F(1):
 					next = SCR_INFO;
 					break;
+				case 'l':
+				case KEY_F(2):
+					next = SCR_LHIST;
+					break;
+				case 's':
+				case KEY_F(3):
+					next = SCR_SCAN;
+					break;
+				case 'p':
+				case KEY_F(7):
+					next = SCR_PREFS;
+					break;
+				case 'h':
+				case KEY_F(8):
+					next = SCR_HELP;
+					break;
+				case 'a':
+				case KEY_F(9):
+					next = SCR_ABOUT;
+					break;
 				case 'q':
+				case KEY_F(10):
 					next = SCR_QUIT;
 					break;
-				default:
-					continue;
 				}
 			} while (next == cur);
 		}

@@ -18,9 +18,11 @@ represents the same levels as a moving histogram.
 
 On startup, you'll see (depending on configuration) one of the different
 monitor screens. At the bottom, you'll find a \fImenu-bar\fR listing the
-screens and their function key names.  The following screens can be selected:
+screens and their activating keys. Each screen is activated by either the
+corresponding function key or the key corresponding to the first character
+of the screen name. The following screens can be selected:
 .TP
-.B Info (F1)
+.B Info (F1 or 'i')
 This is the most comprehensive screen. It displays a condensed overview of
 wireless-specific parameters and network statistics, as well as bar graphs.
 The layout is arranged into several sub-sections.
@@ -60,10 +62,8 @@ also determine the broadcast address (last 32 \- \fIprefix_len\fR bits set
 to 1), that address is shown only if it does not derive from the interface
 address and prefix length. Likewise, the interface MTU is shown only if it
 differs from the default Ethernet MTU of 1500 bytes.
-
-Another keyboard shortcut for this screen is '\fIi\fR'.
 .TP
-.B Level histogram (F2)
+.B Level histogram (F2 or 'l')
 This is a full-screen histogram plot showing the evolution of levels with time.
 The screen is partitioned into a grid, with dBm levels shown in green at
 the right hand side (depending on configuration).  At the very minimum,
@@ -71,7 +71,7 @@ the evolution of the signal-level is shown. If the wireless driver also
 supports noise-level information, additionally a noise graph and associated
 SNR graph appear.
 .TP
-.B Scan window (F3)
+.B Scan window (F3 or 's')
 A periodically updated network scan, showing access points and other
 wireless clients, ordered by frequency and then descending order of signal
 quality. Each entry starts with the ESSID, followed by the colour-coded MAC
@@ -86,21 +86,21 @@ Please note that gathering meaningful scan data can take several seconds. Partly
 for this reason, the Scan window is the only screen that can not be suspended
 (CTRL-Z).
 .TP
-.B Preferences (F7)
+.B Preferences (F7 or 'p')
 This screen allows you to change all program options such as interface and
 level scale parameters, and to save the new settings to the configuration
 file. Select a parameter with <up> and <down>, then change the value with
 <left> and <right>. Please refer to \fBwavemonrc\fR(5) for an in-depth
 description of applicable settings.
 .TP
-.B Help (F8)
+.B Help (F8 or 'h')
 This page might show an online-help.
 .TP
-.B About (F9)
+.B About (F9 or 'a')
 Release information and contact URLs.
 .TP
-\fBQuit (F10)
-Exit \fIwavemon\fR. An alternative shortcut for quitting is '\fIq\fR'.
+\fBQuit (F10 or 'q')
+Exit \fIwavemon\fR.
 .LP
 \fBNote:\fR some operations, such as displaying encryption information or performing scans, require
 \fBCAP_NET_ADMIN\fR privileges (see \fBcapabilities\fR(7)). For non-root users, these can be
