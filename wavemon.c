@@ -183,6 +183,7 @@ int main(int argc, char *argv[])
 	sigaddset(&blockmask, SIGWINCH);
 
 	for (cur = conf.startup_scr; cur != SCR_QUIT; cur = next) {
+		int escape = 0;
 
 		if (sigprocmask(SIG_BLOCK, &blockmask, &oldmask) < 0)
 			err_sys("cannot block SIGWINCH");
@@ -202,6 +203,26 @@ int main(int argc, char *argv[])
 
 				if (key <= 0)
 					usleep(5000);
+				/*
+				 * Translate vt100 PF1..4 escape sequences sent
+				 * by some X terminals (e.g. aterm) into F1..F4.
+				 */
+				switch (key) {
+				case 033:
+					escape = 1;
+					break;
+				case 'O':
+					escape = 2;
+					break;
+				case 'P' ... 'S':
+					if (escape == 2)
+						key = KEY_F(key - 'P' + 1);
+					/* fall through */
+				default:
+					escape = 0;
+				}
+
+				/* Main menu */
 				switch (key) {
 				case 'i':
 				case KEY_F(1):
@@ -230,7 +251,6 @@ int main(int argc, char *argv[])
 				case 'q':
 				case KEY_F(10):
 					next = SCR_QUIT;
-					break;
 				}
 			} while (next == cur);
 		}
