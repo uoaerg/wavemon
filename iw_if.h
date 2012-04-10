@@ -254,9 +254,20 @@ struct scan_result {
 
 	struct scan_result *next;
 };
-
 extern struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version);
 extern void free_scan_result(struct scan_result *head);
+
+/**
+ * struct cnt - count frequency of integer numbers
+ * @val:	value to count
+ * @count:	how often @val occurs
+ */
+struct cnt {
+	int	val;
+	int	count;
+};
+extern struct cnt *channel_stats(struct scan_result *head,
+				 struct iw_range *iw_range, int *max_cnt);
 
 /*
  *	General helper routines

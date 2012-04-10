@@ -34,6 +34,8 @@ Determines the ordering used in the scan window: (\fIrev\fR) \fIchannel\fR sorts
 \fIopen\fR in descending order of openness. The combined variants \fIchan/sig\fR and
 \fIopen/sig\fR sort first by channel/openness and then by signal strength; their combined
 functionality is provided by \fIopen/chan/sig\fR.
+It also affects the status line at the bottom: normally the most crowded channels are listed,
+use of \fIrev\ channel\fR switches to least crowded ones instead.
 .P
 .RE
 .B stat_updates = <n>

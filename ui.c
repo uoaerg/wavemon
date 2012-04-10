@@ -70,11 +70,11 @@ void waddstr_center(WINDOW *win, int y, const char *s)
 	mvwaddstr(win, y, (WAV_WIDTH - strlen(s)) / 2, s);
 }
 
-void waddstr_b(WINDOW *win, const char *s)
+void wadd_attr_str(WINDOW *win, const int attrs, const char *s)
 {
-	wattron(win, A_BOLD);
+	wattron(win, attrs);
 	waddstr(win, s);
-	wattroff(win, A_BOLD);
+	wattroff(win, attrs);
 }
 
 /* Enforce that @str is at most @len characters (excluding the terminal '\0') */

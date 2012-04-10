@@ -20,6 +20,7 @@
 #include "iw_if.h"
 
 #define START_LINE	2	/* where to begin the screen */
+#define NUMTOP		5	/* maximum number of 'top' statistics entries */
 
 /* GLOBALS */
 static WINDOW *w_aplst;
@@ -47,7 +48,6 @@ static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
 				dbm.signal);
 	else
 		len += snprintf(buf + len, buflen - len, "? dBm");
-
 
 	if (cur->freq < 1e3)
 		len += snprintf(buf + len, buflen - len, ", Chan %2.0f",
@@ -77,8 +77,11 @@ static void display_aplist(WINDOW *w_aplst)
 	char s[IW_ESSID_MAX_SIZE << 3];
 	int max_essid_len = 0;
 	int i, line = START_LINE;
+	int total = 0, open = 0, tg = 0, fg = 0;
 	struct iw_range range;
 	struct scan_result *head, *cur;
+	struct cnt *stats;
+	int max_cnt = NUMTOP;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
@@ -126,10 +129,17 @@ static void display_aplist(WINDOW *w_aplst)
 	if (!head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 
-	for (cur = head; cur; cur = cur->next) {
+	for (cur = head; cur; cur = cur->next, total++) {
 		if (str_is_ascii(cur->essid))
 			max_essid_len = clamp(strlen(cur->essid),
 					      max_essid_len, IW_ESSID_MAX_SIZE);
+		open += ! cur->has_key;
+		if (cur->freq < 1e3)
+			;	/* cur->freq is channel number */
+		else if (cur->freq < 5e9)
+			tg++;
+		else
+			fg++;
 	}
 
 	/* Truncate overly long access point lists to match screen height */
@@ -161,8 +171,49 @@ static void display_aplist(WINDOW *w_aplst)
 		waddstr(w_aplst, " ");
 		waddstr(w_aplst, s);
 	}
-	free_scan_result(head);
+
+	/* Summary statistics at the bottom. */
+	if (total < NUMTOP)
+		goto done;
+
+	wmove(w_aplst, MAXYLEN, 1);
+	wadd_attr_str(w_aplst, A_REVERSE, "total:");
+	sprintf(s, " %d", total);
+	waddstr(w_aplst, s);
+
+	if (total + START_LINE > line) {
+		sprintf(s, " (%d not shown)", total + START_LINE - line);
+		waddstr(w_aplst, s);
+	}
+	if (open) {
+		sprintf(s, ", %d open", open);
+		waddstr(w_aplst, s);
+	}
+	if (tg && fg) {
+		waddch(w_aplst, ' ');
+		wadd_attr_str(w_aplst, A_REVERSE, "5/2GHz:");
+		sprintf(s, " %d/%d", fg, tg);
+		waddstr(w_aplst, s);
+	}
+
+	stats = channel_stats(head, &range, &max_cnt);
+	if (stats) {
+		waddch(w_aplst, ' ');
+		if (conf.scan_sort_order == SO_CHAN_REV)
+			sprintf(s, "bottom-%d:", max_cnt);
+		else
+			sprintf(s, "top-%d:", max_cnt);
+		wadd_attr_str(w_aplst, A_REVERSE, s);
+
+		for (i = 0; i < max_cnt; i++) {
+			sprintf(s, "%s CH-%d(%d)", i ? "," : "",
+				   stats[i].val, stats[i].count);
+			waddstr(w_aplst, s);
+		}
+	}
+	free(stats);
 done:
+	free_scan_result(head);
 	close(skfd);
 	wrefresh(w_aplst);
 }

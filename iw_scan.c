@@ -5,6 +5,7 @@
  * replaced by corresponding netlink calls.
  */
 #include "iw_if.h"
+#include <search.h>		/* lsearch(3) */
 
 #define MAX_SCAN_WAIT	10000	/* maximum milliseconds spent waiting */
 
@@ -687,14 +688,13 @@ struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 			if (f == 127) {
 				struct scan_result *cur = head, **prev = &head;
 
-				f = 0;
-
 				while (cur && scan_cmp[conf.scan_sort_order](cur, new) > 0)
 					prev = &cur->next, cur = cur->next;
 
 				*prev     = new;
 				new->next = cur;
 				new       = NULL;
+				f = 0;
 			}
 		}
 		free(new);	/* may have been allocated but not filled in */
@@ -708,4 +708,60 @@ void free_scan_result(struct scan_result *head)
 		free_scan_result(head->next);
 		free(head);
 	}
+}
+
+/*
+ * Channel statistics
+ */
+
+
+/*
+ * For lfind, it compares key value with array member, needs to
+ * return 0 if they are the same, non-0 otherwise.
+ */
+static int cmp_key(const void *a, const void *b)
+{
+	return ((struct cnt *)a)->val - ((struct cnt *)b)->val;
+}
+
+/* For quick-sorting the array in descending order of counts */
+static int cmp_cnt(const void *a, const void *b)
+{
+	if (conf.scan_sort_order == SO_CHAN_REV)
+		return ((struct cnt *)a)->count - ((struct cnt *)b)->count;
+	return ((struct cnt *)b)->count - ((struct cnt *)a)->count;
+}
+
+struct cnt *channel_stats(struct scan_result *head,
+			  struct iw_range *iw_range, int *max_cnt)
+{
+	struct scan_result *cur;
+	struct cnt *arr = NULL, *bin, key = {0, 0};
+	size_t cnt = 0, n = 0;
+
+	for (cur = head; cur; cur = cur->next)
+		cnt++;
+	if (!cnt)
+		return NULL;
+
+	arr = calloc(cnt, sizeof(key));
+	for (cur = head; cur && n < *max_cnt; cur = cur->next) {
+		key.val = freq_to_channel(cur->freq, iw_range);
+
+		if (key.val >= 0) {
+			bin = lsearch(&key, arr, &n, sizeof(key), cmp_key);
+			if (bin)
+				bin->count++;
+		}
+	}
+
+	if (n < *max_cnt)
+		*max_cnt = n;
+	if (n > 0) {
+		qsort(arr, n, sizeof(key), cmp_cnt);
+	} else {
+		free(arr);
+		return NULL;
+	}
+	return arr;
 }
