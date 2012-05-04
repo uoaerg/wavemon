@@ -1,5 +1,19 @@
 NEWS
 ====
+
+--------------------
+0.7.5 (2012-05-04)
+--------------------
+  * Scan window:
+    - added a summary status line to present summary statistics.
+  * Bug fixes:
+    - added additional keyboard shortcuts for each screen to cope with
+      terminals which remap the function keys, fixing Ubuntu bug #725036;
+    - the shortcut is the first character of the screen's name (F1: i,
+      F2: l, F3: s, F7: p, F8: h, F9: a, F10: q), see manpage for details;
+    - added work-around for terminals with broken terminfo entries (e.g.
+      old aterm), now supporting the vt100 PF1..4 sequences in addition.
+
 --------------------
 0.7.4 (2012-02-03)
 --------------------
