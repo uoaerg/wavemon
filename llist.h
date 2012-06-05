@@ -25,6 +25,5 @@ void 	*ll_getall(int ld);
 void 	ll_reset(int ld);
 void 	ll_push(int ld, const char *format, ...);
 void 	ll_replace(int ld, unsigned long n, const char *format, ...);
-signed long ll_scan(int ld, const char *format, ...);
 unsigned long ll_size(int ld);
 void 	ll_destroy(int ld);

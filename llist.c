@@ -33,7 +33,7 @@
  * c = char
  * f = float
  * s = char *
- * S = char *, case-insensitive and fuzzy (for ll_scan)
+ * S = char *, case-insensitive and fuzzy
  * * = void *
  */
 
@@ -196,52 +196,6 @@ void ll_replace(int ld, unsigned long n, const char *format, ...)
 
 	free(l->e);
 	free(l);
-}
-
-/*
- * return the position of a given element in list (or -1)
- */
-signed long ll_scan(int ld, const char *format, ...)
-{
-	llist *l = lists[ld];
-	va_list ap;
-	int len, i, rv = -1, int_v;
-	double double_v;
-	char *string_v;
-
-	va_start(ap, format);
-	switch (*format) {
-	case 'd':
-		int_v = va_arg(ap, int);
-		for (i = 0; (l = l->next); i++)
-			if (*(int *)l->e == int_v)
-				rv = i;
-		break;
-	case 'f':
-		double_v = va_arg(ap, double);
-		for (i = 0; (l = l->next); i++)
-			if (*(double *)l->e == double_v)
-				rv = i;
-		break;
-	case 's':
-		string_v = strdup(va_arg(ap, char *));
-		for (i = 0; (l = l->next); i++)
-			if (!strcmp(l->e, string_v))
-				rv = i;
-		free(string_v);
-		break;
-	case 'S':
-		string_v = strdup(va_arg(ap, char *));
-		len = strlen(string_v);
-		for (i = 0; (l = l->next); i++)
-			if (strncasecmp(l->e, string_v, len) == 0) {
-				rv = i;
-				break;
-			}
-		free(string_v);
-	}
-	va_end(ap);
-	return rv;
 }
 
 /*
