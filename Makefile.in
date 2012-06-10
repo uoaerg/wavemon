@@ -8,10 +8,12 @@ datadir     = $(datarootdir)/@PACKAGE_NAME@
 exec_perms  = 0755
 install-suid-root: exec_perms = 4755
 
-CC	= @CC@
-CFLAGS	= @CFLAGS@
-DEFS	= @DEFS@
-LDLIBS	= @LIBS@
+CC	 ?= @CC@
+CFLAGS	 ?= @CFLAGS@
+CPPFLAGS ?= @CPPFLAGS@
+LDFLAGS  ?= @LDFLAGS@
+DEFS	 ?= @DEFS@
+LDLIBS	 ?= @LIBS@
 
 INSTALL = @INSTALL@
 RM	= rm -vf
@@ -23,7 +25,7 @@ OBJS	= $(PURESRC:.c=.o)
 DOCS	= README NEWS THANKS AUTHORS COPYING ChangeLog
 
 %.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) $(DEFS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(DEFS) -c -o $@ $<
 
 all: @PACKAGE_NAME@
 @PACKAGE_NAME@: $(MAIN) $(OBJS)
