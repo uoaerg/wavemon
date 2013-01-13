@@ -117,6 +117,12 @@ static void display_aplist(WINDOW *w_aplst)
 		 * test the interface status first.
 		 */
 		goto done;
+	} else if (errno == E2BIG) {
+		/*
+		 * This is a driver issue, since already using the largest possible
+		 * scan buffer. See comments in iwlist.c of wireless tools.
+		 */
+		sprintf(s, "No scan on %s: Driver returned too much data", conf_ifname());
 	} else if (errno) {
 		sprintf(s, "No scan on %s: %s", conf_ifname(), strerror(errno));
 	} else {
