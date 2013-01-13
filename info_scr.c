@@ -151,20 +151,20 @@ static void display_stats(void)
 	waddstr_b(w_stats, tmp);
 
 	waddstr(w_stats, ", invalid: ");
-	sprintf(tmp, "%'u", cur.stat.discard.nwid);
+	sprintf(tmp, "%u", cur.stat.discard.nwid);
 
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " nwid, ");
 
-	sprintf(tmp, "%'u", cur.stat.discard.code);
+	sprintf(tmp, "%u", cur.stat.discard.code);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " crypt, ");
 
-	sprintf(tmp, "%'u", cur.stat.discard.fragment);
+	sprintf(tmp, "%u", cur.stat.discard.fragment);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " frag, ");
 
-	sprintf(tmp, "%'u", cur.stat.discard.misc);
+	sprintf(tmp, "%u", cur.stat.discard.misc);
 	waddstr_b(w_stats, tmp);
 	waddstr(w_stats, " misc");
 
@@ -180,11 +180,11 @@ static void display_stats(void)
 	waddstr_b(w_stats, tmp);
 
 	waddstr(w_stats, ", mac retries: ");
-	sprintf(tmp, "%'u", cur.stat.discard.retries);
+	sprintf(tmp, "%u", cur.stat.discard.retries);
 	waddstr_b(w_stats, tmp);
 
 	waddstr(w_stats, ", missed beacons: ");
-	sprintf(tmp, "%'u", cur.stat.miss.beacon);
+	sprintf(tmp, "%u", cur.stat.miss.beacon);
 	waddstr_b(w_stats, tmp);
 
 	wclrtoborder(w_stats);
