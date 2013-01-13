@@ -75,8 +75,10 @@ static void display_levels(void)
 		qual = ewma(qual, cur.stat.qual.qual, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "link quality: ");
-		sprintf(tmp, "%0.f/%d  ", qual, cur.range.max_qual.qual);
+		sprintf(tmp, "%0.f%%  ", (1e2 * qual)/cur.range.max_qual.qual);
 		waddstr_b(w_levels, tmp);
+		sprintf(tmp, "(%0.f/%d)  ", qual, cur.range.max_qual.qual);
+		waddstr(w_levels, tmp);
 
 		waddbar(w_levels, line++, qual, 0, cur.range.max_qual.qual,
 			lvlscale, true);
