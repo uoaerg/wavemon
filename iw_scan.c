@@ -745,7 +745,7 @@ struct cnt *channel_stats(struct scan_result *head,
 		return NULL;
 
 	arr = calloc(cnt, sizeof(key));
-	for (cur = head; cur && n < *max_cnt; cur = cur->next) {
+	for (cur = head; cur; cur = cur->next) {
 		key.val = freq_to_channel(cur->freq, iw_range);
 
 		if (key.val >= 0) {
