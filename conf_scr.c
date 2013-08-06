@@ -185,7 +185,14 @@ int scr_conf_loop(WINDOW *w_menu)
 
 	key = wgetch(w_menu);
 	switch (key) {
+	case KEY_HOME:
+		active_item = first_item;
+		break;
+	case KEY_END:
+		active_item = num_items - 1;
+		break;
 	case KEY_DOWN:
+	case KEY_NPAGE:
 		active_item = select_item(active_item, 1);
 		if (active_item >= num_items) {
 			active_item = first_item;
@@ -193,6 +200,7 @@ int scr_conf_loop(WINDOW *w_menu)
 		}
 		break;
 	case KEY_UP:
+	case KEY_PPAGE:
 		active_item = select_item(active_item, -1);
 		if (active_item < first_item)
 			active_item = num_items - 1;
