@@ -114,7 +114,16 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 
 		wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
 					     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);
-		wprintw(menu, "%-6s", screens[cur].key_name);
+		if (*screens[cur].key_name) {
+
+			wattron(menu, A_UNDERLINE);
+			waddch(menu, screens[cur].key_name[0]);
+			wattroff(menu, A_UNDERLINE);
+
+			wprintw(menu, "%-5s", screens[cur].key_name + 1);
+		} else  {
+			wprintw(menu, "%-6s", "");
+		}
 	}
 	wrefresh(menu);
 
