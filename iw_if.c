@@ -468,6 +468,17 @@ void iw_getstat(struct iw_stat *iw)
 	iw_sanitize(&iw->range, &iw->stat.qual, &iw->dbm);
 }
 
+const char *we_version(void)
+{
+	static char buf[BUFSIZ];
+	struct iw_stat iw;
+
+	iw_getinf_range(conf_ifname(), &iw.range);
+	sprintf(buf, "wireless extensions v%d (source v%d)",
+	       iw.range.we_version_compiled, iw.range.we_version_source);
+	return buf;
+}
+
 void dump_parameters(void)
 {
 	struct iw_dyn_info info;
@@ -501,8 +512,7 @@ void dump_parameters(void)
 		}
 		printf("\n");
 	}
-	printf("       WE version: %d (source version %d)\n\n",
-	       iw.range.we_version_compiled, iw.range.we_version_source);
+	printf("\n");
 
 	if (info.cap_essid) {
 		if (info.essid_ct > 1)

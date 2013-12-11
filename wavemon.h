@@ -276,6 +276,7 @@ static inline int cp_from_scale(float value, const char *cscale, bool reverse)
 /*
  *	Wireless interfaces
  */
+extern const char *we_version(void);
 extern const char *conf_ifname(void);
 extern void conf_get_interface_list(bool init);
 extern char **iw_get_interface_list(void);
