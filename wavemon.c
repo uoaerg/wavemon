@@ -154,12 +154,12 @@ int main(int argc, char *argv[])
 
 	/* initialize the ncurses interface */
 	initscr();
-	check_geometry();
-	cbreak();
 	noecho();
 	nonl();
-	clear();
+	cbreak();
 	curs_set(0);
+	clear();
+	check_geometry();
 
 	start_color();
 	init_pair(CP_STANDARD,	COLOR_WHITE,	COLOR_BLACK);
