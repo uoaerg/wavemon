@@ -291,7 +291,7 @@ struct timer {
 };
 
 extern void start_timer(struct timer *t, unsigned long d);
-extern int end_timer(struct timer *t);
+extern bool end_timer(struct timer *t);
 
 /*
  *	Error handling

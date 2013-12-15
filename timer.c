@@ -19,23 +19,23 @@
  */
 #include "wavemon.h"
 
-void start_timer(struct timer *t, unsigned long duration)
+static unsigned long get_usecs(void)
 {
 	struct timeval tv;
 	struct timezone tz;
 
 	gettimeofday(&tv, &tz);
 
-	t->stime = tv.tv_sec * 1000000 + tv.tv_usec;
+	return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+void start_timer(struct timer *t, unsigned long duration)
+{
+	t->stime    = get_usecs();
 	t->duration = duration;
 }
 
-int end_timer(struct timer *t)
+bool end_timer(struct timer *t)
 {
-	struct timeval tv;
-	struct timezone tz;
-
-	gettimeofday(&tv, &tz);
-
-	return (tv.tv_sec * 1000000 + tv.tv_usec >= t->stime + t->duration);
+	return get_usecs() >= t->stime + t->duration;
 }
