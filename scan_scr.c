@@ -20,7 +20,7 @@
 #include "iw_if.h"
 
 #define START_LINE	2	/* where to begin the screen */
-#define NUMTOP		5	/* maximum number of 'top' statistics entries */
+#define NUMTOP		3	/* maximum number of 'top' statistics entries */
 
 /* GLOBALS */
 static bool scan_enabled;
@@ -192,7 +192,7 @@ static void display_aplist(WINDOW *w_aplst)
 		wadd_attr_str(w_aplst, A_REVERSE, s);
 
 		for (i = 0; i < max_cnt; i++) {
-			sprintf(s, "%s CH-%d(%d)", i ? "," : "",
+			sprintf(s, "%s ch#%d (%d)", i ? "," : "",
 				   stats[i].val, stats[i].count);
 			waddstr(w_aplst, s);
 		}
