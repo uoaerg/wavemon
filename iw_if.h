@@ -254,7 +254,7 @@ struct scan_result {
 
 	struct scan_result *next;
 };
-extern struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version);
+extern struct scan_result *get_scan_list(const char *ifname, int we_version);
 extern void free_scan_result(struct scan_result *head);
 
 /**

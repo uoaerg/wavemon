@@ -23,6 +23,7 @@
 #define NUMTOP		5	/* maximum number of 'top' statistics entries */
 
 /* GLOBALS */
+static bool scan_enabled;
 static struct iw_range range;
 static WINDOW *w_aplst;
 static pid_t pid;
@@ -81,56 +82,38 @@ static void display_aplist(WINDOW *w_aplst)
 	struct scan_result *head, *cur;
 	struct cnt *stats;
 	int max_cnt = NUMTOP;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
-
-	head = get_scan_list(skfd, conf_ifname(),
-			     range.we_version_compiled);
-	if (head) {
-		;
-	} else if (errno == EPERM || !has_net_admin_capability()) {
-		/*
-		 * Don't try to read leftover results, it does not work reliably
-		 */
-		sprintf(s, "This screen requires CAP_NET_ADMIN permissions");
-	} else if (errno == EINTR || errno == EAGAIN || errno == EBUSY) {
-		/* Ignore temporary errors */
-		goto done;
-	} else if (!if_is_up(skfd, conf_ifname())) {
-		sprintf(s, "Interface '%s' is down ", conf_ifname());
-		if (!has_net_admin_capability())
-			strcat(s, "- can not scan");
-		else if (if_set_up(skfd, conf_ifname()) < 0)
-			sprintf(s, "Can not bring up '%s' for scanning: %s",
-				conf_ifname(), strerror(errno));
-		else
-			strcat(s, "- setting it up ...");
-	} else if (errno == EFAULT) {
-		/*
-		 * EFAULT can occur after a window resizing event and is temporary.
-		 * It may also occur when the interface is down, hence we need to
-		 * test the interface status first.
-		 */
-		goto done;
-	} else if (errno == E2BIG) {
-		/*
-		 * This is a driver issue, since already using the largest possible
-		 * scan buffer. See comments in iwlist.c of wireless tools.
-		 */
-		sprintf(s, "No scan on %s: Driver returned too much data", conf_ifname());
-	} else if (errno) {
-		sprintf(s, "No scan on %s: %s", conf_ifname(), strerror(errno));
-	} else {
-		sprintf(s, "No scan results on %s", conf_ifname());
-	}
 
 	for (i = 1; i <= MAXYLEN; i++)
 		mvwclrtoborder(w_aplst, i, 1);
 
-	if (!head)
+	head = get_scan_list(conf_ifname(), range.we_version_compiled);
+	if (!head) {
+		if (errno == EPERM) {
+			/* Don't try to read leftover results, it does not work reliably. */
+			goto done;
+		} else if (errno == EINTR || errno == EAGAIN || errno == EBUSY) {
+			/* Ignore temporary errors. */
+			goto done;
+		} else if (errno == EFAULT) {
+			/*
+			 * EFAULT can occur after a window resizing event and is temporary.
+			 * It may also occur when the interface is down, hence we need to
+			 * test the interface status first.
+			 */
+			goto done;
+		} else if (errno == E2BIG) {
+			/*
+			 * This is a driver issue, since already using the largest possible
+			 * scan buffer. See comments in iwlist.c of wireless tools.
+			 */
+			sprintf(s, "No scan on %s: Driver returned too much data", conf_ifname());
+		} else if (errno) {
+			sprintf(s, "No scan on %s: %s", conf_ifname(), strerror(errno));
+		} else {
+			sprintf(s, "No scan results on %s", conf_ifname());
+		}
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
+	}
 
 	for (cur = head; cur; cur = cur->next, total++) {
 		if (str_is_ascii(cur->essid))
@@ -217,12 +200,14 @@ static void display_aplist(WINDOW *w_aplst)
 	free(stats);
 done:
 	free_scan_result(head);
-	close(skfd);
 	wrefresh(w_aplst);
 }
 
 void scr_aplst_init(void)
 {
+	int skfd;
+	char s[128];
+
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 	/*
 	 * Both parent and child process write to the terminal, updating
@@ -233,20 +218,39 @@ void scr_aplst_init(void)
 	 */
 	sig_tstp = xsignal(SIGTSTP, SIG_IGN);
 
-	/* Gathering scan data can take seconds. Inform user. */
-	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
+	scan_enabled = has_net_admin_capability();
+	if (!scan_enabled) {
+		sprintf(s, "This screen requires CAP_NET_ADMIN permissions");
+	} else {
+		skfd = socket(AF_INET, SOCK_DGRAM, 0);
+		if (skfd < 0)
+			err_sys("%s: can not open socket", __func__);
+
+		scan_enabled = if_is_up(skfd, conf_ifname());
+		if (scan_enabled) {
+			sprintf(s, "Waiting for scan data ...");
+		} else {
+			sprintf(s, "Interface %s is down - setting it up ...", conf_ifname());
+			if (if_set_up(skfd, conf_ifname()) < 0)
+				err_sys("Can not bring up interface '%s'", conf_ifname());
+			scan_enabled = if_is_up(skfd, conf_ifname());
+		}
+		close(skfd);
+	}
+	waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, s);
 	wrefresh(w_aplst);
 
-	/* Obtain interface information (interface not assumed to change). */
-	iw_getinf_range(conf_ifname(), &range);
+	if (scan_enabled) {
+		iw_getinf_range(conf_ifname(), &range);
 
-	pid = fork();
-	if (pid < 0) {
-		err_sys("could not fork scan process");
-	} else if (pid == 0) {
-		do display_aplist(w_aplst);
-		while (usleep(conf.stat_iv * 1000) == 0);
-		exit(EXIT_SUCCESS);
+		pid = fork();
+		if (pid < 0) {
+			err_sys("could not fork scan process");
+		} else if (pid == 0) {
+			do display_aplist(w_aplst);
+			while (usleep(conf.stat_iv * 1000) == 0);
+			exit(EXIT_SUCCESS);
+		}
 	}
 }
 
@@ -257,7 +261,8 @@ int scr_aplst_loop(WINDOW *w_menu)
 
 void scr_aplst_fini(void)
 {
-	kill(pid, SIGTERM);
+	if (scan_enabled)
+		kill(pid, SIGTERM);
 	delwin(w_aplst);
 	xsignal(SIGTSTP, sig_tstp);
 }

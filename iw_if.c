@@ -39,7 +39,7 @@ static int if_get_flags(int skfd, const char *ifname)
 	return ifr.ifr_flags;
 }
 
-/* Return true if @ifname is known to be up */
+/* Return true if @ifname is known to be up. */
 bool if_is_up(int skfd, const char *ifname)
 {
 	return if_get_flags(skfd, ifname) & IFF_UP;

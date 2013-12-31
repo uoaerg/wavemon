@@ -602,11 +602,15 @@ static int (*scan_cmp[])(const struct scan_result *, const struct scan_result *)
 	[SO_OPEN_CH_SI]	= cmp_open_chan_sig
 };
 
-struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
+struct scan_result *get_scan_list(const char *ifname, int we_version)
 {
 	struct scan_result *head = NULL;
 	struct iwreq wrq;
 	int wait, waited = 0;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
 	/*
 	 * Some drivers may return very large scan results, either because there
 	 * are many cells, or there are many large elements. Do not bother to
@@ -620,7 +624,7 @@ struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 	memset(&wrq, 0, sizeof(wrq));
 	strncpy(wrq.ifr_ifrn.ifrn_name, ifname, IFNAMSIZ);
 	if (ioctl(skfd, SIOCSIWSCAN, &wrq) < 0)
-		return NULL;
+		goto done;
 
 	/* Larger initial timeout of 250ms between set and first get */
 	for (wait = 250; (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
@@ -699,6 +703,8 @@ struct scan_result *get_scan_list(int skfd, const char *ifname, int we_version)
 		}
 		free(new);	/* may have been allocated but not filled in */
 	}
+done:
+	close(skfd);
 	return head;
 }
 
