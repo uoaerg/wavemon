@@ -56,7 +56,7 @@ static char *fmt_scan_result(struct scan_result *cur, char buf[], size_t buflen)
 		len += snprintf(buf + len, buflen - len, ", ch %2d, %g MHz",
 				channel, cur->freq / 1e6);
 	else if (channel >= 0)
-		len += snprintf(buf + len, buflen - len, ", CH %3d, %g MHz",
+		len += snprintf(buf + len, buflen - len, ", CH %2d, %g MHz",
 				channel, cur->freq / 1e6);
 	else
 		len += snprintf(buf + len, buflen - len, ", %g GHz",
