@@ -23,26 +23,26 @@
 #define NUMTOP		5	/* maximum number of 'top' statistics entries */
 
 /* GLOBALS */
+static struct iw_range range;
 static WINDOW *w_aplst;
 static pid_t pid;
 static void (*sig_tstp)(int);
 
-static char *fmt_scan_result(struct scan_result *cur, struct iw_range *iw_range,
-			     char buf[], size_t buflen)
+static char *fmt_scan_result(struct scan_result *cur, char buf[], size_t buflen)
 {
 	struct iw_levelstat dbm;
 	size_t len = 0;
-	int channel = freq_to_channel(cur->freq, iw_range);
+	int channel = freq_to_channel(cur->freq, &range);
 
-	iw_sanitize(iw_range, &cur->qual, &dbm);
+	iw_sanitize(&range, &cur->qual, &dbm);
 
 	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
 		len += snprintf(buf + len, buflen - len, "%3.0f%%, %.0f dBm",
-				1E2 * cur->qual.qual / iw_range->max_qual.qual,
+				1E2 * cur->qual.qual / range.max_qual.qual,
 				dbm.signal);
 	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%2d/%d",
-				cur->qual.qual, iw_range->max_qual.qual);
+				cur->qual.qual, range.max_qual.qual);
 	else if (!(cur->qual.updated & IW_QUAL_LEVEL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%.0f dBm",
 				dbm.signal);
@@ -78,7 +78,6 @@ static void display_aplist(WINDOW *w_aplst)
 	int max_essid_len = 0;
 	int i, line = START_LINE;
 	int total = 0, open = 0, tg = 0, fg = 0;
-	struct iw_range range;
 	struct scan_result *head, *cur;
 	struct cnt *stats;
 	int max_cnt = NUMTOP;
@@ -86,8 +85,6 @@ static void display_aplist(WINDOW *w_aplst)
 
 	if (skfd < 0)
 		err_sys("%s: can not open socket", __func__);
-
-	iw_getinf_range(conf_ifname(), &range);
 
 	head = get_scan_list(skfd, conf_ifname(),
 			     range.we_version_compiled);
@@ -173,7 +170,7 @@ static void display_aplist(WINDOW *w_aplst)
 
 		wattroff(w_aplst, COLOR_PAIR(col));
 
-		fmt_scan_result(cur, &range, s, sizeof(s));
+		fmt_scan_result(cur, s, sizeof(s));
 		waddstr(w_aplst, " ");
 		waddstr(w_aplst, s);
 	}
@@ -239,6 +236,9 @@ void scr_aplst_init(void)
 	/* Gathering scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
+
+	/* Obtain interface information (interface not assumed to change). */
+	iw_getinf_range(conf_ifname(), &range);
 
 	pid = fork();
 	if (pid < 0) {

@@ -304,7 +304,9 @@ void dyn_info_cleanup(struct iw_dyn_info *info)
 
 
 /*
- * get range information
+ * Request range information for a given wireless interface.
+ * @ifname: name of the wireless argument
+ * @range:  storage location to populate with range information.
  */
 void iw_getinf_range(const char *ifname, struct iw_range *range)
 {
