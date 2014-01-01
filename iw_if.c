@@ -46,9 +46,13 @@ bool if_is_up(int skfd, const char *ifname)
 }
 
 /** Bring @ifname up if not already up. Return 0 if ok, < 0 on error. */
-int if_set_up(int skfd, const char *ifname)
+int if_set_up(const char *ifname)
 {
 	struct ifreq ifr;
+	int ret, skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
 
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
@@ -58,7 +62,9 @@ int if_set_up(int skfd, const char *ifname)
 		return 0;
 
 	ifr.ifr_flags |= IFF_UP;
-	return ioctl(skfd, SIOCSIFFLAGS, &ifr);
+	ret = ioctl(skfd, SIOCSIFFLAGS, &ifr);
+	close(skfd);
+	return ret;
 }
 
 /* Interface information */
