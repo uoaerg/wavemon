@@ -519,7 +519,7 @@ static int iw_extract_event_stream(struct stream_descr *stream,
 	return 1;
 }
 
-static void iw_extract_ie(struct iw_event *iwe, struct scan_result *sr)
+static void iw_extract_ie(struct iw_event *iwe, struct scan_entry *sr)
 {
 	const uint8_t wpa1_oui[3] = { 0x00, 0x50, 0xf2 };
 	uint8_t *buffer = iwe->u.data.pointer;
@@ -552,47 +552,47 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_result *sr)
  * Ordering functions for scan results
  */
 /* Order by ascending frequency. */
-static int cmp_chan(const struct scan_result *a, const struct scan_result *b)
+static int cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->freq < b->freq;
 }
 
-static int cmp_chan_rev(const struct scan_result *a, const struct scan_result *b)
+static int cmp_chan_rev(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return cmp_chan(b, a);
 }
 
 /* Order by descending signal strength. */
-static int cmp_sig(const struct scan_result *a, const struct scan_result *b)
+static int cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->qual.level - b->qual.level;
 }
 
 /* Order by ascending frequency first, then by descending signal strength. */
-static int cmp_chan_sig(const struct scan_result *a, const struct scan_result *b)
+static int cmp_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->freq == b->freq ? cmp_sig(a, b) : cmp_chan(a, b);
 }
 
 /* Show open access points first, ordered by mode. */
-static int cmp_open(const struct scan_result *a, const struct scan_result *b)
+static int cmp_open(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->has_key > b->has_key;
 }
 
 /* Sort (open) access points by descending signal strength. */
-static int cmp_open_sig(const struct scan_result *a, const struct scan_result *b)
+static int cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->has_key == b->has_key ? cmp_sig(a, b) : cmp_open(a, b);
 }
 
 /* Sort (open) access points by ascending frequency, then by descending signal. */
-static int cmp_open_chan_sig(const struct scan_result *a, const struct scan_result *b)
+static int cmp_open_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->has_key == b->has_key ? cmp_chan_sig(a, b) : cmp_open(a, b);
 }
 
-static int (*scan_cmp[])(const struct scan_result *, const struct scan_result *) = {
+static int (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) = {
 	[SO_CHAN]	= cmp_chan,
 	[SO_CHAN_REV]	= cmp_chan_rev,
 	[SO_SIGNAL]	= cmp_sig,
@@ -602,9 +602,14 @@ static int (*scan_cmp[])(const struct scan_result *, const struct scan_result *)
 	[SO_OPEN_CH_SI]	= cmp_open_chan_sig
 };
 
-struct scan_result *get_scan_list(const char *ifname, int we_version)
+/**
+ * Produce ranked list of scan results.
+ * @ifname:     interface name to run scan on
+ * @we_version: version of the WE extensions (needed internally)
+ */
+struct scan_entry *get_scan_list(const char *ifname, int we_version)
 {
-	struct scan_result *head = NULL;
+	struct scan_entry *head = NULL;
 	struct iwreq wrq;
 	int wait, waited = 0;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -645,7 +650,7 @@ struct scan_result *get_scan_list(const char *ifname, int we_version)
 	if (wrq.u.data.length) {
 		struct iw_event iwe;
 		struct stream_descr stream;
-		struct scan_result *new = NULL;
+		struct scan_entry *new = NULL;
 		int f = 0;		/* Idea taken from waproamd */
 
 		memset(&stream, 0, sizeof(stream));
@@ -690,7 +695,7 @@ struct scan_result *get_scan_list(const char *ifname, int we_version)
 				break;
 			}
 			if (f == 127) {
-				struct scan_result *cur = head, **prev = &head;
+				struct scan_entry *cur = head, **prev = &head;
 
 				while (cur && scan_cmp[conf.scan_sort_order](cur, new) > 0)
 					prev = &cur->next, cur = cur->next;
@@ -708,10 +713,10 @@ done:
 	return head;
 }
 
-void free_scan_result(struct scan_result *head)
+void free_scan_list(struct scan_entry *head)
 {
 	if (head) {
-		free_scan_result(head->next);
+		free_scan_list(head->next);
 		free(head);
 	}
 }
@@ -738,10 +743,10 @@ static int cmp_cnt(const void *a, const void *b)
 	return ((struct cnt *)b)->count - ((struct cnt *)a)->count;
 }
 
-struct cnt *channel_stats(struct scan_result *head,
-			  struct iw_range *iw_range, int *max_cnt)
+struct cnt *channel_stats(struct scan_entry *head,
+			  struct iw_range *iw_range, size_t *max_cnt)
 {
-	struct scan_result *cur;
+	struct scan_entry *cur;
 	struct cnt *arr = NULL, *bin, key = {0, 0};
 	size_t cnt = 0, n = 0;
 

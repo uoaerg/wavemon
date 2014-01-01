@@ -231,7 +231,7 @@ static inline void sampling_stop(void)	{ alarm(0); }
  *	Organization of scan results
  */
 /**
- * struct scan_result  -  Ranked list of scan results
+ * struct scan_entry  -  Representation of a single scan result.
  * @ap_addr:	MAC address
  * @essid:	station SSID (may be empty)
  * @mode:	operation mode (type of station)
@@ -239,9 +239,9 @@ static inline void sampling_stop(void)	{ alarm(0); }
  * @qual:	signal quality information
  * @has_key:	whether using encryption or not
  * @flags:	properties gathered from Information Elements
- * @next:	next, lower-ranking entry
+ * @next:	next entry in list
  */
-struct scan_result {
+struct scan_entry {
 	struct ether_addr	ap_addr;
 	char			essid[IW_ESSID_MAX_SIZE + 2];
 	int			mode;
@@ -251,10 +251,10 @@ struct scan_result {
 	int 			has_key:1;
 	uint32_t		flags;
 
-	struct scan_result *next;
+	struct scan_entry	*next;
 };
-extern struct scan_result *get_scan_list(const char *ifname, int we_version);
-extern void free_scan_result(struct scan_result *head);
+extern struct scan_entry *get_scan_list(const char *ifname, int we_version);
+extern void free_scan_list(struct scan_entry *head);
 
 /**
  * struct cnt - count frequency of integer numbers
@@ -265,8 +265,35 @@ struct cnt {
 	int	val;
 	int	count;
 };
-extern struct cnt *channel_stats(struct scan_result *head,
-				 struct iw_range *iw_range, int *max_cnt);
+extern struct cnt *channel_stats(struct scan_entry *head,
+				 struct iw_range *iw_range, size_t *max_cnt);
+
+/**
+ * struct scan_result - Structure to aggregate all collected scan data.
+ * @head:	   begin of scan_entry list (may be NULL)
+ * @num_total:     number of entries in list starting at @head
+ * @num_open:      number of open entries among @num_total
+ * @num_two_gig:   number of 2.4GHz stations among @num_total
+ * @num_five_gig:  number of 5 GHz stations among @num_total
+ * @msg:	   error message, if any
+ * @max_essid_len: maximum ESSID-string length (for formatting)
+ * @channel_stats: array of channel statistics entries
+ * @num_ch_stats:  length of @channel_stats array
+ */
+struct scan_result {
+	struct scan_entry *head;
+	uint16_t	  num_entries,
+			  num_open,
+			  num_two_gig,
+			  num_five_gig;
+	char		  msg[128];
+
+	uint16_t	  max_essid_len;
+
+	struct cnt	  *channel_stats;
+	size_t            num_ch_stats;
+
+};
 
 /*
  *	General helper routines
