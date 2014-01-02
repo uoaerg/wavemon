@@ -60,12 +60,7 @@ AC_CHECK_LIB([pthread], [pthread_create], [CFLAGS="$CFLAGS -pthread"],
 AC_CHECK_LIB([cap], [cap_get_flag])
 
 # Testing library functions
-AC_CHECK_FUNCS([modf log10 gettimeofday	\
-		memmove memset strdup	\
-		strchr strspn strcspn	\
-		strcasecmp strncasecmp	\
-		strtol			\
-		ether_ntohost], [],
+AC_CHECK_FUNCS([gettimeofday ether_ntohost], [],
 	       [AC_MSG_ERROR(function '$ac_func' not supported)])
 
 # Checks for typedefs, structures, and compiler characteristics.
