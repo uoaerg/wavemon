@@ -607,7 +607,7 @@ static int (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) =
  * @ifname:     interface name to run scan on
  * @we_version: version of the WE extensions (needed internally)
  */
-struct scan_entry *get_scan_list(const char *ifname, int we_version)
+static struct scan_entry *get_scan_list(const char *ifname, int we_version)
 {
 	struct scan_entry *head = NULL;
 	struct iwreq wrq;
@@ -713,7 +713,7 @@ done:
 	return head;
 }
 
-void free_scan_list(struct scan_entry *head)
+static void free_scan_list(struct scan_entry *head)
 {
 	if (head) {
 		free_scan_list(head->next);
@@ -722,9 +722,8 @@ void free_scan_list(struct scan_entry *head)
 }
 
 /*
- * Channel statistics
+ * 	Channel statistics * shown at the bottom of scan screen.
  */
-
 
 /*
  * For lfind, it compares key value with array member, needs to
@@ -743,36 +742,136 @@ static int cmp_cnt(const void *a, const void *b)
 	return ((struct cnt *)b)->count - ((struct cnt *)a)->count;
 }
 
-struct cnt *channel_stats(struct scan_entry *head,
-			  struct iw_range *iw_range, size_t *max_cnt)
+/**
+ * Fill in sr->channel_stats (must not have been allocated yet).
+ */
+static void compute_channel_stats(struct scan_result *sr)
 {
 	struct scan_entry *cur;
-	struct cnt *arr = NULL, *bin, key = {0, 0};
-	size_t cnt = 0, n = 0;
+	struct cnt *bin, key = {0, 0};
+	size_t n = 0;
 
-	for (cur = head; cur; cur = cur->next)
-		cnt++;
-	if (!cnt)
-		return NULL;
+	if (!sr->num.entries)
+		return;
 
-	arr = calloc(cnt, sizeof(key));
-	for (cur = head; cur; cur = cur->next) {
-		key.val = freq_to_channel(cur->freq, iw_range);
+	sr->channel_stats = calloc(sr->num.entries, sizeof(key));
+	for (cur = sr->head; cur; cur = cur->next) {
+		key.val = freq_to_channel(cur->freq, &sr->range);
 
 		if (key.val >= 0) {
-			bin = lsearch(&key, arr, &n, sizeof(key), cmp_key);
+			bin = lsearch(&key, sr->channel_stats, &n, sizeof(key), cmp_key);
 			if (bin)
 				bin->count++;
 		}
 	}
 
-	if (n < *max_cnt)
-		*max_cnt = n;
 	if (n > 0) {
-		qsort(arr, n, sizeof(key), cmp_cnt);
+		qsort(sr->channel_stats, n, sizeof(key), cmp_cnt);
+		sr->num.ch_stats = n < MAX_CH_STATS ? n : MAX_CH_STATS;
 	} else {
-		free(arr);
-		return NULL;
+		free(sr->channel_stats);
+		sr->channel_stats = NULL;
 	}
-	return arr;
+}
+
+/*
+ *	Scan results.
+ */
+void scan_result_init(struct scan_result *sr)
+{
+	memset(sr, 0, sizeof(*sr));
+	iw_getinf_range(conf_ifname(), &sr->range);
+	pthread_mutex_init(&sr->mutex, NULL);
+}
+
+void scan_result_fini(struct scan_result *sr)
+{
+	free_scan_list(sr->head);
+	free(sr->channel_stats);
+	pthread_mutex_destroy(&sr->mutex);
+}
+
+/** The actual scan thread. */
+void *do_scan(void *sr_ptr)
+{
+	struct scan_result *sr = (struct scan_result *)sr_ptr;
+	struct scan_entry *cur;
+
+	pthread_detach(pthread_self());
+
+	do {
+		pthread_mutex_lock(&sr->mutex);
+
+		free_scan_list(sr->head);
+		free(sr->channel_stats);
+
+		sr->head          = NULL;
+		sr->channel_stats = NULL;
+		sr->msg[0]        = '\0';
+		sr->max_essid_len = MAX_ESSID_LEN;
+		memset(&(sr->num), 0, sizeof(sr->num));
+
+		sr->head = get_scan_list(conf_ifname(), sr->range.we_version_compiled);
+		if (!sr->head) {
+			switch(errno) {
+			case EPERM:
+				/* Don't try to read leftover results, it does not work reliably. */
+				if (!has_net_admin_capability())
+					snprintf(sr->msg, sizeof(sr->msg),
+						 "This screen requires CAP_NET_ADMIN permissions");
+				break;
+			case EFAULT:
+				/*
+				 * EFAULT can occur after a window resizing event and is temporary.
+				 * It may also occur when the interface is down, hence defer handling.
+				 */
+				break;
+			case EINTR:
+			case EBUSY:
+			case EAGAIN:
+				/* Temporary errors. */
+				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan access to device ...");
+				break;
+			case ENETDOWN:
+				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
+				if (if_set_up(conf_ifname()) < 0)
+					err_sys("Can not bring up interface '%s'", conf_ifname());
+				break;
+			case E2BIG:
+				/*
+				 * This is a driver issue, since already using the largest possible
+				 * scan buffer. See comments in iwlist.c of wireless tools.
+				 */
+				snprintf(sr->msg, sizeof(sr->msg),
+					 "No scan on %s: Driver returned too much data", conf_ifname());
+				break;
+			case 0:
+				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
+				break;
+			default:
+				snprintf(sr->msg, sizeof(sr->msg),
+					 "Scan failed on %s: %s", conf_ifname(), strerror(errno));
+			}
+		}
+
+		for (cur = sr->head; cur; cur = cur->next) {
+			if (str_is_ascii(cur->essid))
+				sr->max_essid_len = clamp(strlen(cur->essid),
+							  sr->max_essid_len,
+							  IW_ESSID_MAX_SIZE);
+			sr->num.open += !cur->has_key;
+			if (cur->freq < 1e3)
+				;	/* cur->freq is channel number */
+			else if (cur->freq < 5e9)
+				sr->num.two_gig++;
+			else
+				sr->num.five_gig++;
+			sr->num.entries++;
+		}
+		compute_channel_stats(sr);
+
+		pthread_mutex_unlock(&sr->mutex);
+	} while (usleep(conf.stat_iv * 1000) == 0);
+
+	return NULL;
 }

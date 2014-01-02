@@ -254,8 +254,6 @@ struct scan_entry {
 
 	struct scan_entry	*next;
 };
-extern struct scan_entry *get_scan_list(const char *ifname, int we_version);
-extern void free_scan_list(struct scan_entry *head);
 
 /**
  * struct cnt - count frequency of integer numbers
@@ -266,8 +264,6 @@ struct cnt {
 	int	val;
 	int	count;
 };
-extern struct cnt *channel_stats(struct scan_entry *head,
-				 struct iw_range *iw_range, size_t *max_cnt);
 
 /**
  * struct scan_result - Structure to aggregate all collected scan data.
@@ -280,7 +276,8 @@ extern struct cnt *channel_stats(struct scan_entry *head,
  * @num.two_gig:   number of 2.4GHz stations among @num.total
  * @num.five_gig:  number of 5 GHz stations among @num.total
  * @num.ch_stats:  length of @channel_stats array
- * @mutex:         protects concurrent consumer/producer access
+ * @range:         range data associated with scan interface
+ * @mutex:         protects against concurrent consumer/producer access
  */
 struct scan_result {
 	struct scan_entry *head;
@@ -292,23 +289,17 @@ struct scan_result {
 				open,
 				two_gig,
 				five_gig;
+/* Maximum number of 'top' statistics entries. */
+#define MAX_CH_STATS		3
 		size_t		ch_stats;
 	}		  num;
+	struct iw_range	  range;
 	pthread_mutex_t   mutex;
 };
 
-static inline void scan_result_init(struct scan_result *sr)
-{
-	memset(sr, 0, sizeof(*sr));
-	pthread_mutex_init(&sr->mutex, NULL);
-}
-
-static inline void scan_result_fini(struct scan_result *sr)
-{
-	free_scan_list(sr->head);
-	free(sr->channel_stats);
-	pthread_mutex_destroy(&sr->mutex);
-}
+extern void scan_result_init(struct scan_result *sr);
+extern void scan_result_fini(struct scan_result *sr);
+extern void *do_scan(void *sr_ptr);
 
 /*
  *	General helper routines

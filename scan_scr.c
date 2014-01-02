@@ -20,14 +20,11 @@
 #include "iw_if.h"
 
 #define START_LINE	2	/* where to begin the screen */
-#define NUMTOP		3	/* maximum number of 'top' statistics entries */
 
 /* GLOBALS */
-static struct iw_range range;
 static struct scan_result sr;
 static pthread_t scan_thread;
 static WINDOW *w_aplst;
-
 
 /**
  * Sanitize and format single scan entry as a string.
@@ -39,17 +36,17 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 {
 	struct iw_levelstat dbm;
 	size_t len = 0;
-	int channel = freq_to_channel(cur->freq, &range);
+	int channel = freq_to_channel(cur->freq, &sr.range);
 
-	iw_sanitize(&range, &cur->qual, &dbm);
+	iw_sanitize(&sr.range, &cur->qual, &dbm);
 
 	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
 		len += snprintf(buf + len, buflen - len, "%3.0f%%, %.0f dBm",
-				1E2 * cur->qual.qual / range.max_qual.qual,
+				1E2 * cur->qual.qual / sr.range.max_qual.qual,
 				dbm.signal);
 	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%2d/%d",
-				cur->qual.qual, range.max_qual.qual);
+				cur->qual.qual, sr.range.max_qual.qual);
 	else if (!(cur->qual.updated & IW_QUAL_LEVEL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%.0f dBm",
 				dbm.signal);
@@ -76,92 +73,6 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 	if (cur->flags)
 		len += snprintf(buf + len, buflen - len, ", %s",
 				 format_enc_capab(cur->flags, "/"));
-}
-
-static void *do_scan(void *sr_ptr)
-{
-	struct scan_result *sr = (struct scan_result *)sr_ptr;
-	struct scan_entry *cur;
-
-	pthread_detach(pthread_self());
-
-	do {
-		pthread_mutex_lock(&sr->mutex);
-
-		free_scan_list(sr->head);
-		free(sr->channel_stats);
-
-		sr->head          = NULL;
-		sr->channel_stats = NULL;
-		sr->msg[0]        = '\0';
-		sr->max_essid_len = MAX_ESSID_LEN;
-		memset(&(sr->num), 0, sizeof(sr->num));
-
-		sr->head = get_scan_list(conf_ifname(), range.we_version_compiled);
-		if (sr->head) {
-			sr->num.ch_stats  = NUMTOP;
-			sr->channel_stats = channel_stats(sr->head, &range, &(sr->num.ch_stats));
-		} else {
-			switch(errno) {
-			case EPERM:
-				/* Don't try to read leftover results, it does not work reliably. */
-				if (!has_net_admin_capability())
-					snprintf(sr->msg, sizeof(sr->msg),
-						 "This screen requires CAP_NET_ADMIN permissions");
-				break;
-			case EFAULT:
-				/*
-				 * EFAULT can occur after a window resizing event and is temporary.
-				 * It may also occur when the interface is down, hence defer handling.
-				 */
-				break;
-			case EINTR:
-			case EBUSY:
-			case EAGAIN:
-				/* Temporary errors. */
-				snprintf(sr->msg, sizeof(sr->msg), "Waiting for device to become ready ...");
-				break;
-			case ENETDOWN:
-				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
-				if (if_set_up(conf_ifname()) < 0)
-					err_sys("Can not bring up interface '%s'", conf_ifname());
-				break;
-			case E2BIG:
-				/*
-				 * This is a driver issue, since already using the largest possible
-				 * scan buffer. See comments in iwlist.c of wireless tools.
-				 */
-				snprintf(sr->msg, sizeof(sr->msg),
-					 "No scan on %s: Driver returned too much data", conf_ifname());
-				break;
-			case 0:
-				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
-				break;
-			default:
-				snprintf(sr->msg, sizeof(sr->msg),
-					 "Scan failed on %s: %s", conf_ifname(), strerror(errno));
-			}
-		}
-
-		for (cur = sr->head; cur; cur = cur->next) {
-			if (str_is_ascii(cur->essid))
-				sr->max_essid_len = clamp(strlen(cur->essid),
-							  sr->max_essid_len,
-							  IW_ESSID_MAX_SIZE);
-			sr->num.open += !cur->has_key;
-			if (cur->freq < 1e3)
-				;	/* cur->freq is channel number */
-			else if (cur->freq < 5e9)
-				sr->num.two_gig++;
-			else
-				sr->num.five_gig++;
-			sr->num.entries++;
-		}
-
-		pthread_mutex_unlock(&sr->mutex);
-	} while (usleep(conf.stat_iv * 1000) == 0);
-
-	return NULL;
 }
 
 static void display_aplist(WINDOW *w_aplst)
@@ -211,7 +122,7 @@ static void display_aplist(WINDOW *w_aplst)
 		waddstr(w_aplst, s);
 	}
 
-	if (sr.num.entries < NUMTOP)
+	if (sr.num.entries < MAX_CH_STATS)
 		goto done;
 
 	wmove(w_aplst, MAXYLEN, 1);
@@ -260,8 +171,6 @@ void scr_aplst_init(void)
 	/* Gathering scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
-
-	iw_getinf_range(conf_ifname(), &range);
 
 	scan_result_init(&sr);
 	pthread_create(&scan_thread, NULL, do_scan, &sr);
