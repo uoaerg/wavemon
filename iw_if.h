@@ -19,6 +19,7 @@
  */
 #include "wavemon.h"
 #include <netdb.h>
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ether.h>
@@ -271,29 +272,43 @@ extern struct cnt *channel_stats(struct scan_entry *head,
 /**
  * struct scan_result - Structure to aggregate all collected scan data.
  * @head:	   begin of scan_entry list (may be NULL)
- * @num_total:     number of entries in list starting at @head
- * @num_open:      number of open entries among @num_total
- * @num_two_gig:   number of 2.4GHz stations among @num_total
- * @num_five_gig:  number of 5 GHz stations among @num_total
  * @msg:	   error message, if any
  * @max_essid_len: maximum ESSID-string length (for formatting)
  * @channel_stats: array of channel statistics entries
- * @num_ch_stats:  length of @channel_stats array
+ * @num.total:     number of entries in list starting at @head
+ * @num.open:      number of open entries among @num.total
+ * @num.two_gig:   number of 2.4GHz stations among @num.total
+ * @num.five_gig:  number of 5 GHz stations among @num.total
+ * @num.ch_stats:  length of @channel_stats array
+ * @mutex:         protects concurrent consumer/producer access
  */
 struct scan_result {
 	struct scan_entry *head;
-	uint16_t	  num_entries,
-			  num_open,
-			  num_two_gig,
-			  num_five_gig;
 	char		  msg[128];
-
 	uint16_t	  max_essid_len;
-
 	struct cnt	  *channel_stats;
-	size_t            num_ch_stats;
-
+	struct assorted_numbers {
+		uint16_t	entries,
+				open,
+				two_gig,
+				five_gig;
+		size_t		ch_stats;
+	}		  num;
+	pthread_mutex_t   mutex;
 };
+
+static inline void scan_result_init(struct scan_result *sr)
+{
+	memset(sr, 0, sizeof(*sr));
+	pthread_mutex_init(&sr->mutex, NULL);
+}
+
+static inline void scan_result_fini(struct scan_result *sr)
+{
+	free_scan_list(sr->head);
+	free(sr->channel_stats);
+	pthread_mutex_destroy(&sr->mutex);
+}
 
 /*
  *	General helper routines

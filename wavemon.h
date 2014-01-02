@@ -80,6 +80,9 @@ enum info_screen_geometry {
 /* Number of seconds to display a warning message outside ncurses mode */
 #define WARN_DISPLAY_DELAY	3
 
+/* Minimum SSID length */
+#define MAX_ESSID_LEN		16
+
 /*
  * Symbolic names of actions to take when crossing thresholds.
  * These actions invoke the corresponding ncurses functions.

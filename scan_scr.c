@@ -25,9 +25,9 @@
 /* GLOBALS */
 static struct iw_range range;
 static struct scan_result sr;
+static pthread_t scan_thread;
 static WINDOW *w_aplst;
-static pid_t pid;
-static void (*sig_tstp)(int);
+
 
 /**
  * Sanitize and format single scan entry as a string.
@@ -78,71 +78,90 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 				 format_enc_capab(cur->flags, "/"));
 }
 
-static void get_scan_result(void)
+static void *do_scan(void *sr_ptr)
 {
+	struct scan_result *sr = (struct scan_result *)sr_ptr;
 	struct scan_entry *cur;
 
-	memset(&sr, 0, sizeof(sr));
+	pthread_detach(pthread_self());
 
-	sr.head = get_scan_list(conf_ifname(), range.we_version_compiled);
-	if (sr.head) {
-		sr.num_ch_stats  = NUMTOP;
-		sr.channel_stats = channel_stats(sr.head, &range, &(sr.num_ch_stats));
-	} else {
-		switch(errno) {
-		case EPERM:
-			/* Don't try to read leftover results, it does not work reliably. */
-			if (!has_net_admin_capability())
-				snprintf(sr.msg, sizeof(sr.msg),
-					 "This screen requires CAP_NET_ADMIN permissions");
-			break;
-		case EINTR:
-		case EBUSY:
-		case EAGAIN:
-			/* Ignore temporary errors. */
-			break;
-		case EFAULT:
-			/*
-			 * EFAULT can occur after a window resizing event and is temporary.
-			 * It may also occur when the interface is down, hence we need to
-			 * test the interface status first.
-			 */
-			break;
-		case ENETDOWN:
-			snprintf(sr.msg, sizeof(sr.msg), "Interface %s is down - setting it up ...", conf_ifname());
-			if (if_set_up(conf_ifname()) < 0)
-				err_sys("Can not bring up interface '%s'", conf_ifname());
-			break;
-		case E2BIG:
-			/*
-			 * This is a driver issue, since already using the largest possible
-			 * scan buffer. See comments in iwlist.c of wireless tools.
-			 */
-			snprintf(sr.msg, sizeof(sr.msg),
-				 "No scan on %s: Driver returned too much data", conf_ifname());
-			break;
-		case 0:
-			snprintf(sr.msg, sizeof(sr.msg), "Empty scan results on %s", conf_ifname());
-			break;
-		default:
-			snprintf(sr.msg, sizeof(sr.msg),
-				 "Scan failed on %s: %s", conf_ifname(), strerror(errno));
+	do {
+		pthread_mutex_lock(&sr->mutex);
+
+		free_scan_list(sr->head);
+		free(sr->channel_stats);
+
+		sr->head          = NULL;
+		sr->channel_stats = NULL;
+		sr->msg[0]        = '\0';
+		sr->max_essid_len = MAX_ESSID_LEN;
+		memset(&(sr->num), 0, sizeof(sr->num));
+
+		sr->head = get_scan_list(conf_ifname(), range.we_version_compiled);
+		if (sr->head) {
+			sr->num.ch_stats  = NUMTOP;
+			sr->channel_stats = channel_stats(sr->head, &range, &(sr->num.ch_stats));
+		} else {
+			switch(errno) {
+			case EPERM:
+				/* Don't try to read leftover results, it does not work reliably. */
+				if (!has_net_admin_capability())
+					snprintf(sr->msg, sizeof(sr->msg),
+						 "This screen requires CAP_NET_ADMIN permissions");
+				break;
+			case EFAULT:
+				/*
+				 * EFAULT can occur after a window resizing event and is temporary.
+				 * It may also occur when the interface is down, hence defer handling.
+				 */
+				break;
+			case EINTR:
+			case EBUSY:
+			case EAGAIN:
+				/* Temporary errors. */
+				snprintf(sr->msg, sizeof(sr->msg), "Waiting for device to become ready ...");
+				break;
+			case ENETDOWN:
+				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
+				if (if_set_up(conf_ifname()) < 0)
+					err_sys("Can not bring up interface '%s'", conf_ifname());
+				break;
+			case E2BIG:
+				/*
+				 * This is a driver issue, since already using the largest possible
+				 * scan buffer. See comments in iwlist.c of wireless tools.
+				 */
+				snprintf(sr->msg, sizeof(sr->msg),
+					 "No scan on %s: Driver returned too much data", conf_ifname());
+				break;
+			case 0:
+				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
+				break;
+			default:
+				snprintf(sr->msg, sizeof(sr->msg),
+					 "Scan failed on %s: %s", conf_ifname(), strerror(errno));
+			}
 		}
-	}
 
-	for (cur = sr.head; cur; cur = cur->next, sr.num_entries++) {
-		if (str_is_ascii(cur->essid))
-			sr.max_essid_len = clamp(strlen(cur->essid),
-						 sr.max_essid_len,
-						 IW_ESSID_MAX_SIZE);
-		sr.num_open += !cur->has_key;
-		if (cur->freq < 1e3)
-			;	/* cur->freq is channel number */
-		else if (cur->freq < 5e9)
-			sr.num_two_gig++;
-		else
-			sr.num_five_gig++;
-	}
+		for (cur = sr->head; cur; cur = cur->next) {
+			if (str_is_ascii(cur->essid))
+				sr->max_essid_len = clamp(strlen(cur->essid),
+							  sr->max_essid_len,
+							  IW_ESSID_MAX_SIZE);
+			sr->num.open += !cur->has_key;
+			if (cur->freq < 1e3)
+				;	/* cur->freq is channel number */
+			else if (cur->freq < 5e9)
+				sr->num.two_gig++;
+			else
+				sr->num.five_gig++;
+			sr->num.entries++;
+		}
+
+		pthread_mutex_unlock(&sr->mutex);
+	} while (usleep(conf.stat_iv * 1000) == 0);
+
+	return NULL;
 }
 
 static void display_aplist(WINDOW *w_aplst)
@@ -151,14 +170,18 @@ static void display_aplist(WINDOW *w_aplst)
 	int i, col, line = START_LINE;
 	struct scan_entry *cur;
 
-	for (i = 1; i <= MAXYLEN; i++)
-		mvwclrtoborder(w_aplst, i, 1);
+	/* Scanning can take several seconds - do not refresh if locked. */
+	if (pthread_mutex_trylock(&sr.mutex))
+		return;
 
-	get_scan_result();
+	if (sr.head || *sr.msg)
+		for (i = 1; i <= MAXYLEN; i++)
+			mvwclrtoborder(w_aplst, i, 1);
+
 	if (!sr.head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, sr.msg);
 
-	/* Truncate overly long access point lists to match screen height */
+	/* Truncate overly long access point lists to match screen height. */
 	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
 		col = CP_SCAN_NON_AP;
 
@@ -188,60 +211,51 @@ static void display_aplist(WINDOW *w_aplst)
 		waddstr(w_aplst, s);
 	}
 
-	if (sr.num_entries < NUMTOP)
+	if (sr.num.entries < NUMTOP)
 		goto done;
 
 	wmove(w_aplst, MAXYLEN, 1);
 	wadd_attr_str(w_aplst, A_REVERSE, "total:");
-	sprintf(s, " %d", sr.num_entries);
+	sprintf(s, " %d", sr.num.entries);
 	waddstr(w_aplst, s);
 
-	if (sr.num_entries + START_LINE > line) {
-		sprintf(s, " (%d not shown)", sr.num_entries + START_LINE - line);
+	if (sr.num.entries + START_LINE > line) {
+		sprintf(s, " (%d not shown)", sr.num.entries + START_LINE - line);
 		waddstr(w_aplst, s);
 	}
-	if (sr.num_open) {
-		sprintf(s, ", %d open", sr.num_open);
+	if (sr.num.open) {
+		sprintf(s, ", %d open", sr.num.open);
 		waddstr(w_aplst, s);
 	}
-	if (sr.num_two_gig && sr.num_five_gig) {
+	if (sr.num.two_gig && sr.num.five_gig) {
 		waddch(w_aplst, ' ');
 		wadd_attr_str(w_aplst, A_REVERSE, "5/2GHz:");
-		sprintf(s, " %d/%d", sr.num_five_gig, sr.num_two_gig);
+		sprintf(s, " %d/%d", sr.num.five_gig, sr.num.two_gig);
 		waddstr(w_aplst, s);
 	}
 
 	if (sr.channel_stats) {
 		waddch(w_aplst, ' ');
 		if (conf.scan_sort_order == SO_CHAN_REV)
-			sprintf(s, "bottom-%d:", (int)sr.num_ch_stats);
+			sprintf(s, "bottom-%d:", (int)sr.num.ch_stats);
 		else
-			sprintf(s, "top-%d:", (int)sr.num_ch_stats);
+			sprintf(s, "top-%d:", (int)sr.num.ch_stats);
 		wadd_attr_str(w_aplst, A_REVERSE, s);
 
-		for (i = 0; i < sr.num_ch_stats; i++) {
+		for (i = 0; i < sr.num.ch_stats; i++) {
 			sprintf(s, "%s ch#%d (%d)", i ? "," : "",
 				sr.channel_stats[i].val, sr.channel_stats[i].count);
 			waddstr(w_aplst, s);
 		}
 	}
 done:
-	free_scan_list(sr.head);
-	free(sr.channel_stats);
+	pthread_mutex_unlock(&sr.mutex);
 	wrefresh(w_aplst);
 }
 
 void scr_aplst_init(void)
 {
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
-	/*
-	 * Both parent and child process write to the terminal, updating
-	 * different areas of the screen. Suspending wavemon brings the
-	 * terminal state out of order, messing up the screen. The choice
-	 * is between a more  complicated (sophisticated) handling of
-	 * signals, and to keep it simple by not allowing to suspend.
-	 */
-	sig_tstp = xsignal(SIGTSTP, SIG_IGN);
 
 	/* Gathering scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
@@ -249,24 +263,19 @@ void scr_aplst_init(void)
 
 	iw_getinf_range(conf_ifname(), &range);
 
-	pid = fork();
-	if (pid < 0) {
-		err_sys("could not fork scan process");
-	} else if (pid == 0) {
-		do display_aplist(w_aplst);
-		while (usleep(conf.stat_iv * 1000) == 0);
-		exit(EXIT_SUCCESS);
-	}
+	scan_result_init(&sr);
+	pthread_create(&scan_thread, NULL, do_scan, &sr);
 }
 
 int scr_aplst_loop(WINDOW *w_menu)
 {
+	display_aplist(w_aplst);
 	return wgetch(w_menu);
 }
 
 void scr_aplst_fini(void)
 {
-	kill(pid, SIGTERM);
+	pthread_cancel(scan_thread);
+	scan_result_fini(&sr);
 	delwin(w_aplst);
-	xsignal(SIGTSTP, sig_tstp);
 }

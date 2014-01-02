@@ -28,7 +28,7 @@ AC_PROG_INSTALL
 AC_HEADER_STDC
 AC_HEADER_TIME
 AC_CHECK_HEADERS([ncurses.h fcntl.h netdb.h sys/ioctl.h sys/time.h unistd.h\
-		  net/if_arp.h netinet/ether.h net/ethernet.h],
+		  net/if_arp.h netinet/ether.h net/ethernet.h pthread.h],
 		 [], [AC_MSG_ERROR($ac_header not found)])
 
 # linux/if.h needs 'struct sockaddr'
@@ -53,10 +53,11 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 AC_HEADER_STDBOOL
 
 # Tests involving libraries
-AC_CHECK_LIB([m], [pow])
-AC_CHECK_LIB([ncurses], [waddstr])
+AC_CHECK_LIB([m], [pow], [],              [AC_MSG_ERROR(math library not found)])
+AC_CHECK_LIB([ncurses], [waddstr], [],    [AC_MSG_ERROR(ncurses library not found)])
+AC_CHECK_LIB([pthread], [pthread_create], [CFLAGS="$CFLAGS -pthread"],
+					  [AC_MSG_ERROR(pthread library not found)])
 AC_CHECK_LIB([cap], [cap_get_flag])
-
 
 # Testing library functions
 AC_CHECK_FUNCS([modf log10 gettimeofday	\
