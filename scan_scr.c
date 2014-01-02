@@ -36,7 +36,6 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 {
 	struct iw_levelstat dbm;
 	size_t len = 0;
-	int channel = freq_to_channel(cur->freq, &sr.range);
 
 	iw_sanitize(&sr.range, &cur->qual, &dbm);
 
@@ -56,12 +55,10 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 	if (cur->freq < 1e3)
 		len += snprintf(buf + len, buflen - len, ", Chan %2.0f",
 				cur->freq);
-	else if (channel >= 0 && cur->freq < 5e9)
-		len += snprintf(buf + len, buflen - len, ", ch %2d, %g MHz",
-				channel, cur->freq / 1e6);
-	else if (channel >= 0)
-		len += snprintf(buf + len, buflen - len, ", CH %2d, %g MHz",
-				channel, cur->freq / 1e6);
+	else if (cur->chan >= 0)
+		len += snprintf(buf + len, buflen - len, ", %s %2d, %g MHz",
+				cur->freq < 5e9 ? "ch" : "CH",
+				cur->chan, cur->freq / 1e6);
 	else
 		len += snprintf(buf + len, buflen - len, ", %g GHz",
 				cur->freq / 1e9);

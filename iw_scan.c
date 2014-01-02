@@ -756,9 +756,8 @@ static void compute_channel_stats(struct scan_result *sr)
 
 	sr->channel_stats = calloc(sr->num.entries, sizeof(key));
 	for (cur = sr->head; cur; cur = cur->next) {
-		key.val = freq_to_channel(cur->freq, &sr->range);
-
-		if (key.val >= 0) {
+		if (cur->chan >= 0) {
+			key.val = cur->chan;
 			bin = lsearch(&key, sr->channel_stats, &n, sizeof(key), cmp_key);
 			if (bin)
 				bin->count++;
@@ -767,11 +766,11 @@ static void compute_channel_stats(struct scan_result *sr)
 
 	if (n > 0) {
 		qsort(sr->channel_stats, n, sizeof(key), cmp_cnt);
-		sr->num.ch_stats = n < MAX_CH_STATS ? n : MAX_CH_STATS;
 	} else {
 		free(sr->channel_stats);
 		sr->channel_stats = NULL;
 	}
+	sr->num.ch_stats = n < MAX_CH_STATS ? n : MAX_CH_STATS;
 }
 
 /*
@@ -859,14 +858,13 @@ void *do_scan(void *sr_ptr)
 				sr->max_essid_len = clamp(strlen(cur->essid),
 							  sr->max_essid_len,
 							  IW_ESSID_MAX_SIZE);
-			sr->num.open += !cur->has_key;
-			if (cur->freq < 1e3)
-				;	/* cur->freq is channel number */
-			else if (cur->freq < 5e9)
-				sr->num.two_gig++;
-			else
+			cur->chan = freq_to_channel(cur->freq, &sr->range);
+			if (cur->freq >= 5e9)
 				sr->num.five_gig++;
-			sr->num.entries++;
+			else if (cur->freq >= 2e9)
+				sr->num.two_gig++;
+			sr->num.entries += 1;
+			sr->num.open    += !cur->has_key;
 		}
 		compute_channel_stats(sr);
 

@@ -237,6 +237,7 @@ static inline void sampling_stop(void)	{ alarm(0); }
  * @essid:	station SSID (may be empty)
  * @mode:	operation mode (type of station)
  * @freq:	frequency/channel information
+ * @chan:       channel corresponding to @freq (where applicable)
  * @qual:	signal quality information
  * @has_key:	whether using encryption or not
  * @flags:	properties gathered from Information Elements
@@ -247,6 +248,7 @@ struct scan_entry {
 	char			essid[IW_ESSID_MAX_SIZE + 2];
 	int			mode;
 	double			freq;
+	int			chan;
 	struct	iw_quality	qual;
 
 	int 			has_key:1;
@@ -516,8 +518,8 @@ static inline int freq_to_channel(double freq, const struct iw_range *range)
 {
 	int i;
 
-	if (freq < 1.0e3)
-		return -1;
+	if (freq < 1e3)		/* Convention: freq is channel number if < 1e3 */
+		return freq;
 
 	for (i = 0; i < range->num_frequency; i++)
 		if (freq_to_hz(&range->freq[i]) == freq)
