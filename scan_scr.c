@@ -34,21 +34,18 @@ static WINDOW *w_aplst;
  */
 static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 {
-	struct iw_levelstat dbm;
 	size_t len = 0;
-
-	iw_sanitize(&sr.range, &cur->qual, &dbm);
 
 	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
 		len += snprintf(buf + len, buflen - len, "%3.0f%%, %.0f dBm",
 				1E2 * cur->qual.qual / sr.range.max_qual.qual,
-				dbm.signal);
+				cur->dbm.signal);
 	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%2d/%d",
 				cur->qual.qual, sr.range.max_qual.qual);
 	else if (!(cur->qual.updated & IW_QUAL_LEVEL_INVALID))
 		len += snprintf(buf + len, buflen - len, "%.0f dBm",
-				dbm.signal);
+				cur->dbm.signal);
 	else
 		len += snprintf(buf + len, buflen - len, "? dBm");
 

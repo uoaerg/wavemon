@@ -858,6 +858,7 @@ void *do_scan(void *sr_ptr)
 				sr->max_essid_len = clamp(strlen(cur->essid),
 							  sr->max_essid_len,
 							  IW_ESSID_MAX_SIZE);
+			iw_sanitize(&sr->range, &cur->qual, &cur->dbm);
 			cur->chan = freq_to_channel(cur->freq, &sr->range);
 			if (cur->freq >= 5e9)
 				sr->num.five_gig++;

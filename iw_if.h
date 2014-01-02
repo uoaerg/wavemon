@@ -249,7 +249,8 @@ struct scan_entry {
 	int			mode;
 	double			freq;
 	int			chan;
-	struct	iw_quality	qual;
+	struct iw_quality	qual;
+	struct iw_levelstat	dbm;
 
 	int 			has_key:1;
 	uint32_t		flags;
