@@ -73,21 +73,23 @@ SNR graph appear.
 .TP
 .B Scan window (F3 or 's')
 A periodically updated network scan, showing access points and other
-wireless clients, ordered by frequency and then descending order of signal
-quality. Each entry starts with the ESSID, followed by the colour-coded MAC
+wireless clients. It is sorted depending on \fIsort_order\fR and \fIsort_ascending\fR, see \fBwavemonrc\fR(5).
+Each entry starts with the ESSID, followed by the colour-coded MAC
 address and the signal/channel information. A green/red MAC address indicates
 an (un-)encrypted access point, the colour changes to yellow for non-access
 points (in this case the mode is shown at the end of the line). The
 uncoloured information following the MAC address lists relative and
 absolute signal strengths, channel, frequency, and the mode if the node
 is not an access point.
-A status line at the bottom informs about the most (least) crowded channels,
-depending on how \fIsort_order\fR is set (reverse channel or other); see
-\fBwavemonrc\fR(5).
+A status line at the bottom informs about the current sort order and a few
+statistics, such as most (least) crowded channels (least crowded channels
+are listed when sorting by descending channel).
 
-Please note that gathering meaningful scan data can take several seconds. Partly
-for this reason, the Scan window is the only screen that can not be suspended
-(CTRL-Z).
+The \fIsort_order\fR can also directly be changed via these keyboard shortcuts:
+\fIa\fRscending, \fId\fRescending; by \fIs\fRignal, \fIc\fRhannel (\fIC\fR also with signal),
+or \fIo\fRpen access (\fIO\fR also with signal).
+
+Please note that gathering meaningful scan data can take several seconds.
 .TP
 .B Preferences (F7 or 'p')
 This screen allows you to change all program options such as interface and

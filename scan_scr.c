@@ -72,6 +72,13 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 static void display_aplist(WINDOW *w_aplst)
 {
 	char s[IW_ESSID_MAX_SIZE << 3];
+	const char *sort_type[] = {
+		[SO_CHAN]	= "Chan",
+		[SO_SIGNAL]	= "Sig",
+		[SO_OPEN]	= "Open",
+		[SO_CHAN_SIG]	= "Ch/Sg",
+		[SO_OPEN_SIG]	= "Op/Sg"
+	};
 	int i, col, line = START_LINE;
 	struct scan_entry *cur;
 
@@ -85,6 +92,8 @@ static void display_aplist(WINDOW *w_aplst)
 
 	if (!sr.head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, sr.msg);
+
+	sort_scan_list(&sr.head);
 
 	/* Truncate overly long access point lists to match screen height. */
 	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
@@ -121,17 +130,21 @@ static void display_aplist(WINDOW *w_aplst)
 
 	wmove(w_aplst, MAXYLEN, 1);
 	wadd_attr_str(w_aplst, A_REVERSE, "total:");
-	sprintf(s, " %d", sr.num.entries);
+	sprintf(s, " %d ", sr.num.entries);
 	waddstr(w_aplst, s);
 
+	sprintf(s, "%s %ssc", sort_type[conf.scan_sort_order], conf.scan_sort_asc ? "a" : "de");
+	wadd_attr_str(w_aplst, A_REVERSE, s);
+
 	if (sr.num.entries + START_LINE > line) {
-		sprintf(s, " (%d not shown)", sr.num.entries + START_LINE - line);
+		sprintf(s, ", %d not shown", sr.num.entries + START_LINE - line);
 		waddstr(w_aplst, s);
 	}
 	if (sr.num.open) {
 		sprintf(s, ", %d open", sr.num.open);
 		waddstr(w_aplst, s);
 	}
+
 	if (sr.num.two_gig && sr.num.five_gig) {
 		waddch(w_aplst, ' ');
 		wadd_attr_str(w_aplst, A_REVERSE, "5/2GHz:");
@@ -141,15 +154,17 @@ static void display_aplist(WINDOW *w_aplst)
 
 	if (sr.channel_stats) {
 		waddch(w_aplst, ' ');
-		if (conf.scan_sort_order == SO_CHAN_REV)
+		if (conf.scan_sort_order == SO_CHAN && !conf.scan_sort_asc)
 			sprintf(s, "bottom-%d:", (int)sr.num.ch_stats);
 		else
 			sprintf(s, "top-%d:", (int)sr.num.ch_stats);
 		wadd_attr_str(w_aplst, A_REVERSE, s);
 
 		for (i = 0; i < sr.num.ch_stats; i++) {
-			sprintf(s, "%s ch#%d (%d)", i ? "," : "",
-				sr.channel_stats[i].val, sr.channel_stats[i].count);
+			waddstr(w_aplst, i ? ", " : " ");
+			sprintf(s, "ch#%d", sr.channel_stats[i].val);
+			wadd_attr_str(w_aplst, A_BOLD, s);
+			sprintf(s, " (%d)", sr.channel_stats[i].count);
 			waddstr(w_aplst, s);
 		}
 	}
@@ -172,8 +187,37 @@ void scr_aplst_init(void)
 
 int scr_aplst_loop(WINDOW *w_menu)
 {
+	int key;
+
 	display_aplist(w_aplst);
-	return wgetch(w_menu);
+
+	key = wgetch(w_menu);
+	switch (key) {
+	case 'a':	/* ascending */
+		conf.scan_sort_asc = true;
+		return -1;
+	case 'c':	/* channel */
+		conf.scan_sort_order = SO_CHAN;
+		return -1;
+	case 'C':	/* channel and signal */
+		conf.scan_sort_order = SO_CHAN_SIG;
+		return -1;
+	case 'd':	/* descending */
+		conf.scan_sort_asc = false;
+		return -1;
+	case 'o':	/* open (descending is default) */
+		conf.scan_sort_order = SO_OPEN;
+		conf.scan_sort_asc = false;
+		return -1;
+	case 'O':	/* open and signal (descending) */
+		conf.scan_sort_order = SO_OPEN_SIG;
+		conf.scan_sort_asc = false;
+		return -1;
+	case 's':	/* signal */
+		conf.scan_sort_order = SO_SIGNAL;
+		return -1;
+	}
+	return key;
 }
 
 void scr_aplst_fini(void)

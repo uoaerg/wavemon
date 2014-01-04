@@ -257,6 +257,7 @@ struct scan_entry {
 
 	struct scan_entry	*next;
 };
+extern void sort_scan_list(struct scan_entry **headp);
 
 /**
  * struct cnt - count frequency of integer numbers

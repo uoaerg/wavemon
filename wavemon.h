@@ -107,12 +107,10 @@ static inline void threshold_action(enum threshold_action action)
  */
 enum scan_sort_order {
 	SO_CHAN,
-	SO_CHAN_REV,
 	SO_SIGNAL,
 	SO_OPEN,
 	SO_CHAN_SIG,
-	SO_OPEN_SIG,
-	SO_OPEN_CH_SI
+	SO_OPEN_SIG
 };
 
 /*
@@ -137,7 +135,8 @@ extern struct wavemon_conf {
 	int	check_geometry,		/* ensure window is large enough */
 		cisco_mac,		/* Cisco-style MAC addresses */
 		random,			/* random signals */
-		override_bounds;	/* override autodetection */
+		override_bounds,	/* override autodetection */
+		scan_sort_asc;		/* direction of @scan_sort_order */
 
 	/* Enumerated values */
 	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */

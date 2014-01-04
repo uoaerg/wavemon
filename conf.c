@@ -36,12 +36,10 @@ static char *action_items[] = {
 
 static char *sort_order[] = {
 	[SO_CHAN]	= "Channel",
-	[SO_CHAN_REV]	= "Rev Channel",
 	[SO_SIGNAL]	= "Signal",
 	[SO_OPEN]	= "Open",
 	[SO_CHAN_SIG]	= "Chan/Sig",
 	[SO_OPEN_SIG]	= "Open/Sig",
-	[SO_OPEN_CH_SI]	= "Open/Chan/Sig",
 	NULL
 };
 
@@ -70,7 +68,8 @@ struct wavemon_conf conf = {
 	.noise_min		= -102,
 	.noise_max		= 10,
 
-	.scan_sort_order	= SO_CHAN,
+	.scan_sort_order	= SO_CHAN_SIG,
+	.scan_sort_asc		= false,
 	.lthreshold_action	= TA_DISABLED,
 	.lthreshold		= -80,
 	.hthreshold_action	= TA_DISABLED,
@@ -326,11 +325,19 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Scan sort order");
+	item->name	= strdup("Scan sort type");
 	item->cfname	= strdup("sort_order");
 	item->type	= t_list;
 	item->v.i	= &conf.scan_sort_order;
 	item->list	= sort_order;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Scan sort in ascending order");
+	item->cfname	= strdup("sort_ascending");
+	item->type	= t_list;
+	item->v.i	= &conf.scan_sort_asc;
+	item->list	= on_off_names;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));

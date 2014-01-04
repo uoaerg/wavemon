@@ -24,18 +24,24 @@ If enabled, display MAC addresses using lower-case hex digits separated by dots
 rather than colons.
 .P
 .RE
-.B sort_order = (channel|rev channel|signal|open|chan/sig|open/sig|open/chan/sig)
+.B sort_order = (channel|signal|open|chan/sig|open/sig)
 .RS
 .RE
-(Scan Sort Order)
+(Scan sort type)
 .RS
-Determines the ordering used in the scan window: (\fIrev\fR) \fIchannel\fR sorts in ascending
-(descending) order of channel number, \fIsignal\fR in descending order of signal strength, and
-\fIopen\fR in descending order of openness. The combined variants \fIchan/sig\fR and
-\fIopen/sig\fR sort first by channel/openness and then by signal strength; their combined
-functionality is provided by \fIopen/chan/sig\fR.
+Determines the ordering used in the scan window: \fIchannel\fR sorts by channel number,
+\fIsignal\fR by signal strength, and \fIopen\fR by openness. The combined variants \fIchan/sig\fR and
+\fIopen/sig\fR sort first by channel/openness and then by signal strength.
 It also affects the status line at the bottom: normally the most crowded channels are listed,
-use of \fIrev\ channel\fR switches to least crowded ones instead.
+sorting by \fIchannel\fR in descending order switches to least crowded ones instead.
+.P
+.RE
+.B sort_ascending = (on|off)
+.RS
+.RE
+(Scan sort direction)
+.RS
+Sets the direction of the \fIsort_order\fR: ascending (on) or descending (off).
 .P
 .RE
 .B stat_updates = <n>

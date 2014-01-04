@@ -552,54 +552,41 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_entry *sr)
  * Ordering functions for scan results
  */
 /* Order by ascending frequency. */
-static int cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
+static bool cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->freq < b->freq;
 }
 
-static int cmp_chan_rev(const struct scan_entry *a, const struct scan_entry *b)
-{
-	return cmp_chan(b, a);
-}
-
 /* Order by descending signal strength. */
-static int cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
+static bool cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
-	return a->qual.level - b->qual.level;
+	return a->qual.level < b->qual.level;
 }
 
 /* Order by ascending frequency first, then by descending signal strength. */
-static int cmp_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
+static bool cmp_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->freq == b->freq ? cmp_sig(a, b) : cmp_chan(a, b);
 }
 
 /* Show open access points first, ordered by mode. */
-static int cmp_open(const struct scan_entry *a, const struct scan_entry *b)
+static bool cmp_open(const struct scan_entry *a, const struct scan_entry *b)
 {
-	return a->has_key > b->has_key;
+	return a->has_key < b->has_key;
 }
 
 /* Sort (open) access points by descending signal strength. */
-static int cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
+static bool cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->has_key == b->has_key ? cmp_sig(a, b) : cmp_open(a, b);
 }
 
-/* Sort (open) access points by ascending frequency, then by descending signal. */
-static int cmp_open_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
-{
-	return a->has_key == b->has_key ? cmp_chan_sig(a, b) : cmp_open(a, b);
-}
-
-static int (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) = {
+static bool (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) = {
 	[SO_CHAN]	= cmp_chan,
-	[SO_CHAN_REV]	= cmp_chan_rev,
 	[SO_SIGNAL]	= cmp_sig,
 	[SO_OPEN]	= cmp_open,
 	[SO_CHAN_SIG]	= cmp_chan_sig,
-	[SO_OPEN_SIG]	= cmp_open_sig,
-	[SO_OPEN_CH_SI]	= cmp_open_chan_sig
+	[SO_OPEN_SIG]	= cmp_open_sig
 };
 
 /**
@@ -609,7 +596,7 @@ static int (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) =
  */
 static struct scan_entry *get_scan_list(const char *ifname, int we_version)
 {
-	struct scan_entry *head = NULL;
+	struct scan_entry *head = NULL, **tailp = &head;
 	struct iwreq wrq;
 	int wait, waited = 0;
 	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -695,22 +682,37 @@ static struct scan_entry *get_scan_list(const char *ifname, int we_version)
 				break;
 			}
 			if (f == 127) {
-				struct scan_entry *cur = head, **prev = &head;
-
-				while (cur && scan_cmp[conf.scan_sort_order](cur, new) > 0)
-					prev = &cur->next, cur = cur->next;
-
-				*prev     = new;
-				new->next = cur;
-				new       = NULL;
-				f = 0;
+				f      = 0;
+				*tailp = new;
+				tailp  = &new->next;
+				new    = NULL;
 			}
 		}
-		free(new);	/* may have been allocated but not filled in */
+		free(new);	/* may have been allocated, but not filled in */
 	}
 done:
 	close(skfd);
 	return head;
+}
+
+/*
+ * Simple sort routine.
+ * FIXME: use hash or tree to store entries, a list to display them.
+ */
+void sort_scan_list(struct scan_entry **headp)
+{
+	struct scan_entry *head = NULL, *cur, *new = *headp, **prev;
+
+	while (new) {
+		for (cur = head, prev = &head; cur &&
+		     conf.scan_sort_asc == scan_cmp[conf.scan_sort_order](cur, new);
+		     prev = &cur->next, cur = cur->next)
+			;
+		*prev = new;
+		new = new->next;
+		(*prev)->next = cur;
+	}
+	*headp = head;
 }
 
 static void free_scan_list(struct scan_entry *head)
@@ -722,11 +724,11 @@ static void free_scan_list(struct scan_entry *head)
 }
 
 /*
- * 	Channel statistics * shown at the bottom of scan screen.
+ * 	Channel statistics shown at the bottom of scan screen.
  */
 
 /*
- * For lfind, it compares key value with array member, needs to
+ * For lsearch, it compares key value with array member, needs to
  * return 0 if they are the same, non-0 otherwise.
  */
 static int cmp_key(const void *a, const void *b)
@@ -737,7 +739,7 @@ static int cmp_key(const void *a, const void *b)
 /* For quick-sorting the array in descending order of counts */
 static int cmp_cnt(const void *a, const void *b)
 {
-	if (conf.scan_sort_order == SO_CHAN_REV)
+	if (conf.scan_sort_order == SO_CHAN && !conf.scan_sort_asc)
 		return ((struct cnt *)a)->count - ((struct cnt *)b)->count;
 	return ((struct cnt *)b)->count - ((struct cnt *)a)->count;
 }
@@ -829,7 +831,7 @@ void *do_scan(void *sr_ptr)
 			case EBUSY:
 			case EAGAIN:
 				/* Temporary errors. */
-				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan access to device ...");
+				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data on %s ...", conf_ifname());
 				break;
 			case ENETDOWN:
 				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
