@@ -140,7 +140,6 @@ static void check_geometry(void)
 
 int main(int argc, char *argv[])
 {
-	WINDOW *w_menu;
 	enum wavemon_screen cur, next;
 	sigset_t blockmask, oldmask;
 
@@ -192,6 +191,7 @@ int main(int argc, char *argv[])
 	sigaddset(&blockmask, SIGWINCH);
 
 	for (cur = conf.startup_scr; cur != SCR_QUIT; cur = next) {
+		WINDOW *w_menu;
 		int escape = 0;
 
 		if (sigprocmask(SIG_BLOCK, &blockmask, &oldmask) < 0)

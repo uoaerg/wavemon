@@ -222,7 +222,7 @@ static void display_lhist(void)
 		/* Clear screen and set up horizontal grid lines */
 		wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
 		for (y = 1; y <= HIST_MAXYLEN; y++)
-			mvwaddch(w_lhist, hist_y(y), hist_x(x), y % 5 ? ' ' : '-');
+			mvwaddch(w_lhist, hist_y(y), hist_x(x), (y % 5) ? ' ' : '-');
 
 		/*
 		 * SNR comes first, as it determines the background. If either

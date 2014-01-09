@@ -134,6 +134,8 @@ char **iw_get_interface_list(void)
 				continue;
 
 			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
+			if (if_list == NULL)
+				err_sys("can not reallocate interface list");
 			if_list[nifs-1] = strdup(p);
 			if_list[nifs++] = NULL;
 		}
@@ -163,7 +165,7 @@ void if_getstat(const char *ifname, struct if_stat *stat)
 			lp += strlen(ifname) + 1;
 			lp += strspn(lp, " ");
 
-			sscanf(lp, "%llu %llu %lu %lu %lu %lu %lu %lu %llu %llu",
+			sscanf(lp, "%Lu %Lu %lu %lu %lu %lu %lu %lu %Lu %Lu",
 				&stat->rx_bytes, &stat->rx_packets, &d, &d, &d, &d, &d, &d,
 				&stat->tx_bytes, &stat->tx_packets);
 		}

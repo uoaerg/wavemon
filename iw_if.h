@@ -67,8 +67,8 @@ struct if_info {
 				netmask,
 				bcast;
 	uint16_t		mtu;
-	short			txqlen;
-	short			flags;
+	uint16_t		txqlen;
+	uint16_t		flags;
 };
 extern int  if_set_up(const char *ifname);
 extern void if_getinf(const char *ifname, struct if_info *info);

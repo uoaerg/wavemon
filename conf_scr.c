@@ -33,7 +33,6 @@ extern int conf_items;		/* index into array storing menu items */
 static WINDOW *w_conf, *w_confpad;
 static int first_item, active_item;
 static int num_items, list_offset;
-static struct conf_item *item;
 
 static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
@@ -133,13 +132,13 @@ static int select_item(int rv, int incr)
 /* Perform selection, return offset value to ensure pad fits inside window */
 static int m_pref(WINDOW *w_conf, int list_offset, int active_item, int num_items)
 {
-	struct conf_item *item;
 	int active_line, i, j;
 
 	werase(w_conf);
 
 	for (active_line = i = j = 0; i < num_items; i++) {
-		item = ll_get(conf_items, i);
+		struct conf_item *item = ll_get(conf_items, i);
+
 		if (!item->dep || *item->dep) {
 			if (i != active_item)
 				waddstr_item(w_conf, j++, item, 0);
@@ -159,6 +158,7 @@ static int m_pref(WINDOW *w_conf, int list_offset, int active_item, int num_item
 
 void scr_conf_init(void)
 {
+	struct conf_item *item;
 	conf_get_interface_list(false);	/* may have changed in the meantime */
 
 	num_items = ll_size(conf_items);
@@ -174,6 +174,7 @@ void scr_conf_init(void)
 
 int scr_conf_loop(WINDOW *w_menu)
 {
+	struct conf_item *item;
 	int key;
 
 	list_offset = m_pref(w_confpad, list_offset, active_item, num_items);
