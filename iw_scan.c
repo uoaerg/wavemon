@@ -551,18 +551,22 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_entry *sr)
 /*
  * Ordering functions for scan results
  */
-/* Order by ascending frequency. */
-static bool cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
-{
-	return a->freq < b->freq;
-}
 
-/* Order by descending signal strength. */
+/* Order by ascending signal strength. */
 static bool cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->qual.level < b->qual.level;
 }
 
+/* Order by frequency; group same channels by ESSID, hidden ESSIDs by signal strength. */
+static bool cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
+{
+	if (a->freq == b->freq && !*a->essid && !*b->essid)
+		return cmp_sig(a, b);
+	if (a->freq == b->freq)
+		return strncmp(a->essid, b->essid, IW_ESSID_MAX_SIZE) < 0;
+	return a->freq < b->freq;
+}
 /* Order by ascending frequency first, then by descending signal strength. */
 static bool cmp_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
