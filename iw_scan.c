@@ -549,37 +549,49 @@ static void iw_extract_ie(struct iw_event *iwe, struct scan_entry *sr)
 /*----------------- End of code copied from iwlib -----------------------*/
 
 /*
- * Ordering functions for scan results
+ * Ordering functions for scan results: all return true for a < b.
  */
 
-/* Order by ascending signal strength. */
+/* Order by frequency. */
+static bool cmp_freq(const struct scan_entry *a, const struct scan_entry *b)
+{
+	return a->freq < b->freq;
+}
+
+/* Order by signal strength. */
 static bool cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->qual.level < b->qual.level;
 }
 
-/* Order by frequency; group same channels by ESSID, hidden ESSIDs by signal strength. */
+/* Order by ESSID, organize entries with same ESSID by frequency and signal. */
+static bool cmp_essid(const struct scan_entry *a, const struct scan_entry *b)
+{
+	int res = strncmp(a->essid, b->essid, IW_ESSID_MAX_SIZE);
+
+	return res == 0 ? (a->freq == b->freq ? cmp_sig(a, b) : cmp_freq(a, b))
+			: res < 0;
+}
+
+/* Order by frequency, grouping channels by ESSID. */
 static bool cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
 {
-	if (a->freq == b->freq && !*a->essid && !*b->essid)
-		return cmp_sig(a, b);
-	if (a->freq == b->freq)
-		return strncmp(a->essid, b->essid, IW_ESSID_MAX_SIZE) < 0;
-	return a->freq < b->freq;
+	return a->freq == b->freq ? cmp_essid(a, b) : cmp_freq(a, b);
 }
-/* Order by ascending frequency first, then by descending signal strength. */
+
+/* Order by frequency first, then by signal strength. */
 static bool cmp_chan_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->freq == b->freq ? cmp_sig(a, b) : cmp_chan(a, b);
 }
 
-/* Show open access points first, ordered by mode. */
+/* Order by openness (open access points frist). */
 static bool cmp_open(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->has_key < b->has_key;
 }
 
-/* Sort (open) access points by descending signal strength. */
+/* Sort (open) access points by signal strength. */
 static bool cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
 	return a->has_key == b->has_key ? cmp_sig(a, b) : cmp_open(a, b);
@@ -588,6 +600,7 @@ static bool cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
 static bool (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) = {
 	[SO_CHAN]	= cmp_chan,
 	[SO_SIGNAL]	= cmp_sig,
+	[SO_ESSID]	= cmp_essid,
 	[SO_OPEN]	= cmp_open,
 	[SO_CHAN_SIG]	= cmp_chan_sig,
 	[SO_OPEN_SIG]	= cmp_open_sig

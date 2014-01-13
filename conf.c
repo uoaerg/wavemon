@@ -37,6 +37,7 @@ static char *action_items[] = {
 static char *sort_order[] = {
 	[SO_CHAN]	= "Channel",
 	[SO_SIGNAL]	= "Signal",
+	[SO_ESSID]	= "Essid",
 	[SO_OPEN]	= "Open",
 	[SO_CHAN_SIG]	= "Chan/Sig",
 	[SO_OPEN_SIG]	= "Open/Sig",

@@ -108,6 +108,7 @@ static inline void threshold_action(enum threshold_action action)
 enum scan_sort_order {
 	SO_CHAN,
 	SO_SIGNAL,
+	SO_ESSID,
 	SO_OPEN,
 	SO_CHAN_SIG,
 	SO_OPEN_SIG

@@ -24,14 +24,14 @@ If enabled, display MAC addresses using lower-case hex digits separated by dots
 rather than colons.
 .P
 .RE
-.B sort_order = (channel|signal|open|chan/sig|open/sig)
+.B sort_order = (channel|essid|signal|open|chan/sig|open/sig)
 .RS
 .RE
 (Scan sort type)
 .RS
-Determines the ordering used in the scan window: \fIchannel\fR sorts by channel number,
-\fIsignal\fR by signal strength, and \fIopen\fR by openness. The combined variants \fIchan/sig\fR and
-\fIopen/sig\fR sort first by channel/openness and then by signal strength.
+Determines the ordering used in the scan window: \fIchannel\fR sorts by channel number, \fIessid\fR by
+access point name, \fIsignal\fR by signal strength, and \fIopen\fR by openness. The combined variants
+\fIchan/sig\fR and \fIopen/sig\fR sort first by channel/openness and then by signal strength.
 It also affects the status line at the bottom: normally the most crowded channels are listed,
 sorting by \fIchannel\fR in descending order switches to least crowded ones instead.
 .P
