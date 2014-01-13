@@ -53,7 +53,7 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 		len += snprintf(buf + len, buflen - len, ", Chan %2.0f",
 				cur->freq);
 	else if (cur->chan >= 0)
-		len += snprintf(buf + len, buflen - len, ", %s %2d, %g MHz",
+		len += snprintf(buf + len, buflen - len, ", %s %3d, %g MHz",
 				cur->freq < 5e9 ? "ch" : "CH",
 				cur->chan, cur->freq / 1e6);
 	else
