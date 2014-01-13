@@ -75,7 +75,6 @@ static llist *arg2element(char type, va_list * ap, llist * next)
 		*((double *)l->e) = va_arg(*ap, double);
 		break;
 	case '*':
-		l->e = (void *)malloc(sizeof(void *));
 		l->e = va_arg(*ap, void *);
 	}
 	l->next = next;
