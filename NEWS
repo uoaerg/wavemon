@@ -2,6 +2,32 @@ NEWS
 ====
 
 --------------------
+0.7.6 (2014-01-18)
+--------------------
+  * Scan window:
+    - complete redesign based on pthreads to fix terminal bug, as a result of better
+      design the scan window now also can be suspended (details of fix are below),
+    - add message for 'too much data' (E2BIG) error case,
+    - use same formatting (3 digits) for 2/5 GHz,
+    - support for changing sort order via keyboard shortcuts (see manpage, several
+      ascending/descending sort orders are now available directly on the screen),
+    - currently active sort order is now displayed on status line at the bottom,
+    - stabilized by-channel sort to always use the same order for identical channels,
+    - added 'sort by Essid' to selection of sort menus;
+  * Info window:
+    - add percentage for easier reading of link quality,
+    - deprecate use of locale settings for 'discard' information (fixes display);
+  * Configuration screen:
+    - add support for Page Up/Down, Home, and End buttons to ease navigation,
+    - added more information to '-v' version information (ncurses/WE versions);
+  * Bug fixes:
+    - fix bug in ranking top/bottom 3 channels in scan window,
+    - complete redesign of scan process based on pthreads to fix bug that became
+       visible on ncurses >= 5.9.20130504 (slackware 14.1 and debian jessie), caused
+       by child/parent both updating the same screen (bug had been hidden by the
+       internal buffering of ncurses which was then removed), reported by Nick Warne.
+
+--------------------
 0.7.5 (2012-05-04)
 --------------------
   * Scan window:

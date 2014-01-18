@@ -3,14 +3,13 @@ improvements, or submitting actual code. Here is a list of these people. Help
 me (gerrit@erg.abdn.ac.uk) keep it complete and accurate.
 
 Christoph J. Thompson (cjsthompson@gmail.com) provided DESTDIR support for
-the installation process and contributed a Slackware build script, found in
-the contrib folder (2009-03-03).
+the installation process and contributed a Slackware build script (2009-03-03).
 
 Tom Gordon to help fix a build error occurring under Puppy Linux, in wavemon
 version 0.5 (2009-02-06).
 
 Dave W. Capella (dave.capella@cornell.edu) provided modifications to build
-ipkg packages for mobile devices in 2002 (now in contrib/).
+ipkg packages for mobile devices in 2002.
 
 Nelson A. de Oliveira provided helpful tips for choosing a sensible screen-size
 default, and helped much to reduce annoyances in keeping the configuration-file
@@ -32,3 +31,7 @@ Robert M. Stockmann and Koniu helped with bug fixes in 0.7.1; thanks to Koniu
 support for window resizing got started.
 
 Jonathan McCrohan fixed manpage compilation errors in 0.7.4.
+
+Mohammad Etemaddar suggested useful keyboard highlighting in 0.7.6. Nick Warne helped
+uncover a bug in the scan window which led to a complete overhaul of based on threads;
+he also provided useful suggestions to improve sorting of scan results (0.7.6).
