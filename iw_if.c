@@ -101,14 +101,15 @@ void if_getinf(const char *ifname, struct if_info *info)
 }
 
 /**
- * iw_get_interface_list  -  Return NULL-terminated array of WiFi interfaces.
+ * iw_get_interface_list  -  fill if_list with NULL-terminated array of WiFi
+ * interfaces.
  * Use the safe route of checking /proc/net/dev/ for wireless interfaces:
  * - SIOCGIFCONF only returns running interfaces that have an IP address;
  * - /proc/net/wireless may exist, but may not list all wireless interfaces.
  */
-char **iw_get_interface_list(void)
+void iw_get_interface_list(char** if_list, size_t max_entries)
 {
-	char **if_list = NULL, *p, tmp[BUFSIZ];
+	char *p, tmp[BUFSIZ];
 	int  nifs = 1;		/* if_list[nifs-1] = NULL */
 	struct iwreq wrq;
 	FILE *fp;
@@ -129,27 +130,24 @@ char **iw_get_interface_list(void)
 			 * Use SIOCGIWNAME as indicator: if interface does not
 			 * support this ioctl, it has no wireless extensions.
 			 */
-			strncpy(wrq.ifr_name, p, IFNAMSIZ);
+			snprintf(wrq.ifr_name, IFNAMSIZ, "%s", p);
 			if (ioctl(skfd, SIOCGIWNAME, &wrq) < 0)
 				continue;
-
-			if_list = realloc(if_list, sizeof(char *) * (nifs + 1));
-			if (if_list == NULL)
-				err_sys("can not reallocate interface list");
+			if(nifs >= max_entries) break;
 			if_list[nifs-1] = strdup(p);
 			if_list[nifs++] = NULL;
 		}
 	}
 	close(skfd);
 	fclose(fp);
-	return if_list;
 }
 
 void if_getstat(const char *ifname, struct if_stat *stat)
 {
 	char line[0x100];
-	unsigned long d;
+	unsigned long long d;
 	char *lp;
+	size_t l = strlen(ifname);
 	const char path[] = "/proc/net/dev";
 	FILE *fp = fopen(path, "r");
 
@@ -161,11 +159,11 @@ void if_getstat(const char *ifname, struct if_stat *stat)
 	 */
 	while (fgets(line, sizeof(line), fp)) {
 		lp = line + strspn(line, " ");
-		if (!strncmp(lp, ifname, strlen(ifname))) {
-			lp += strlen(ifname) + 1;
+		if (!strncmp(lp, ifname, l) && lp[l] == ':') {
+			lp += l + 1;
 			lp += strspn(lp, " ");
 
-			sscanf(lp, "%Lu %Lu %lu %lu %lu %lu %lu %lu %Lu %Lu",
+			sscanf(lp, "%llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
 				&stat->rx_bytes, &stat->rx_packets, &d, &d, &d, &d, &d, &d,
 				&stat->tx_bytes, &stat->tx_packets);
 		}

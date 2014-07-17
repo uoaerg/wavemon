@@ -22,7 +22,8 @@
 #include <sys/types.h>
 
 /* GLOBALS */
-static char **if_list;		/* array of WiFi interface names */
+#define MAX_IFLIST_ENTRIES 64
+static char *if_list[MAX_IFLIST_ENTRIES]; /* array of WiFi interface names */
 int conf_items;			/* index into array storing menu items */
 
 static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
@@ -85,16 +86,14 @@ void conf_get_interface_list(bool init)
 	char *old_if = NULL;
 	int idx;
 
-	if (if_list) {
-		for (idx = 0; if_list[idx]; idx++)
-			if (idx == conf.if_idx)
-				old_if = if_list[idx];
-			else
-				free(if_list[idx]);
-		free(if_list);
+	for (idx = 0; if_list[idx]; idx++) {
+		if (idx == conf.if_idx)
+			old_if = if_list[idx];
+		else
+			free(if_list[idx]);
 	}
-	if_list = iw_get_interface_list();
-	if (if_list == NULL && !init)
+	iw_get_interface_list(if_list, MAX_IFLIST_ENTRIES);
+	if (!if_list[0] && !init)
 		err_quit("no wireless interfaces found!");
 
 	conf.if_idx = 0;
@@ -109,7 +108,7 @@ void conf_get_interface_list(bool init)
 /** Return currently selected interface name */
 const char *conf_ifname(void)
 {
-	return if_list ? if_list[conf.if_idx] : "(none)";
+	return if_list[0] && if_list[conf.if_idx] ? if_list[conf.if_idx] : "(none)";
 }
 
 /* Return full path of rcfile. Allocates string which must bee free()-d. */
@@ -541,7 +540,7 @@ void getconf(int argc, char *argv[])
 	while ((arg = getopt(argc, argv, "dghi:rv")) >= 0) {
 		switch (arg) {
 		case 'd':
-			if (if_list)
+			if (if_list[0])
 				dump++;
 			break;
 		case 'g':
@@ -551,7 +550,7 @@ void getconf(int argc, char *argv[])
 			help++;
 			break;
 		case 'i':
-			conf.if_idx = if_list ? argv_find(if_list, optarg) : -1;
+			conf.if_idx = argv_find(if_list, optarg);
 			if (conf.if_idx < 0)
 				err_quit("no wireless extensions found on '%s'",
 					 optarg);
@@ -587,6 +586,6 @@ void getconf(int argc, char *argv[])
 
 	if (version || help || dump)
 		exit(EXIT_SUCCESS);
-	else if (if_list == NULL)
+	else if (if_list[0] == NULL)
 		err_quit("no supported wireless interfaces found");
 }
