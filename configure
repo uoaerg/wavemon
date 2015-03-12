@@ -2186,11 +2186,19 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 ac_config_files="$ac_config_files Makefile"
 
+# allow BUILD_DATE to be externally set for build reproducibility
+if test "$BUILD_DATE"; then
+  cat >>confdefs.h <<_ACEOF
+#define BUILD_DATE "$BUILD_DATE"
+_ACEOF
+
+else
 
 cat >>confdefs.h <<_ACEOF
 #define BUILD_DATE "`/bin/date`"
 _ACEOF
 
+fi
 
 CFLAGS="-O2 -Wall"
 
