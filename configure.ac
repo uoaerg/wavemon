@@ -68,6 +68,13 @@ AC_CHECK_LIB([cap], [cap_get_flag])
 AC_CHECK_FUNCS([gettimeofday ether_ntohost], [],
 	       [AC_MSG_ERROR(function '$ac_func' not supported)])
 
+# libnl3 - for genetlink support
+PKG_CHECK_MODULES([LIBNL3], [libnl-3.0 >= 3.1], [], [AC_MSG_ERROR(need libnl >= 3.1)])
+if test "${have_libnl3}" = "yes"; then
+	CFLAGS+=" ${LIBNL3_CFLAGS}"
+	LIBS+=" ${LIBNL3_LIBS}"
+fi
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_PROG_GCC_TRADITIONAL
 AC_C_CONST
