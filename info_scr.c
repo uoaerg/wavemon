@@ -18,6 +18,7 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "iw_if.h"
+#include "iw_nl80211.h"
 
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
@@ -30,6 +31,7 @@ void sampling_init(void (*sampling_handler)(int))
 	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
 
 	xsignal(SIGALRM, SIG_IGN);
+	cur.nls = iw_nl80211_init();
 	iw_getinf_range(conf_ifname(), &cur.range);
 	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
 	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
@@ -42,6 +44,11 @@ void sampling_init(void (*sampling_handler)(int))
 void sampling_do_poll(void)
 {
 	iw_getstat(&cur);
+	/* XXX
+	 * HACK: for the transition period, add to the end of struct iw_stat cur.
+	 * Leave the old infrastructure intact, add nl80211 in parallel.
+	 */
+	iw_nl80211_getstat(cur.nls);
 	iw_cache_update(&cur);
 }
 
@@ -553,4 +560,6 @@ void scr_info_fini(void)
 	delwin(w_stats);
 	delwin(w_levels);
 	delwin(w_if);
+
+	iw_nl80211_fini(&cur.nls);
 }
