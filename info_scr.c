@@ -155,27 +155,15 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 1, 1, "RX: ");
 
-	sprintf(tmp, "%'llu (%s)",  nstat.rx_packets,
-		byte_units(nstat.rx_bytes));
+	sprintf(tmp, "%'u (%s)",  cur.nls->rx_packets,
+		byte_units(cur.nls->rx_bytes));
 	waddstr_b(w_stats, tmp);
 
-	waddstr(w_stats, ", invalid: ");
-	sprintf(tmp, "%u", cur.stat.discard.nwid);
+	waddstr(w_stats, ", rate: ");
+	waddstr_b(w_stats, cur.nls->rx_bitrate);
 
+	sprintf(tmp, ", inactive: %.1f s", (float)cur.nls->inactive_time/1e3);
 	waddstr_b(w_stats, tmp);
-	waddstr(w_stats, " nwid, ");
-
-	sprintf(tmp, "%u", cur.stat.discard.code);
-	waddstr_b(w_stats, tmp);
-	waddstr(w_stats, " crypt, ");
-
-	sprintf(tmp, "%u", cur.stat.discard.fragment);
-	waddstr_b(w_stats, tmp);
-	waddstr(w_stats, " frag, ");
-
-	sprintf(tmp, "%u", cur.stat.discard.misc);
-	waddstr_b(w_stats, tmp);
-	waddstr(w_stats, " misc");
 
 	wclrtoborder(w_stats);
 
@@ -184,17 +172,24 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 2, 1, "TX: ");
 
-	sprintf(tmp, "%'llu (%s)",  nstat.tx_packets,
-		byte_units(nstat.tx_bytes));
+	sprintf(tmp, "%'u (%s)",  cur.nls->tx_packets,
+		byte_units(cur.nls->tx_bytes));
 	waddstr_b(w_stats, tmp);
 
-	waddstr(w_stats, ", mac retries: ");
-	sprintf(tmp, "%u", cur.stat.discard.retries);
-	waddstr_b(w_stats, tmp);
+	waddstr(w_stats, ", rate: ");
+	waddstr_b(w_stats, cur.nls->tx_bitrate);
 
-	waddstr(w_stats, ", missed beacons: ");
-	sprintf(tmp, "%u", cur.stat.miss.beacon);
-	waddstr_b(w_stats, tmp);
+	if (cur.nls->tx_failed) {
+		waddstr(w_stats, ", failed: ");
+		sprintf(tmp, "%u", cur.nls->tx_failed);
+		waddstr_b(w_stats, tmp);
+	}
+
+	if (cur.nls->tx_retries) {
+		waddstr(w_stats, ", retries: ");
+		sprintf(tmp, "%u", cur.nls->tx_retries);
+		waddstr_b(w_stats, tmp);
+	}
 
 	wclrtoborder(w_stats);
 	wrefresh(w_stats);

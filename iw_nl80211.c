@@ -1,15 +1,7 @@
 /*
  * PROTOTYPE: add nl80211 calls to iw_if. Mostly copied/stolen from iw
  */
-//#include <net/if.h>
-
-//#include <linux/if_ether.h>	/* ETH_ALEN */
-
-/*
- * Use local copy of nl80211.h rather than the one shipped with the distro in
- * /usr/include/linux. There are different versions, local one may be out of date.
- */
-
+#include "wavemon.h"
 #include <net/if.h>
 #include <errno.h>
 #include <err.h>
@@ -17,7 +9,6 @@
 #include <stdlib.h>
 
 #include "iw_nl80211.h"
-#define conf_ifname() "wlan0"
 
 /* Initialize and allocate the nl80211 sub-structure */
 struct iw_nl80211_stat *iw_nl80211_init(void)
@@ -83,23 +74,6 @@ static int ack_handler(struct nl_msg *msg, void *arg)
 	return NL_STOP;
 }
 
-// stolen from iw:util.c
-static void mac_addr_n2a(char *mac_addr, unsigned char *arg)
-{
-	int i, l;
-#define ETH_ALEN 6
-	l = 0;
-	for (i = 0; i < ETH_ALEN ; i++) {
-		if (i == 0) {
-			sprintf(mac_addr+l, "%02x", arg[i]);
-			l += 2;
-		} else {
-			sprintf(mac_addr+l, ":%02x", arg[i]);
-			l += 3;
-		}
-	}
-}
-
 // stolen from iw:station.c
 void parse_bitrate(struct nlattr *bitrate_attr, char *buf, int buflen)
 {
@@ -148,13 +122,16 @@ void parse_bitrate(struct nlattr *bitrate_attr, char *buf, int buflen)
 		pos += snprintf(pos, buflen - (pos - buf),
 				" VHT-NSS %d", nla_get_u8(rinfo[NL80211_RATE_INFO_VHT_NSS]));
 }
-// stolen from iw:station.c
+
+// stolen and modified from iw:station.c
 static int print_sta_handler(struct nl_msg *msg, void *arg)
 {
+	struct iw_nl80211_stat *is = (struct iw_nl80211_stat *)arg;
+
 	struct nlattr *tb[NL80211_ATTR_MAX + 1];
 	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
 	struct nlattr *sinfo[NL80211_STA_INFO_MAX + 1];
-	char mac_addr[20], state_name[10], dev[20];
+	char state_name[10];
 	struct nl80211_sta_flag_update *sta_flags;
 	static struct nla_policy stats_policy[NL80211_STA_INFO_MAX + 1] = {
 		[NL80211_STA_INFO_INACTIVE_TIME] = { .type = NLA_U32 },
@@ -180,6 +157,8 @@ static int print_sta_handler(struct nl_msg *msg, void *arg)
 		[NL80211_STA_INFO_CHAIN_SIGNAL_AVG] = { .type = NLA_NESTED },
 	};
 
+	if (!is)
+		err_quit("is is NULL");
 	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
 		  genlmsg_attrlen(gnlh, 0), NULL);
 
@@ -200,31 +179,22 @@ static int print_sta_handler(struct nl_msg *msg, void *arg)
 		return NL_SKIP;
 	}
 
-	mac_addr_n2a(mac_addr, nla_data(tb[NL80211_ATTR_MAC]));
-	if_indextoname(nla_get_u32(tb[NL80211_ATTR_IFINDEX]), dev);
-	printf("Station %s (on %s)", mac_addr, dev);
+	memcpy(&is->mac_addr, nla_data(tb[NL80211_ATTR_MAC]), ETH_ALEN);
 
 	if (sinfo[NL80211_STA_INFO_INACTIVE_TIME])
-		printf("\n\tinactive time:\t%u ms",
-			nla_get_u32(sinfo[NL80211_STA_INFO_INACTIVE_TIME]));
+		is->inactive_time = nla_get_u32(sinfo[NL80211_STA_INFO_INACTIVE_TIME]);
 	if (sinfo[NL80211_STA_INFO_RX_BYTES])
-		printf("\n\trx bytes:\t%u",
-			nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]));
+		is->rx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]);
 	if (sinfo[NL80211_STA_INFO_RX_PACKETS])
-		printf("\n\trx packets:\t%u",
-			nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]));
+		is->rx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]);
 	if (sinfo[NL80211_STA_INFO_TX_BYTES])
-		printf("\n\ttx bytes:\t%u",
-			nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]));
+		is->tx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]);
 	if (sinfo[NL80211_STA_INFO_TX_PACKETS])
-		printf("\n\ttx packets:\t%u",
-			nla_get_u32(sinfo[NL80211_STA_INFO_TX_PACKETS]));
+		is->tx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_TX_PACKETS]);
 	if (sinfo[NL80211_STA_INFO_TX_RETRIES])
-		printf("\n\ttx retries:\t%u",
-			nla_get_u32(sinfo[NL80211_STA_INFO_TX_RETRIES]));
+		is->tx_retries = nla_get_u32(sinfo[NL80211_STA_INFO_TX_RETRIES]);
 	if (sinfo[NL80211_STA_INFO_TX_FAILED])
-		printf("\n\ttx failed:\t%u",
-			nla_get_u32(sinfo[NL80211_STA_INFO_TX_FAILED]));
+		is->tx_failed = nla_get_u32(sinfo[NL80211_STA_INFO_TX_FAILED]);
 
 	/* XXX
 	char *chain;
@@ -242,32 +212,18 @@ static int print_sta_handler(struct nl_msg *msg, void *arg)
 			*/
 
 	if (sinfo[NL80211_STA_INFO_T_OFFSET])
-		printf("\n\tToffset:\t%lld us",
-			(unsigned long long)nla_get_u64(sinfo[NL80211_STA_INFO_T_OFFSET]));
+		is->tx_offset = nla_get_u64(sinfo[NL80211_STA_INFO_T_OFFSET]);
 
-	if (sinfo[NL80211_STA_INFO_TX_BITRATE]) {
-		char buf[100];
+	if (sinfo[NL80211_STA_INFO_TX_BITRATE])
+		parse_bitrate(sinfo[NL80211_STA_INFO_TX_BITRATE], is->tx_bitrate, sizeof(is->tx_bitrate));
 
-		parse_bitrate(sinfo[NL80211_STA_INFO_TX_BITRATE], buf, sizeof(buf));
-		printf("\n\ttx bitrate:\t%s", buf);
-	}
-
-	if (sinfo[NL80211_STA_INFO_RX_BITRATE]) {
-		char buf[100];
-
-		parse_bitrate(sinfo[NL80211_STA_INFO_RX_BITRATE], buf, sizeof(buf));
-		printf("\n\trx bitrate:\t%s", buf);
-	}
+	if (sinfo[NL80211_STA_INFO_RX_BITRATE])
+		parse_bitrate(sinfo[NL80211_STA_INFO_RX_BITRATE], is->rx_bitrate, sizeof(is->rx_bitrate));
 
 	if (sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]) {
-		uint32_t thr;
-
-		thr = nla_get_u32(sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]);
+		is->expected_thru = nla_get_u32(sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]);
 		/* convert in Mbps but scale by 1000 to save kbps units */
-		thr = thr * 1000 / 1024;
-
-		printf("\n\texpected throughput:\t%u.%uMbps",
-		       thr / 1000, thr % 1000);
+		is->expected_thru = is->expected_thru * 1000 / 1024;
 	}
 
 	if (sinfo[NL80211_STA_INFO_LLID])
@@ -325,56 +281,31 @@ static int print_sta_handler(struct nl_msg *msg, void *arg)
 		sta_flags = (struct nl80211_sta_flag_update *)
 			    nla_data(sinfo[NL80211_STA_INFO_STA_FLAGS]);
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_AUTHORIZED)) {
-			printf("\n\tauthorized:\t");
-			if (sta_flags->set & BIT(NL80211_STA_FLAG_AUTHORIZED))
-				printf("yes");
-			else
-				printf("no");
-		}
+		if (sta_flags->mask & BIT(NL80211_STA_FLAG_AUTHORIZED) &&
+		    sta_flags->set & BIT(NL80211_STA_FLAG_AUTHORIZED))
+			is->authenticated = true;
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_AUTHENTICATED)) {
-			printf("\n\tauthenticated:\t");
-			if (sta_flags->set & BIT(NL80211_STA_FLAG_AUTHENTICATED))
-				printf("yes");
-			else
-				printf("no");
-		}
+		if (sta_flags->mask & BIT(NL80211_STA_FLAG_AUTHENTICATED) &&
+		    sta_flags->set & BIT(NL80211_STA_FLAG_AUTHENTICATED))
+			is->authenticated = true;
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_SHORT_PREAMBLE)) {
-			printf("\n\tpreamble:\t");
-			if (sta_flags->set & BIT(NL80211_STA_FLAG_SHORT_PREAMBLE))
-				printf("short");
-			else
-				printf("long");
-		}
+		if (sta_flags->mask & BIT(NL80211_STA_FLAG_SHORT_PREAMBLE) &&
+		    sta_flags->set & BIT(NL80211_STA_FLAG_SHORT_PREAMBLE))
+			is->long_preamble = true;
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_WME)) {
-			printf("\n\tWMM/WME:\t");
-			if (sta_flags->set & BIT(NL80211_STA_FLAG_WME))
-				printf("yes");
-			else
-				printf("no");
-		}
+		if (sta_flags->mask & BIT(NL80211_STA_FLAG_WME) &&
+		    sta_flags->set & BIT(NL80211_STA_FLAG_WME))
+			is->wme = true;
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_MFP)) {
-			printf("\n\tMFP:\t\t");
-			if (sta_flags->set & BIT(NL80211_STA_FLAG_MFP))
-				printf("yes");
-			else
-				printf("no");
-		}
+		if (sta_flags->mask & BIT(NL80211_STA_FLAG_MFP) &&
+		    sta_flags->set & BIT(NL80211_STA_FLAG_MFP))
+			is->mfp = true;
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_TDLS_PEER)) {
-			printf("\n\tTDLS peer:\t");
-			if (sta_flags->set & BIT(NL80211_STA_FLAG_TDLS_PEER))
-				printf("yes");
-			else
-				printf("no");
-		}
+		if (sta_flags->mask & BIT(NL80211_STA_FLAG_TDLS_PEER) &&
+		    sta_flags->set & BIT(NL80211_STA_FLAG_TDLS_PEER))
+			is->tdls = true;
 	}
 
-	printf("\n");
 	return NL_SKIP;
 }
 
@@ -407,7 +338,7 @@ int handle_cmd(struct iw_nl80211_stat *is, struct cmd *cmd)
 	// NLA_PUT_U64(msg, NL80211_ATTR_WDEV, devidx);
 
 	/* Set callback for this message */
-	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, NULL);
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
 
 	ret = nl_send_auto_complete(is->nl_sock, msg);
 	if (ret < 0)
@@ -433,13 +364,12 @@ int handle_cmd(struct iw_nl80211_stat *is, struct cmd *cmd)
 void iw_nl80211_getstat(struct iw_nl80211_stat *is)
 {
 	struct cmd cmd = {
-		.cmd 	 = NL80211_CMD_GET_STATION,
-		.flags	 = NLM_F_DUMP,
-		.handler = print_sta_handler
+		.cmd		= NL80211_CMD_GET_STATION,
+		.flags		= NLM_F_DUMP,
+		.handler	= print_sta_handler,
+		.handler_arg	= is
 	};
 
-	reset_shell_mode();
 	handle_cmd(is, &cmd);
-	exit(0);
 }
 
