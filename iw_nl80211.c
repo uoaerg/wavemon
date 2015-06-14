@@ -397,9 +397,53 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
+/* Regulatory domain, stolen from iw:reg.c */
+static int reg_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_reg *ir = (struct iw_nl80211_reg *)arg;
+	struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	char *alpha2;
+
+	ir->region = -1;
+
+	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb_msg[NL80211_ATTR_REG_ALPHA2])
+		return NL_SKIP;
+
+	if (!tb_msg[NL80211_ATTR_REG_RULES])
+		return NL_SKIP;
+
+	if (tb_msg[NL80211_ATTR_WIPHY])
+		printf("phy#%d%s\n", nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]),
+		       tb_msg[NL80211_ATTR_WIPHY_SELF_MANAGED_REG] ?
+		       " (self-managed)" : "");
+	else
+		printf("global\n");
+
+	if (tb_msg[NL80211_ATTR_DFS_REGION])
+		ir->region = nla_get_u8(tb_msg[NL80211_ATTR_DFS_REGION]);
+	else
+		ir->region = NL80211_DFS_UNSET;
+
+	alpha2 = nla_data(tb_msg[NL80211_ATTR_REG_ALPHA2]);
+	ir->country[0] = alpha2[0];
+	ir->country[1] = alpha2[1];
+
+	return NL_SKIP;
+}
+
 /*
  * COMMAND HANDLERS
  */
+static struct cmd cmd_reg = {
+	.cmd	 = NL80211_CMD_GET_REG,
+	.flags	 = 0,
+	.handler = reg_handler
+};
+
 static struct cmd cmd_ifstat = {
 	.cmd	 = NL80211_CMD_GET_INTERFACE,
 	.flags	 = 0,
@@ -411,6 +455,13 @@ static struct cmd cmd_station = {
 	.flags	 = NLM_F_DUMP,
 	.handler = station_handler,
 };
+
+void iw_nl80211_getreg(struct iw_nl80211_reg *ir)
+{
+	cmd_reg.handler_arg = ir;
+	memset(ir, 0, sizeof(*ir));
+	handle_cmd(&cmd_reg);
+}
 
 void iw_nl80211_getstat(struct iw_nl80211_stat *is)
 {

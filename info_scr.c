@@ -201,11 +201,13 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 {
 	struct iw_dyn_info info;
 	struct iw_nl80211_ifstat ifs;
+	struct iw_nl80211_reg ir;
 	char tmp[0x100];
 	int i;
 
 	dyn_info_get(&info, conf_ifname(), &cur.range);
 	iw_nl80211_getifstat(&ifs);
+	iw_nl80211_getreg(&ir);
 
 	/*
 	 * Interface Part
@@ -221,6 +223,14 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	/* PHY */
 	sprintf(tmp, ", phy %d", ifs.phy);
 	waddstr(w_if, tmp);
+
+	/* Regulatory domain */
+	if (ir.region > 0) {
+		waddstr(w_if, ", reg: ");
+		waddstr_b(w_if, ir.country);
+		sprintf(tmp, " (%s)", dfs_domain_name(ir.region));
+		waddstr(w_if, tmp);
+	}
 
 	if (ifs.ssid[0]) {
 		waddstr_b(w_if, ",");

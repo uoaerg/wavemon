@@ -324,6 +324,7 @@ extern double dbm2mw(const double in);
 extern char *dbm2units(const double in);
 extern double mw2dbm(const double in);
 
+extern const char *dfs_domain_name(enum nl80211_dfs_regions region);
 extern int ieee80211_frequency_to_channel(int freq);
 extern const char *channel_width_name(enum nl80211_chan_width width);
 extern const char *channel_type_name(enum nl80211_channel_type channel_type);

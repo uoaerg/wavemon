@@ -202,3 +202,20 @@ const char *iftype_name(enum nl80211_iftype iftype)
 	sprintf(modebuf, "Unknown mode (%d)", iftype);
 	return modebuf;
 }
+
+/* stolen from iw:reg.c */
+const char *dfs_domain_name(enum nl80211_dfs_regions region)
+{
+	switch (region) {
+	case NL80211_DFS_UNSET:
+		return "DFS-UNSET";
+	case NL80211_DFS_FCC:
+		return "DFS-FCC";
+	case NL80211_DFS_ETSI:
+		return "DFS-ETSI";
+	case NL80211_DFS_JP:
+		return "DFS-JP";
+	default:
+		return "DFS-invalid";
+	}
+}
