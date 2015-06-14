@@ -10,73 +10,7 @@
 
 #include "iw_nl80211.h"
 
-// GLOBALS
-// XXX FIXME
-static struct nl_sock	*nl_sock;
-
-static void iw_nl80211_init_sock(void) {
-	if (nl_sock)
-		return;
-
-	nl_sock = nl_socket_alloc();
-	if (!nl_sock)
-		err(1, "Failed to allocate netlink socket");
-
-	/* Set rx/tx socket buffer size to 8kb (default is 32kb) */
-	nl_socket_set_buffer_size(nl_sock, 8192, 8192);
-
-	if (genl_connect(nl_sock))
-		err(1, "failed to connect to GeNetlink");
-}
-
-/* Initialize and allocate the nl80211 sub-structure */
-struct iw_nl80211_stat *iw_nl80211_init(void)
-{
-	struct iw_nl80211_stat *is = calloc(1, sizeof(*is));
-
-	if (is == NULL)
-		err(1, "failed to allocate nl80211 structure");
-
-	return is;
-}
-
-/* Teardown */
-void iw_nl80211_fini(struct iw_nl80211_stat **isptr)
-{
-	free(*isptr);
-	*isptr = NULL;
-}
-
-/*
- * COMMAND HANDLING
- */
-
-// Predefined handlers, stolen from iw:iw.c
-static int error_handler(struct sockaddr_nl *nla, struct nlmsgerr *err,
-			 void *arg)
-{
-	int *ret = arg;
-	*ret = err->error;
-	return NL_STOP;
-}
-
-static int finish_handler(struct nl_msg *msg, void *arg)
-{
-	int *ret = arg;
-	*ret = 0;
-	return NL_SKIP;
-}
-
-static int ack_handler(struct nl_msg *msg, void *arg)
-{
-	int *ret = arg;
-	*ret = 0;
-	return NL_STOP;
-}
-
 /* stolen/modified from iw:iw.c */
-// FIXME: this is not going to work with multiple threads accessing the same socket
-// FIXME: find a better way of keeping separate sockets around
 int handle_cmd(struct cmd *cmd)
 {
 	struct nl_cb *cb;
@@ -85,19 +19,35 @@ int handle_cmd(struct cmd *cmd)
 	int ret;
 	uint32_t ifindex;
 
-	if (!nl_sock)
-		iw_nl80211_init_sock();
+	/*
+	 * Initialization of static components:
+	 * - per-cmd socket
+	 * - global nl80211 ID
+	 * - per-cmd interface index (in case conf_ifname() changes)
+	 */
+	if (!cmd->sk) {
+		cmd->sk = nl_socket_alloc();
+		if (!cmd->sk)
+			err(1, "Failed to allocate netlink socket");
+
+		/* NB: not setting sk buffer size, using default 32Kb */
+		if (genl_connect(cmd->sk))
+			err(1, "failed to connect to GeNetlink");
+	}
+
+	if (nl80211_id < 0) {
+		nl80211_id = genl_ctrl_resolve(cmd->sk, "nl80211");
+		if (nl80211_id < 0)
+			err(1, "nl80211 not found");
+	}
 
 	ifindex = if_nametoindex(conf_ifname());
 	if (ifindex == 0 && errno)
 		err(1, "failed to look up interface %s", conf_ifname());
 
-	if (nl80211_id < 0) {
-		nl80211_id = genl_ctrl_resolve(nl_sock, "nl80211");
-		if (nl80211_id < 0)
-			err(1, "nl80211 not found");
-	}
-
+	/*
+	 * Message Preparation
+	 */
 	msg = nlmsg_alloc();
 	if (!msg)
 		err(2, "failed to allocate netlink message");
@@ -118,7 +68,7 @@ int handle_cmd(struct cmd *cmd)
 	/* Set callback for this message */
 	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
 
-	ret = nl_send_auto_complete(nl_sock, msg);
+	ret = nl_send_auto_complete(cmd->sk, msg);
 	if (ret < 0)
 		err(2, "failed to send station-dump message");
 
@@ -130,7 +80,7 @@ int handle_cmd(struct cmd *cmd)
 	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &ret);
 
 	while (ret > 0)
-		nl_recvmsgs(nl_sock, cb);
+		nl_recvmsgs(cmd->sk, cb);
 
 	nl_cb_put(cb);
 	nlmsg_free(msg);
@@ -376,24 +326,9 @@ static int station_handler(struct nl_msg *msg, void *arg)
 }
 
 
-// Populate statistics
-void iw_nl80211_getstat(struct iw_nl80211_stat *is)
-{
-	struct cmd cmd = {
-		.cmd		= NL80211_CMD_GET_STATION,
-		.flags		= NLM_F_DUMP,
-		.handler	= station_handler,
-		.handler_arg	= is
-	};
-
-	handle_cmd(&cmd);
-}
-
 /*
  * INTERFACE COMMANDS
  */
-
-
 void print_ssid_escaped(char *buf, const size_t buflen,
 			const uint8_t *data, const size_t datalen)
 {
@@ -462,16 +397,43 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
-// Populate statistics
+/*
+ * COMMAND HANDLERS
+ */
+static struct cmd cmd_ifstat = {
+	.cmd	 = NL80211_CMD_GET_INTERFACE,
+	.flags	 = 0,
+	.handler = iface_handler
+};
+
+static struct cmd cmd_station = {
+	.cmd	 = NL80211_CMD_GET_STATION,
+	.flags	 = NLM_F_DUMP,
+	.handler = station_handler,
+};
+
+void iw_nl80211_getstat(struct iw_nl80211_stat *is)
+{
+	cmd_station.handler_arg = is;
+	memset(is, 0, sizeof(*is));
+	handle_cmd(&cmd_station);
+}
+
 void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 {
-	struct cmd cmd = {
-		.cmd		= NL80211_CMD_GET_INTERFACE,
-		.flags		= 0,
-		.handler	= iface_handler,
-		.handler_arg	= ifs
-	};
-
+	cmd_ifstat.handler_arg = ifs;
 	memset(ifs, 0, sizeof(*ifs));
-	handle_cmd(&cmd);
+	handle_cmd(&cmd_ifstat);
 }
+
+/* Teardown: terminate all sockets */
+void iw_nl80211_fini(void)
+{
+	if (cmd_station.sk)
+		nl_socket_free(cmd_station.sk);
+	if (cmd_ifstat.sk)
+		nl_socket_free(cmd_ifstat.sk);
+	cmd_station.sk = NULL;
+	cmd_ifstat.sk  = NULL;
+}
+

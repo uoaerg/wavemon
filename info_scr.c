@@ -31,7 +31,6 @@ void sampling_init(void (*sampling_handler)(int))
 	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
 
 	xsignal(SIGALRM, SIG_IGN);
-	cur.nls = iw_nl80211_init();
 	iw_getinf_range(conf_ifname(), &cur.range);
 	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
 	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
@@ -47,8 +46,11 @@ void sampling_do_poll(void)
 	/* XXX
 	 * HACK: for the transition period, add to the end of struct iw_stat cur.
 	 * Leave the old infrastructure intact, add nl80211 in parallel.
+	 * FIXME: this function is also called from the history screen,
+	 *        in that case cur.nls is NULL.
 	 */
-	iw_nl80211_getstat(cur.nls);
+	if (cur.nls)
+		iw_nl80211_getstat(cur.nls);
 	iw_cache_update(&cur);
 }
 
@@ -222,7 +224,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	if (ifs.ssid[0]) {
 		waddstr_b(w_if, ",");
-		waddstr(w_if, "  SSID: ");
+		waddstr(w_if, " SSID: ");
 		waddstr_b(w_if, ifs.ssid);
 	}
 
@@ -236,8 +238,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	waddstr(w_info, "mode: ");
 	waddstr_b(w_info, iftype_name(ifs.iftype));
 
-	if (cur.nls) {
-		waddstr(w_info, ",  addr: ");
+	if (!ether_addr_is_zero(&cur.nls->mac_addr)) {
+		waddstr(w_info, ",  station: ");
 		waddstr_b(w_info, ether_lookup(&cur.nls->mac_addr));
 	}
 
@@ -504,6 +506,10 @@ void scr_info_init(void)
 {
 	int line = 0;
 
+	cur.nls = calloc(1, sizeof(*cur.nls));
+	if (cur.nls == NULL)
+		err_sys("failed to allocate nl80211 structure");
+
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
 	w_levels = newwin_title(line, WH_LEVEL, "Levels", true);
@@ -536,6 +542,7 @@ int scr_info_loop(WINDOW *w_menu)
 void scr_info_fini(void)
 {
 	sampling_stop();
+	iw_nl80211_fini();
 
 	delwin(w_net);
 	delwin(w_info);
@@ -543,5 +550,6 @@ void scr_info_fini(void)
 	delwin(w_levels);
 	delwin(w_if);
 
-	iw_nl80211_fini(&cur.nls);
+	free(cur.nls);
+	cur.nls = NULL;
 }

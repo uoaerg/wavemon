@@ -81,14 +81,16 @@ struct iw_nl80211_stat {
 
 
 /**
- * struct cmd - stolen from iw:iw.h
+ * struct cmd - stolen and modified from iw:iw.h
  * @cmd:	 nl80211 command to send via GeNetlink
+ * @sk:		 netlink socket to be used for this command
  * @flags:	 flags to set in the GeNetlink message
  * @handler:	 netlink callback handler
  * @handler_arg: argument for @handler
  */
 struct cmd {
         enum nl80211_commands	cmd;
+	struct nl_sock		*sk;
         int			flags;
 	int (*handler)(struct nl_msg *msg, void *arg);
 	void 			*handler_arg;
@@ -106,6 +108,28 @@ enum plink_state {
 };
 /* iw_nl80211.c */
 extern void iw_nl80211_getstat(struct iw_nl80211_stat *is);
-extern struct iw_nl80211_stat *iw_nl80211_init(void);
-extern void iw_nl80211_fini(struct iw_nl80211_stat **isptr);
+extern void iw_nl80211_fini(void);
+
+/* Predefined handlers, stolen from iw:iw.c */
+static inline int error_handler(struct sockaddr_nl *nla, struct nlmsgerr *err,
+			 void *arg)
+{
+	int *ret = arg;
+	*ret = err->error;
+	return NL_STOP;
+}
+
+static inline int finish_handler(struct nl_msg *msg, void *arg)
+{
+	int *ret = arg;
+	*ret = 0;
+	return NL_SKIP;
+}
+
+static inline int ack_handler(struct nl_msg *msg, void *arg)
+{
+	int *ret = arg;
+	*ret = 0;
+	return NL_STOP;
+}
 
