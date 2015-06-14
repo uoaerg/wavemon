@@ -16,6 +16,35 @@
 
 #define BIT(x) (1ULL<<(x))		/* from iw:iw.h */
 
+/**
+ * iw_nl80211_ifstat - interface statistics
+ * @phy:	PHY index
+ * @ifindex:	ifindex of receiving interface
+ * @wdev:	wireless device index
+ * @iftype:	interface mode (access point ...)
+ *
+ * @freq:	frequency in MHz
+ * @chan_width:	channel width
+ * @chan_type:	channel type
+ * @freq_ctr1:	center frequency #1
+ * @freq_ctr2:	center frequency #2
+ */
+struct iw_nl80211_ifstat {
+	uint32_t	phy,
+			ifindex,
+			wdev,
+			iftype;
+
+	char		ssid[64];
+
+	uint32_t	freq;
+	int		chan_width,
+			chan_type,
+			freq_ctr1,
+			freq_ctr2;
+};
+
+extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
 
 /* struct iw_nl80211_stat - nl80211 statistics
  * @nl80211_id:	GeNetlink identifier for nl80211
@@ -23,11 +52,6 @@
  * @ifindex:	interface index for conf_ifname()
  */
 struct iw_nl80211_stat {
-	int		nl80211_id;
-	struct nl_sock	*nl_sock;
-
-	uint32_t	ifindex;
-
 	/*
 	 * Station Statistics
 	 */
@@ -52,12 +76,7 @@ struct iw_nl80211_stat {
 			mfp:1, 		/* Management Frame Protection */
 			tdls:1;		/* Tunneled Direct Link Setup */
 
-//	char		mac_addr[20]; 	/* SSID */
 	struct ether_addr mac_addr;
-
-	/*
-	 * Interface Statistics
-	 */
 };
 
 

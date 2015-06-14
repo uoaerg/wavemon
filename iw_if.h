@@ -18,6 +18,7 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "wavemon.h"
+#include "nl80211.h"
 #include <netdb.h>
 #include <pthread.h>
 #include <arpa/inet.h>
@@ -320,6 +321,11 @@ extern uint8_t dbm_to_u8(const int dbm);
 extern double dbm2mw(const double in);
 extern char *dbm2units(const double in);
 extern double mw2dbm(const double in);
+
+extern int ieee80211_frequency_to_channel(int freq);
+extern const char *channel_width_name(enum nl80211_chan_width width);
+extern const char *channel_type_name(enum nl80211_channel_type channel_type);
+extern const char *iftype_name(enum nl80211_iftype iftype);
 
 /*
  *	WEXT helper routines

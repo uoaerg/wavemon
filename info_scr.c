@@ -198,11 +198,16 @@ static void display_stats(void)
 static void display_info(WINDOW *w_if, WINDOW *w_info)
 {
 	struct iw_dyn_info info;
+	struct iw_nl80211_ifstat ifs;
 	char tmp[0x100];
 	int i;
 
 	dyn_info_get(&info, conf_ifname(), &cur.range);
+	iw_nl80211_getifstat(&ifs);
 
+	/*
+	 * Interface Part
+	 */
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
 	if (cur.range.enc_capa & IW_WPA_MASK)
@@ -211,54 +216,29 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		sprintf(tmp, " (%s)", info.name);
 	waddstr(w_if, tmp);
 
-	if (info.cap_essid) {
+	/* PHY */
+	sprintf(tmp, ", phy %d", ifs.phy);
+	waddstr(w_if, tmp);
+
+	if (ifs.ssid[0]) {
 		waddstr_b(w_if, ",");
-		waddstr(w_if, "  ESSID: ");
-		if (info.essid_ct > 1)
-			sprintf(tmp, "\"%s\" [%d]", info.essid,
-						    info.essid_ct);
-		else if (info.essid_ct)
-			sprintf(tmp, "\"%s\"", info.essid);
-		else
-			sprintf(tmp, "off/any");
-		waddstr_b(w_if, tmp);
+		waddstr(w_if, "  SSID: ");
+		waddstr_b(w_if, ifs.ssid);
 	}
 
-	if (info.cap_nickname) {
-		waddstr(w_if, ",  nick: ");
-		sprintf(tmp, "\"%s\"", info.nickname);
-		waddstr_b(w_if, tmp);
-	}
-
-	if (info.cap_nwid) {
-		waddstr(w_if, ",  nwid: ");
-		if (info.nwid.disabled)
-			sprintf(tmp, "off/any");
-		else
-			sprintf(tmp, "%X", info.nwid.value);
-		waddstr_b(w_if, tmp);
-	}
 	wclrtoborder(w_if);
 	wrefresh(w_if);
 
+	/*
+	 * Info window:
+	 */
 	wmove(w_info, 1, 1);
 	waddstr(w_info, "mode: ");
-	if (info.cap_mode)
-		waddstr_b(w_info, iw_opmode(info.mode));
-	else
-		waddstr(w_info, "n/a");
+	waddstr_b(w_info, iftype_name(ifs.iftype));
 
-	if (info.mode != IW_MODE_MASTER &&
-	    info.mode != IW_MODE_SECOND && info.mode != IW_MODE_MONITOR) {
-		if (info.mode == IW_MODE_ADHOC)
-			waddstr(w_info, ",  cell: ");
-		else
-			waddstr(w_info, ",  access point: ");
-
-		if (info.cap_ap)
-			waddstr_b(w_info, format_bssid(&info.ap_addr));
-		else
-			waddstr(w_info, "n/a");
+	if (cur.nls) {
+		waddstr(w_info, ",  addr: ");
+		waddstr_b(w_info, ether_lookup(&cur.nls->mac_addr));
 	}
 
 	if (info.cap_sens) {
@@ -273,31 +253,38 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	wclrtoborder(w_info);
 
 	wmove(w_info, 2, 1);
-	if (info.cap_freq && info.freq < 256)
-		info.freq = channel_to_freq(info.freq, &cur.range);
-	if (info.cap_freq && info.freq > 1e3) {
+	if (ifs.freq) {
 		waddstr(w_info, "freq: ");
-		sprintf(tmp, "%g GHz", info.freq / 1.0e9);
+		sprintf(tmp, "%d MHz", ifs.freq);
 		waddstr_b(w_info, tmp);
 
-		i = freq_to_channel(info.freq, &cur.range);
-		if (i >= 0) {
-			waddstr(w_info, ", channel: ");
-			sprintf(tmp, "%d", i);
+		if (ifs.freq_ctr1 && ifs.freq_ctr1 != ifs.freq) {
+			waddstr(w_info, ", ctr1: ");
+			sprintf(tmp, "%d MHz", ifs.freq_ctr1);
 			waddstr_b(w_info, tmp);
 		}
+		if (ifs.freq_ctr2 && ifs.freq_ctr2 != ifs.freq_ctr1 && ifs.freq_ctr2 != ifs.freq) {
+			waddstr(w_info, ", ctr2: ");
+			sprintf(tmp, "%d MHz", ifs.freq_ctr2);
+			waddstr_b(w_info, tmp);
+		}
+
+		waddstr(w_info, ", channel: ");
+		sprintf(tmp, "%d", ieee80211_frequency_to_channel(ifs.freq));
+		waddstr_b(w_info, tmp);
+
+		if (ifs.chan_width >= 0) {
+			sprintf(tmp, " (width: %s)", channel_width_name(ifs.chan_width));
+			waddstr(w_info, tmp);
+		} else if (ifs.chan_type >= 0) {
+			sprintf(tmp, " (%s)", channel_type_name(ifs.chan_type));
+			waddstr(w_info, tmp);
+		}
+
 	} else {
 		waddstr(w_info, "frequency/channel: n/a");
 	}
 
-	if (! (info.mode >= IW_MODE_MASTER && info.mode <= IW_MODE_MONITOR)) {
-		waddstr(w_info, ",  bitrate: ");
-		if (info.bitrate) {
-			sprintf(tmp, "%g Mbit/s", info.bitrate / 1.0e6);
-			waddstr_b(w_info, tmp);
-		} else
-			waddstr(w_info, "n/a");
-	}
 	wclrtoborder(w_info);
 
 	wmove(w_info, 3, 1);

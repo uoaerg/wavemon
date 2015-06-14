@@ -2,6 +2,7 @@
  * General-purpose utilities used by multiple files.
  */
 #include "wavemon.h"
+#include "nl80211.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ether.h>
@@ -114,8 +115,82 @@ double mw2dbm(const double in)
 	return 10.0 * log10(in);
 }
 
+/* Stolen from iw:util.c */
+int ieee80211_frequency_to_channel(int freq)
+{
+	/* see 802.11-2007 17.3.8.3.2 and Annex J */
+	if (freq == 2484)
+		return 14;
+	else if (freq < 2484)
+		return (freq - 2407) / 5;
+	else if (freq >= 4910 && freq <= 4980)
+		return (freq - 4000) / 5;
+	else if (freq <= 45000) /* DMG band lower limit */
+		return (freq - 5000) / 5;
+	else if (freq >= 58320 && freq <= 64800)
+		return (freq - 56160) / 2160;
+	else
+		return 0;
+}
 
+const char *channel_width_name(enum nl80211_chan_width width)
+{
+	switch (width) {
+	case NL80211_CHAN_WIDTH_20_NOHT:
+		return "20 MHz (no HT)";
+	case NL80211_CHAN_WIDTH_20:
+		return "20 MHz";
+	case NL80211_CHAN_WIDTH_40:
+		return "40 MHz";
+	case NL80211_CHAN_WIDTH_80:
+		return "80 MHz";
+	case NL80211_CHAN_WIDTH_80P80:
+		return "80+80 MHz";
+	case NL80211_CHAN_WIDTH_160:
+		return "160 MHz";
+	default:
+		return "unknown";
+	}
+}
 
+/* stolen from iw:interface.c */
+const char *channel_type_name(enum nl80211_channel_type channel_type)
+{
+	switch (channel_type) {
+	case NL80211_CHAN_NO_HT:
+		return "NO HT";
+	case NL80211_CHAN_HT20:
+		return "HT20";
+	case NL80211_CHAN_HT40MINUS:
+		return "HT40-";
+	case NL80211_CHAN_HT40PLUS:
+		return "HT40+";
+	default:
+		return "unknown";
+	}
+}
 
+/* stolen from iw:util.c */
+const char *iftype_name(enum nl80211_iftype iftype)
+{
+	static char modebuf[100];
+	static const char *ifmodes[NL80211_IFTYPE_MAX + 1] = {
+		"Unspecified",
+		"IBSS",
+		"Managed",
+		"AP",
+		"AP/VLAN",
+		"WDS",
+		"Monitor",
+		"Mesh Point",
+		"P2P-Client",
+		"P2P-GO",
+		"P2P-Device",
+		"Outside of a BSS",
+	};
 
-
+	if (iftype <= NL80211_IFTYPE_MAX && ifmodes[iftype])
+		return ifmodes[iftype];
+	sprintf(modebuf, "Unknown mode (%d)", iftype);
+	return modebuf;
+}

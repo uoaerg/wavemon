@@ -10,6 +10,25 @@
 
 #include "iw_nl80211.h"
 
+// GLOBALS
+// XXX FIXME
+static struct nl_sock	*nl_sock;
+
+static void iw_nl80211_init_sock(void) {
+	if (nl_sock)
+		return;
+
+	nl_sock = nl_socket_alloc();
+	if (!nl_sock)
+		err(1, "Failed to allocate netlink socket");
+
+	/* Set rx/tx socket buffer size to 8kb (default is 32kb) */
+	nl_socket_set_buffer_size(nl_sock, 8192, 8192);
+
+	if (genl_connect(nl_sock))
+		err(1, "failed to connect to GeNetlink");
+}
+
 /* Initialize and allocate the nl80211 sub-structure */
 struct iw_nl80211_stat *iw_nl80211_init(void)
 {
@@ -18,38 +37,19 @@ struct iw_nl80211_stat *iw_nl80211_init(void)
 	if (is == NULL)
 		err(1, "failed to allocate nl80211 structure");
 
-	is->nl_sock = nl_socket_alloc();
-	if (!is->nl_sock)
-		err(1, "Failed to allocate netlink socket");
-
-	/* Set rx/tx socket buffer size to 8kb (default is 32kb) */
-	nl_socket_set_buffer_size(is->nl_sock, 8192, 8192);
-
-	if (genl_connect(is->nl_sock))
-		err(1, "failed to connect to GeNetlink");
-
-	is->nl80211_id = genl_ctrl_resolve(is->nl_sock, "nl80211");
-	if (is->nl80211_id < 0)
-		err(1, "nl80211 not found");
-
-	is->ifindex = if_nametoindex(conf_ifname());
-	if (is->ifindex < 0)
-		err(1, "failed to look up interface %s", conf_ifname());
-
 	return is;
 }
 
 /* Teardown */
 void iw_nl80211_fini(struct iw_nl80211_stat **isptr)
 {
-	nl_socket_free((*isptr)->nl_sock);
 	free(*isptr);
 	*isptr = NULL;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-// COMMAND HANDLING
-///////////////////////////////////////////////////////////////////////////////////////////////
+/*
+ * COMMAND HANDLING
+ */
 
 // Predefined handlers, stolen from iw:iw.c
 static int error_handler(struct sockaddr_nl *nla, struct nlmsgerr *err,
@@ -74,6 +74,72 @@ static int ack_handler(struct nl_msg *msg, void *arg)
 	return NL_STOP;
 }
 
+/* stolen/modified from iw:iw.c */
+// FIXME: this is not going to work with multiple threads accessing the same socket
+// FIXME: find a better way of keeping separate sockets around
+int handle_cmd(struct cmd *cmd)
+{
+	struct nl_cb *cb;
+	struct nl_msg *msg;
+	static int nl80211_id = -1;
+	int ret;
+	uint32_t ifindex;
+
+	if (!nl_sock)
+		iw_nl80211_init_sock();
+
+	ifindex = if_nametoindex(conf_ifname());
+	if (ifindex == 0 && errno)
+		err(1, "failed to look up interface %s", conf_ifname());
+
+	if (nl80211_id < 0) {
+		nl80211_id = genl_ctrl_resolve(nl_sock, "nl80211");
+		if (nl80211_id < 0)
+			err(1, "nl80211 not found");
+	}
+
+	msg = nlmsg_alloc();
+	if (!msg)
+		err(2, "failed to allocate netlink message");
+
+	cb = nl_cb_alloc(0 ? NL_CB_DEBUG : NL_CB_DEFAULT);
+	if (!cb)
+		err(2, "failed to allocate netlink callback");
+
+	genlmsg_put(msg, 0, 0, nl80211_id, 0, cmd->flags, cmd->cmd, 0);
+
+	/* netdev identifier: interface index */
+	if (nla_put(msg, NL80211_ATTR_IFINDEX, sizeof(ifindex), &ifindex) < 0)
+		err(2, "failed to add ifindex attribute to netlink message");
+
+	// wdev identifier: wdev index
+	// NLA_PUT_U64(msg, NL80211_ATTR_WDEV, devidx);
+
+	/* Set callback for this message */
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
+
+	ret = nl_send_auto_complete(nl_sock, msg);
+	if (ret < 0)
+		err(2, "failed to send station-dump message");
+
+	/*-------------------------------------------------------------------------
+	 * Receive loop
+	 *-------------------------------------------------------------------------*/
+	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &ret);
+	nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &ret);
+	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &ret);
+
+	while (ret > 0)
+		nl_recvmsgs(nl_sock, cb);
+
+	nl_cb_put(cb);
+	nlmsg_free(msg);
+
+	return 0;
+}
+/*
+ * STATION COMMANDS
+ */
 // stolen from iw:station.c
 void parse_bitrate(struct nlattr *bitrate_attr, char *buf, int buflen)
 {
@@ -124,7 +190,7 @@ void parse_bitrate(struct nlattr *bitrate_attr, char *buf, int buflen)
 }
 
 // stolen and modified from iw:station.c
-static int print_sta_handler(struct nl_msg *msg, void *arg)
+static int station_handler(struct nl_msg *msg, void *arg)
 {
 	struct iw_nl80211_stat *is = (struct iw_nl80211_stat *)arg;
 
@@ -157,8 +223,8 @@ static int print_sta_handler(struct nl_msg *msg, void *arg)
 		[NL80211_STA_INFO_CHAIN_SIGNAL_AVG] = { .type = NLA_NESTED },
 	};
 
-	if (!is)
-		err_quit("is is NULL");
+	assert(is != NULL);
+
 	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
 		  genlmsg_attrlen(gnlh, 0), NULL);
 
@@ -310,66 +376,102 @@ static int print_sta_handler(struct nl_msg *msg, void *arg)
 }
 
 
-/* stolen/modified from iw:iw.c */
-int handle_cmd(struct iw_nl80211_stat *is, struct cmd *cmd)
-{
-	struct nl_cb *cb;
-	struct nl_msg *msg;
-	int ret;
-
-	/*-------------------------------------------------------------------------
-	 * Send 'station dump' message
-	 *-------------------------------------------------------------------------*/
-	msg = nlmsg_alloc();
-	if (!msg)
-		err(2, "failed to allocate netlink message");
-
-	cb = nl_cb_alloc(0 ? NL_CB_DEBUG : NL_CB_DEFAULT);
-	if (!cb)
-		err(2, "failed to allocate netlink callback");
-
-	genlmsg_put(msg, 0, 0, is->nl80211_id, 0, cmd->flags, cmd->cmd, 0);
-
-	/* netdev identifier: interface index */
-	if (nla_put(msg, NL80211_ATTR_IFINDEX, sizeof(is->ifindex), &is->ifindex) < 0)
-		err(2, "failed to add ifindex attribute to netlink message");
-
-	// wdev identifier: wdev index
-	// NLA_PUT_U64(msg, NL80211_ATTR_WDEV, devidx);
-
-	/* Set callback for this message */
-	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
-
-	ret = nl_send_auto_complete(is->nl_sock, msg);
-	if (ret < 0)
-		err(2, "failed to send station-dump message");
-
-	/*-------------------------------------------------------------------------
-	 * Receive loop
-	 *-------------------------------------------------------------------------*/
-	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &ret);
-	nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &ret);
-	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &ret);
-
-	while (ret > 0)
-		nl_recvmsgs(is->nl_sock, cb);
-
-	nl_cb_put(cb);
-	nlmsg_free(msg);
-
-	return 0;
-}
-
 // Populate statistics
 void iw_nl80211_getstat(struct iw_nl80211_stat *is)
 {
 	struct cmd cmd = {
 		.cmd		= NL80211_CMD_GET_STATION,
 		.flags		= NLM_F_DUMP,
-		.handler	= print_sta_handler,
+		.handler	= station_handler,
 		.handler_arg	= is
 	};
 
-	handle_cmd(is, &cmd);
+	handle_cmd(&cmd);
 }
 
+/*
+ * INTERFACE COMMANDS
+ */
+
+
+void print_ssid_escaped(char *buf, const size_t buflen,
+			const uint8_t *data, const size_t datalen)
+{
+	int i, l;
+
+	for (i = l= 0; i < datalen; i++) {
+		if (l + 4 >= buflen) {
+			buf[buflen-1] = '\0';
+			return;
+		}
+		if (isprint(data[i]) && data[i] != ' ' && data[i] != '\\')
+			l += sprintf(buf + l, "%c", data[i]);
+		else if (data[i] == ' ' && i != 0 && i != datalen -1)
+			l += sprintf(buf + l, " ");
+		else
+			l += sprintf(buf + l, "\\x%.2x", data[i]);
+	}
+}
+
+// stolen from iw:interface.c
+static int iface_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_ifstat *ifs = (struct iw_nl80211_ifstat *)arg;
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+
+	assert(ifs != NULL);
+
+	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (tb_msg[NL80211_ATTR_WIPHY])
+		ifs->phy = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]);
+
+	if (tb_msg[NL80211_ATTR_IFINDEX])
+		ifs->ifindex = nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]);
+
+	if (tb_msg[NL80211_ATTR_WDEV])
+		ifs->wdev = nla_get_u64(tb_msg[NL80211_ATTR_WDEV]);
+	if (tb_msg[NL80211_ATTR_SSID])
+		print_ssid_escaped(ifs->ssid, sizeof(ifs->ssid),
+				   nla_data(tb_msg[NL80211_ATTR_SSID]),
+				   nla_len(tb_msg[NL80211_ATTR_SSID]));
+
+	if (tb_msg[NL80211_ATTR_IFTYPE])
+		ifs->iftype = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
+
+	ifs->chan_width = -1;
+	ifs->chan_type  = -1;
+	if (tb_msg[NL80211_ATTR_WIPHY_FREQ]) {
+		ifs->freq = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_FREQ]);
+
+		if (tb_msg[NL80211_ATTR_CHANNEL_WIDTH]) {
+			ifs->chan_width = nla_get_u32(tb_msg[NL80211_ATTR_CHANNEL_WIDTH]);
+
+			if (tb_msg[NL80211_ATTR_CENTER_FREQ1])
+				ifs->freq_ctr1 = nla_get_u32(tb_msg[NL80211_ATTR_CENTER_FREQ1]);
+			if (tb_msg[NL80211_ATTR_CENTER_FREQ2])
+				ifs->freq_ctr2 = nla_get_u32(tb_msg[NL80211_ATTR_CENTER_FREQ2]);
+
+		}
+		if (tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE])
+			ifs->chan_type = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE]);
+	}
+
+	return NL_SKIP;
+}
+
+// Populate statistics
+void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
+{
+	struct cmd cmd = {
+		.cmd		= NL80211_CMD_GET_INTERFACE,
+		.flags		= 0,
+		.handler	= iface_handler,
+		.handler_arg	= ifs
+	};
+
+	memset(ifs, 0, sizeof(*ifs));
+	handle_cmd(&cmd);
+}
