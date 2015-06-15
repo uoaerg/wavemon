@@ -164,7 +164,8 @@ static void display_stats(void)
 	waddstr(w_stats, ", rate: ");
 	waddstr_b(w_stats, cur.nls->rx_bitrate);
 
-	sprintf(tmp, ", inactive: %.1f s", (float)cur.nls->inactive_time/1e3);
+	waddstr(w_stats, ", inactive: ");
+	sprintf(tmp, "%.1f s", (float)cur.nls->inactive_time/1e3);
 	waddstr_b(w_stats, tmp);
 
 	wclrtoborder(w_stats);
@@ -173,7 +174,6 @@ static void display_stats(void)
 	 * Interface TX stats
 	 */
 	mvwaddstr(w_stats, 2, 1, "TX: ");
-
 	sprintf(tmp, "%'u (%s)",  cur.nls->tx_packets,
 		byte_units(cur.nls->tx_bytes));
 	waddstr_b(w_stats, tmp);
@@ -225,17 +225,13 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	waddstr(w_if, tmp);
 
 	/* Regulatory domain */
+	waddstr(w_if, ", reg: ");
 	if (ir.region > 0) {
-		waddstr(w_if, ", reg: ");
 		waddstr_b(w_if, ir.country);
 		sprintf(tmp, " (%s)", dfs_domain_name(ir.region));
 		waddstr(w_if, tmp);
-	}
-
-	if (ifs.ssid[0]) {
-		waddstr_b(w_if, ",");
-		waddstr(w_if, " SSID: ");
-		waddstr_b(w_if, ifs.ssid);
+	} else {
+		waddstr_b(w_if, "not set");
 	}
 
 	wclrtoborder(w_if);
@@ -251,6 +247,12 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	if (!ether_addr_is_zero(&cur.nls->mac_addr)) {
 		waddstr(w_info, ",  station: ");
 		waddstr_b(w_info, ether_lookup(&cur.nls->mac_addr));
+	}
+
+	if (ifs.ssid[0]) {
+		waddstr_b(w_info, ",");
+		waddstr(w_info, "  SSID: ");
+		waddstr_b(w_info, ifs.ssid);
 	}
 
 	if (info.cap_sens) {

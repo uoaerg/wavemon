@@ -416,13 +416,6 @@ static int reg_handler(struct nl_msg *msg, void *arg)
 	if (!tb_msg[NL80211_ATTR_REG_RULES])
 		return NL_SKIP;
 
-	if (tb_msg[NL80211_ATTR_WIPHY])
-		printf("phy#%d%s\n", nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]),
-		       tb_msg[NL80211_ATTR_WIPHY_SELF_MANAGED_REG] ?
-		       " (self-managed)" : "");
-	else
-		printf("global\n");
-
 	if (tb_msg[NL80211_ATTR_DFS_REGION])
 		ir->region = nla_get_u8(tb_msg[NL80211_ATTR_DFS_REGION]);
 	else
