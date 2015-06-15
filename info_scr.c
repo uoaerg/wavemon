@@ -552,7 +552,6 @@ int scr_info_loop(WINDOW *w_menu)
 void scr_info_fini(void)
 {
 	sampling_stop();
-	iw_nl80211_fini();
 
 	delwin(w_net);
 	delwin(w_info);

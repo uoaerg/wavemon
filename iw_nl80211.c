@@ -476,15 +476,3 @@ void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 	memset(ifs, 0, sizeof(*ifs));
 	handle_cmd(&cmd_ifstat);
 }
-
-/* Teardown: terminate all sockets */
-void iw_nl80211_fini(void)
-{
-	if (cmd_station.sk)
-		nl_socket_free(cmd_station.sk);
-	if (cmd_ifstat.sk)
-		nl_socket_free(cmd_ifstat.sk);
-	cmd_station.sk = NULL;
-	cmd_ifstat.sk  = NULL;
-}
-

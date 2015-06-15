@@ -31,7 +31,6 @@ struct cmd {
 	int (*handler)(struct nl_msg *msg, void *arg);
 	void 			*handler_arg;
 };
-extern void iw_nl80211_fini(void);
 
 /**
  * iw_nl80211_ifstat - interface statistics
