@@ -19,7 +19,7 @@ INSTALL = @INSTALL@
 RM	= rm -vf
 
 MAIN	= @PACKAGE_NAME@.c
-HEADERS	= @PACKAGE_NAME@.h llist.h iw_if.h
+HEADERS	= $(wildcard *.h)
 PURESRC	= $(filter-out $(MAIN),$(wildcard *.c))
 OBJS	= $(PURESRC:.c=.o)
 DOCS	= README NEWS THANKS AUTHORS COPYING ChangeLog
