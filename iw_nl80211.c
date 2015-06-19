@@ -10,6 +10,7 @@
 
 #include "iw_nl80211.h"
 
+
 /* stolen/modified from iw:iw.c */
 int handle_cmd(struct cmd *cmd)
 {
@@ -17,7 +18,7 @@ int handle_cmd(struct cmd *cmd)
 	struct nl_msg *msg;
 	static int nl80211_id = -1;
 	int ret;
-	uint32_t ifindex;
+	uint32_t ifindex, idx;
 
 	/*
 	 * Initialization of static components:
@@ -59,8 +60,15 @@ int handle_cmd(struct cmd *cmd)
 	genlmsg_put(msg, 0, 0, nl80211_id, 0, cmd->flags, cmd->cmd, 0);
 
 	/* netdev identifier: interface index */
-	if (nla_put(msg, NL80211_ATTR_IFINDEX, sizeof(ifindex), &ifindex) < 0)
-		err(2, "failed to add ifindex attribute to netlink message");
+	NLA_PUT(msg, NL80211_ATTR_IFINDEX, sizeof(ifindex), &ifindex);
+
+	/* Additional attributes */
+	if (cmd->msg_args) {
+		for (idx = 0; idx < cmd->msg_args_len; idx++)
+			NLA_PUT(msg, cmd->msg_args[idx].type,
+				     cmd->msg_args[idx].len,
+				     cmd->msg_args[idx].data);
+	}
 
 	// wdev identifier: wdev index
 	// NLA_PUT_U64(msg, NL80211_ATTR_WDEV, devidx);
@@ -86,6 +94,9 @@ int handle_cmd(struct cmd *cmd)
 	nlmsg_free(msg);
 
 	return 0;
+
+nla_put_failure:
+	err(2, "failed to add attribute to netlink message");
 }
 /*
  * STATION COMMANDS
@@ -143,7 +154,6 @@ void parse_bitrate(struct nlattr *bitrate_attr, char *buf, int buflen)
 static int station_handler(struct nl_msg *msg, void *arg)
 {
 	struct iw_nl80211_stat *is = (struct iw_nl80211_stat *)arg;
-
 	struct nlattr *tb[NL80211_ATTR_MAX + 1];
 	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
 	struct nlattr *sinfo[NL80211_STA_INFO_MAX + 1];
@@ -182,31 +192,17 @@ static int station_handler(struct nl_msg *msg, void *arg)
 	 * TODO: validate the interface and mac address!
 	 * Otherwise, there's a race condition as soon as
 	 * the kernel starts sending station notifications.
+	 * (NB: comment also stolen from iw)
 	 */
-
-	if (!tb[NL80211_ATTR_STA_INFO]) {
-		fprintf(stderr, "sta stats missing!\n");
+	if (!tb[NL80211_ATTR_STA_INFO])
 		return NL_SKIP;
-	}
 	if (nla_parse_nested(sinfo, NL80211_STA_INFO_MAX,
 			     tb[NL80211_ATTR_STA_INFO],
-			     stats_policy)) {
-		fprintf(stderr, "failed to parse nested attributes!\n");
+			     stats_policy))
 		return NL_SKIP;
-	}
 
 	memcpy(&is->mac_addr, nla_data(tb[NL80211_ATTR_MAC]), ETH_ALEN);
 
-	if (sinfo[NL80211_STA_INFO_INACTIVE_TIME])
-		is->inactive_time = nla_get_u32(sinfo[NL80211_STA_INFO_INACTIVE_TIME]);
-	if (sinfo[NL80211_STA_INFO_RX_BYTES])
-		is->rx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]);
-	if (sinfo[NL80211_STA_INFO_RX_PACKETS])
-		is->rx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]);
-	if (sinfo[NL80211_STA_INFO_TX_BYTES])
-		is->tx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]);
-	if (sinfo[NL80211_STA_INFO_TX_PACKETS])
-		is->tx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_TX_PACKETS]);
 	if (sinfo[NL80211_STA_INFO_TX_RETRIES])
 		is->tx_retries = nla_get_u32(sinfo[NL80211_STA_INFO_TX_RETRIES]);
 	if (sinfo[NL80211_STA_INFO_TX_FAILED])
@@ -229,12 +225,6 @@ static int station_handler(struct nl_msg *msg, void *arg)
 
 	if (sinfo[NL80211_STA_INFO_T_OFFSET])
 		is->tx_offset = nla_get_u64(sinfo[NL80211_STA_INFO_T_OFFSET]);
-
-	if (sinfo[NL80211_STA_INFO_TX_BITRATE])
-		parse_bitrate(sinfo[NL80211_STA_INFO_TX_BITRATE], is->tx_bitrate, sizeof(is->tx_bitrate));
-
-	if (sinfo[NL80211_STA_INFO_RX_BITRATE])
-		parse_bitrate(sinfo[NL80211_STA_INFO_RX_BITRATE], is->rx_bitrate, sizeof(is->rx_bitrate));
 
 	if (sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]) {
 		is->expected_thru = nla_get_u32(sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]);
@@ -428,29 +418,208 @@ static int reg_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
+static int link_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_linkstat *ls = arg;
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *bss[NL80211_BSS_MAX + 1];
+	static struct nla_policy bss_policy[NL80211_BSS_MAX + 1] = {
+		[NL80211_BSS_TSF] = { .type = NLA_U64 },
+		[NL80211_BSS_FREQUENCY] = { .type = NLA_U32 },
+		[NL80211_BSS_BSSID] = { },
+		[NL80211_BSS_BEACON_INTERVAL] = { .type = NLA_U16 },
+		[NL80211_BSS_CAPABILITY] = { .type = NLA_U16 },
+		[NL80211_BSS_INFORMATION_ELEMENTS] = { },
+		[NL80211_BSS_SIGNAL_MBM] = { .type = NLA_U32 },
+		[NL80211_BSS_SIGNAL_UNSPEC] = { .type = NLA_U8 },
+		[NL80211_BSS_STATUS] = { .type = NLA_U32 },
+	};
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_BSS])
+		return NL_SKIP;
+
+	if (nla_parse_nested(bss, NL80211_BSS_MAX, tb[NL80211_ATTR_BSS], bss_policy))
+		return NL_SKIP;
+
+	if (!bss[NL80211_BSS_BSSID])
+		return NL_SKIP;
+
+	if (!bss[NL80211_BSS_STATUS])
+		return NL_SKIP;
+
+	ls->status = nla_get_u32(bss[NL80211_BSS_STATUS]);
+	switch (nla_get_u32(bss[NL80211_BSS_STATUS])) {
+	case NL80211_BSS_STATUS_ASSOCIATED:
+		memcpy(&ls->bssid, nla_data(bss[NL80211_BSS_BSSID]), ETH_ALEN);
+		/* fall through */
+	case NL80211_BSS_STATUS_AUTHENTICATED:
+	case NL80211_BSS_STATUS_IBSS_JOINED:
+		break;
+	default:
+		return NL_SKIP;
+	}
+#if 0
+
+	switch (nla_get_u32(bss[NL80211_BSS_STATUS])) {
+	case NL80211_BSS_STATUS_ASSOCIATED:
+		printf("Connected to %s (on %s)\n", mac_addr, dev);
+		break;
+	case NL80211_BSS_STATUS_AUTHENTICATED:
+		printf("Authenticated with %s (on %s)\n", mac_addr, dev);
+		return NL_SKIP;
+	case NL80211_BSS_STATUS_IBSS_JOINED:
+		printf("Joined IBSS %s (on %s)\n", mac_addr, dev);
+		break;
+	default:
+		return NL_SKIP;
+	}
+#endif
+	ls->valid_data = true;
+#if 0
+	if (bss[NL80211_BSS_INFORMATION_ELEMENTS])
+		print_ies(nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]),
+			  nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]),
+			  false, PRINT_LINK);
+#endif
+
+	return NL_SKIP;
+}
+
+static int link_sta_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_linkstat *ls = arg;
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *sinfo[NL80211_STA_INFO_MAX + 1];
+	struct nlattr *binfo[NL80211_STA_BSS_PARAM_MAX + 1];
+	static struct nla_policy stats_policy[NL80211_STA_INFO_MAX + 1] = {
+		[NL80211_STA_INFO_INACTIVE_TIME] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_RX_BYTES] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_TX_BYTES] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_RX_PACKETS] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_TX_PACKETS] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_SIGNAL] = { .type = NLA_U8 },
+		[NL80211_STA_INFO_TX_BITRATE] = { .type = NLA_NESTED },
+		[NL80211_STA_INFO_LLID] = { .type = NLA_U16 },
+		[NL80211_STA_INFO_PLID] = { .type = NLA_U16 },
+		[NL80211_STA_INFO_PLINK_STATE] = { .type = NLA_U8 },
+	};
+	static struct nla_policy bss_policy[NL80211_STA_BSS_PARAM_MAX + 1] = {
+		[NL80211_STA_BSS_PARAM_CTS_PROT] = { .type = NLA_FLAG },
+		[NL80211_STA_BSS_PARAM_SHORT_PREAMBLE] = { .type = NLA_FLAG },
+		[NL80211_STA_BSS_PARAM_SHORT_SLOT_TIME] = { .type = NLA_FLAG },
+		[NL80211_STA_BSS_PARAM_DTIM_PERIOD] = { .type = NLA_U8 },
+		[NL80211_STA_BSS_PARAM_BEACON_INTERVAL] = { .type = NLA_U16 },
+	};
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_STA_INFO])
+		return NL_SKIP;
+
+	if (nla_parse_nested(sinfo, NL80211_STA_INFO_MAX,
+			     tb[NL80211_ATTR_STA_INFO],
+			     stats_policy))
+		return NL_SKIP;
+
+	if (sinfo[NL80211_STA_INFO_INACTIVE_TIME])
+		ls->inactive_time = nla_get_u32(sinfo[NL80211_STA_INFO_INACTIVE_TIME]);
+
+	if (sinfo[NL80211_STA_INFO_RX_BYTES])
+		ls->rx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]);
+	if (sinfo[NL80211_STA_INFO_RX_PACKETS])
+		ls->rx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]);
+	if (sinfo[NL80211_STA_INFO_TX_BYTES])
+		ls->tx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]);
+	if (sinfo[NL80211_STA_INFO_TX_PACKETS])
+		ls->tx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_TX_PACKETS]);
+
+	if (sinfo[NL80211_STA_INFO_SIGNAL])
+		ls->signal = (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL]);
+
+	if (sinfo[NL80211_STA_INFO_TX_BITRATE])
+		parse_bitrate(sinfo[NL80211_STA_INFO_TX_BITRATE], ls->tx_bitrate, sizeof(ls->tx_bitrate));
+
+	if (sinfo[NL80211_STA_INFO_RX_BITRATE])
+		parse_bitrate(sinfo[NL80211_STA_INFO_RX_BITRATE], ls->rx_bitrate, sizeof(ls->rx_bitrate));
+
+	if (sinfo[NL80211_STA_INFO_BSS_PARAM]) {
+		if (nla_parse_nested(binfo, NL80211_STA_BSS_PARAM_MAX,
+				     sinfo[NL80211_STA_INFO_BSS_PARAM],
+				     bss_policy) == 0) {
+#if 0
+			char *delim = "";
+			printf("\n\tbss flags:\t");
+			if (binfo[NL80211_STA_BSS_PARAM_CTS_PROT]) {
+				printf("CTS-protection");
+				delim = " ";
+			}
+			if (binfo[NL80211_STA_BSS_PARAM_SHORT_PREAMBLE]) {
+				printf("%sshort-preamble", delim);
+				delim = " ";
+			}
+			if (binfo[NL80211_STA_BSS_PARAM_SHORT_SLOT_TIME])
+				printf("%sshort-slot-time", delim);
+			printf("\n\tdtim period:\t%d",
+			       nla_get_u8(binfo[NL80211_STA_BSS_PARAM_DTIM_PERIOD]));
+			printf("\n\tbeacon int:\t%d",
+			       nla_get_u16(binfo[NL80211_STA_BSS_PARAM_BEACON_INTERVAL]));
+			printf("\n");
+#endif
+		}
+	}
+
+	return NL_SKIP;
+}
+
 /*
  * COMMAND HANDLERS
  */
-static struct cmd cmd_reg = {
-	.cmd	 = NL80211_CMD_GET_REG,
-	.flags	 = 0,
-	.handler = reg_handler
-};
+void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
+{
+	static struct cmd cmd_linkstat = {
+		.cmd	 = NL80211_CMD_GET_SCAN,
+		.flags	 = NLM_F_DUMP,
+		.handler = link_handler
+	};
+	static struct cmd cmd_getstation = {
+		.cmd	 = NL80211_CMD_GET_STATION,
+		.flags	 = 0,
+		.handler = link_sta_handler
+	};
 
-static struct cmd cmd_ifstat = {
-	.cmd	 = NL80211_CMD_GET_INTERFACE,
-	.flags	 = 0,
-	.handler = iface_handler
-};
+	struct msg_attribute station_addr = {
+		.type = NL80211_ATTR_MAC,
+		.len  = sizeof(ls->bssid),
+		.data = &ls->bssid
+	};
 
-static struct cmd cmd_station = {
-	.cmd	 = NL80211_CMD_GET_STATION,
-	.flags	 = NLM_F_DUMP,
-	.handler = station_handler,
-};
+	cmd_linkstat.handler_arg = ls;
+	memset(ls, 0, sizeof(*ls));
+	handle_cmd(&cmd_linkstat);
+
+	if (!ether_addr_is_zero(&ls->bssid)) {
+		cmd_getstation.handler_arg  = ls;
+		cmd_getstation.msg_args     = &station_addr;
+		cmd_getstation.msg_args_len = 1;
+
+		handle_cmd(&cmd_getstation);
+	}
+}
 
 void iw_nl80211_getreg(struct iw_nl80211_reg *ir)
 {
+	static struct cmd cmd_reg = {
+		.cmd	 = NL80211_CMD_GET_REG,
+		.flags	 = 0,
+		.handler = reg_handler
+	};
+
 	cmd_reg.handler_arg = ir;
 	memset(ir, 0, sizeof(*ir));
 	handle_cmd(&cmd_reg);
@@ -458,6 +627,12 @@ void iw_nl80211_getreg(struct iw_nl80211_reg *ir)
 
 void iw_nl80211_getstat(struct iw_nl80211_stat *is)
 {
+	static struct cmd cmd_station = {
+		.cmd	 = NL80211_CMD_GET_STATION,
+		.flags	 = NLM_F_DUMP,
+		.handler = station_handler,
+	};
+
 	cmd_station.handler_arg = is;
 	memset(is, 0, sizeof(*is));
 	handle_cmd(&cmd_station);
@@ -465,6 +640,12 @@ void iw_nl80211_getstat(struct iw_nl80211_stat *is)
 
 void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 {
+	static struct cmd cmd_ifstat = {
+		.cmd	 = NL80211_CMD_GET_INTERFACE,
+		.flags	 = 0,
+		.handler = iface_handler
+	};
+
 	cmd_ifstat.handler_arg = ifs;
 	memset(ifs, 0, sizeof(*ifs));
 	handle_cmd(&cmd_ifstat);

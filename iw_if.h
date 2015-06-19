@@ -311,7 +311,6 @@ extern void *do_scan(void *sr_ptr);
 /*
  * utils.c
  */
-extern bool ether_addr_is_zero(const struct ether_addr *ea);
 extern char *ether_addr(const struct ether_addr *ea);
 extern char *ether_lookup(const struct ether_addr *ea);
 extern char *mac_addr(const struct sockaddr *sa);

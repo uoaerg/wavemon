@@ -24,6 +24,7 @@
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static struct timer dyn_updates;
 static struct iw_stat cur;
+static struct iw_nl80211_linkstat ls; // XXX
 
 void sampling_init(void (*sampling_handler)(int))
 {
@@ -51,6 +52,7 @@ void sampling_do_poll(void)
 	 */
 	if (cur.nls)
 		iw_nl80211_getstat(cur.nls);
+	iw_nl80211_get_linkstat(&ls);
 	iw_cache_update(&cur);
 }
 
@@ -99,7 +101,7 @@ static void display_levels(void)
 	if (cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID) {
 		line++;
 	} else {
-		signal = ewma(signal, cur.dbm.signal, conf.meter_decay / 100.0);
+		signal = ewma(signal, ls.signal, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
 		sprintf(tmp, "%.0f dBm (%s)      ", signal, dbm2units(signal));
@@ -157,15 +159,20 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 1, 1, "RX: ");
 
-	sprintf(tmp, "%'u (%s)",  cur.nls->rx_packets,
-		byte_units(cur.nls->rx_bytes));
+	sprintf(tmp, "%'u (%s)",  ls.rx_packets,
+		byte_units(ls.rx_bytes));
 	waddstr_b(w_stats, tmp);
 
 	waddstr(w_stats, ", rate: ");
-	waddstr_b(w_stats, cur.nls->rx_bitrate);
+	waddstr_b(w_stats, ls.rx_bitrate);
+
+	if (cur.nls->expected_thru) {
+		sprintf(tmp, " (exp: %'u kB/s)",  cur.nls->expected_thru);
+		waddstr(w_stats, tmp);
+	}
 
 	waddstr(w_stats, ", inactive: ");
-	sprintf(tmp, "%.1f s", (float)cur.nls->inactive_time/1e3);
+	sprintf(tmp, "%.1f s", (float)ls.inactive_time/1e3);
 	waddstr_b(w_stats, tmp);
 
 	wclrtoborder(w_stats);
@@ -174,22 +181,28 @@ static void display_stats(void)
 	 * Interface TX stats
 	 */
 	mvwaddstr(w_stats, 2, 1, "TX: ");
-	sprintf(tmp, "%'u (%s)",  cur.nls->tx_packets,
-		byte_units(cur.nls->tx_bytes));
+	sprintf(tmp, "%'u (%s)",  ls.tx_packets,
+		byte_units(ls.tx_bytes));
 	waddstr_b(w_stats, tmp);
 
 	waddstr(w_stats, ", rate: ");
-	waddstr_b(w_stats, cur.nls->tx_bitrate);
+	waddstr_b(w_stats, ls.tx_bitrate);
+
+	if (cur.nls->tx_offset) {
+		waddstr(w_stats, ", offset: ");
+		sprintf(tmp, "%llu", (unsigned long long)cur.nls->tx_offset);
+		waddstr_b(w_stats, tmp);
+	}
 
 	if (cur.nls->tx_failed) {
 		waddstr(w_stats, ", failed: ");
-		sprintf(tmp, "%u", cur.nls->tx_failed);
+		sprintf(tmp, "%'u", cur.nls->tx_failed);
 		waddstr_b(w_stats, tmp);
 	}
 
 	if (cur.nls->tx_retries) {
 		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%u", cur.nls->tx_retries);
+		sprintf(tmp, "%'u", cur.nls->tx_retries);
 		waddstr_b(w_stats, tmp);
 	}
 
