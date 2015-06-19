@@ -68,12 +68,13 @@ AC_CHECK_LIB([cap], [cap_get_flag])
 AC_CHECK_FUNCS([gettimeofday ether_ntohost], [],
 	       [AC_MSG_ERROR(function '$ac_func' not supported)])
 
-# libnl3 - for genetlink support
-PKG_CHECK_MODULES([LIBNL3], [libnl-3.0 >= 3.1], [], [AC_MSG_ERROR(need libnl >= 3.1)])
-if test "${have_libnl3}" = "yes"; then
-	CFLAGS+=" ${LIBNL3_CFLAGS}"
-	LIBS+=" ${LIBNL3_LIBS}"
-fi
+# libnl3 with GeNetlink support - wavemon is tracking changes to iw
+PKG_CHECK_MODULES([LIBNL3], [libnl-3.0 >= 3.2], [],
+		  [CFLAGS="$CFLAGS $LIBNL3_CFLAGS"],
+		  [AC_MSG_ERROR(need libnl >= 3.2)])
+PKG_CHECK_MODULES([LIBNL3_GENL], [libnl-genl-3.0 >= 3.2],
+		  [LIBS="$LIBS $LIBNL3_GENL_LIBS"],
+		  [AC_MSG_ERROR(need libnl-genl >= 3.2)])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_PROG_GCC_TRADITIONAL

@@ -25,7 +25,8 @@ OBJS	= $(PURESRC:.c=.o)
 DOCS	= README NEWS THANKS AUTHORS COPYING ChangeLog
 
 %.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(DEFS) -c -o $@ $<
+	@echo ' CC  ' $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(DEFS) -c -o $@ $<
 
 all: @PACKAGE_NAME@
 @PACKAGE_NAME@: $(MAIN) $(OBJS)
