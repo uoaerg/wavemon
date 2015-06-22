@@ -24,7 +24,7 @@
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static struct timer dyn_updates;
 static struct iw_stat cur;
-static struct iw_nl80211_linkstat ls; // XXX
+static struct iw_nl80211_linkstat ls;
 
 void sampling_init(void (*sampling_handler)(int))
 {
@@ -44,14 +44,6 @@ void sampling_init(void (*sampling_handler)(int))
 void sampling_do_poll(void)
 {
 	iw_getstat(&cur);
-	/* XXX
-	 * HACK: for the transition period, add to the end of struct iw_stat cur.
-	 * Leave the old infrastructure intact, add nl80211 in parallel.
-	 * FIXME: this function is also called from the history screen,
-	 *        in that case cur.nls is NULL.
-	 */
-	if (cur.nls)
-		iw_nl80211_getstat(cur.nls);
 	iw_nl80211_get_linkstat(&ls);
 	iw_cache_update(&cur);
 }
@@ -166,8 +158,8 @@ static void display_stats(void)
 	waddstr(w_stats, ", rate: ");
 	waddstr_b(w_stats, ls.rx_bitrate);
 
-	if (cur.nls->expected_thru) {
-		sprintf(tmp, " (exp: %'u kB/s)",  cur.nls->expected_thru);
+	if (ls.expected_thru) {
+		sprintf(tmp, " (exp: %'u kB/s)",  ls.expected_thru);
 		waddstr(w_stats, tmp);
 	}
 
@@ -188,21 +180,21 @@ static void display_stats(void)
 	waddstr(w_stats, ", rate: ");
 	waddstr_b(w_stats, ls.tx_bitrate);
 
-	if (cur.nls->tx_offset) {
+	if (ls.tx_offset) {
 		waddstr(w_stats, ", offset: ");
-		sprintf(tmp, "%llu", (unsigned long long)cur.nls->tx_offset);
+		sprintf(tmp, "%llu", (unsigned long long)ls.tx_offset);
 		waddstr_b(w_stats, tmp);
 	}
 
-	if (cur.nls->tx_failed) {
+	if (ls.tx_failed) {
 		waddstr(w_stats, ", failed: ");
-		sprintf(tmp, "%'u", cur.nls->tx_failed);
+		sprintf(tmp, "%'u", ls.tx_failed);
 		waddstr_b(w_stats, tmp);
 	}
 
-	if (cur.nls->tx_retries) {
+	if (ls.tx_retries) {
 		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%'u", cur.nls->tx_retries);
+		sprintf(tmp, "%'u", ls.tx_retries);
 		waddstr_b(w_stats, tmp);
 	}
 
@@ -234,8 +226,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	waddstr(w_if, tmp);
 
 	/* PHY */
-	sprintf(tmp, ", phy %d", ifs.phy);
-	waddstr(w_if, tmp);
+	waddstr(w_if, ", phy ");
+	sprintf(tmp, "%d", ifs.phy);
+	waddstr_b(w_if, tmp);
 
 	/* Regulatory domain */
 	waddstr(w_if, ", reg: ");
@@ -244,7 +237,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		sprintf(tmp, " (%s)", dfs_domain_name(ir.region));
 		waddstr(w_if, tmp);
 	} else {
-		waddstr_b(w_if, "not set");
+		waddstr_b(w_if, "n/a");
 	}
 
 	wclrtoborder(w_if);
@@ -257,9 +250,27 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	waddstr(w_info, "mode: ");
 	waddstr_b(w_info, iftype_name(ifs.iftype));
 
-	if (!ether_addr_is_zero(&cur.nls->mac_addr)) {
-		waddstr(w_info, ",  station: ");
-		waddstr_b(w_info, ether_lookup(&cur.nls->mac_addr));
+	if (!ether_addr_is_zero(&ls.bssid)) {
+		switch (ls.status) {
+		case NL80211_BSS_STATUS_ASSOCIATED:
+			waddstr(w_info, ", connected to: ");
+			break;
+		case NL80211_BSS_STATUS_AUTHENTICATED:
+			waddstr(w_info, ", authenticated with: ");
+			break;
+		case NL80211_BSS_STATUS_IBSS_JOINED:
+			waddstr(w_info, ", joined IBSS: ");
+			break;
+		default:
+			waddstr(w_info, ", station: ");
+		}
+		waddstr_b(w_info, ether_lookup(&ls.bssid));
+		/* XXX FIXME: tidy up */
+#if 0
+		sprintf(tmp, " autho: %d authe %d wme %d mfp %d tdls %d",
+				ls.authorized, ls.authenticated, ls.wme, ls.mfp, ls.tdls);
+		waddstr_b(w_info, tmp);
+#endif
 	}
 
 	if (ifs.ssid[0]) {
@@ -531,10 +542,6 @@ void scr_info_init(void)
 {
 	int line = 0;
 
-	cur.nls = calloc(1, sizeof(*cur.nls));
-	if (cur.nls == NULL)
-		err_sys("failed to allocate nl80211 structure");
-
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
 	w_levels = newwin_title(line, WH_LEVEL, "Levels", true);
@@ -573,7 +580,4 @@ void scr_info_fini(void)
 	delwin(w_stats);
 	delwin(w_levels);
 	delwin(w_if);
-
-	free(cur.nls);
-	cur.nls = NULL;
 }

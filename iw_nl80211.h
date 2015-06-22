@@ -77,45 +77,29 @@ struct iw_nl80211_ifstat {
 };
 extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
 
-/* struct iw_nl80211_stat - nl80211 statistics
- * @FIXME:
- */
-struct iw_nl80211_stat {
-	/*
-	 * Station Statistics
-	 */
-	uint32_t	tx_retries,
-			tx_failed;
-	uint64_t	tx_offset;
-
-	uint32_t	expected_thru;	/* expected throughput in kbps */
-
-	bool		authorized:1,
-			authenticated:1,
-			long_preamble:1,
-			wme:1,		/* Wireless Multimedia Extensions / Wi-Fi Multimedia */
-			mfp:1, 		/* Management Frame Protection */
-			tdls:1;		/* Tunneled Direct Link Setup */
-
-	struct ether_addr mac_addr;
-};
-extern void iw_nl80211_getstat(struct iw_nl80211_stat *is);
-
 /* struct iw_nl80211_linkstat - link statistics
  * @status:           association status (%nl80211_bss_status)
  * @bssid:            station MAC address
- * @valid_data:	      whether the following stats are valid
  * @inactive_time:    inactivity in msec
  * @rx_bytes/packets: byte/packet counter for RX direction
  * @tx_bytes/packets: byte/packet counter for TX direction
+ * @tx_retries:       TX retry counter
+ * @tx_failed:        TX failure counter
+ * @tx_offset:        FIXME
+ * @expected_thru:    expected throughput in kpbs
  * @signal:           signal strength in dBm
  * @tx_bitrate:	      string describing current TX bitrate
  * @rx_bitrate:	      string describing current RX bitrate
+ * @authorized:       FIXME
+ * @authenticated:    FIXME
+ * @long_preamble:    whether using long or short preamble
+ * @wme:              Wireless Multimedia Extensions / Wi-Fi Multimedia
+ * @mfp:              Management Frame Protection
+ * @tdls:             Tunneled Direct Link Setup
  */
 struct iw_nl80211_linkstat {
 	uint32_t	  	status;
 	struct ether_addr	bssid;
-	bool			valid_data;
 	/*
 	 * Station details (not always filled in):
 	 */
@@ -124,12 +108,22 @@ struct iw_nl80211_linkstat {
 				rx_packets,
 				tx_bytes,
 				tx_packets,
-				tx_retries;
+				tx_retries,
+				tx_failed;
 
+	uint64_t		tx_offset;
+	uint32_t		expected_thru;
 	int8_t			signal;
 
 	char			tx_bitrate[100],
 				rx_bitrate[100];
+
+	bool			authorized:1,
+				authenticated:1,
+				long_preamble:1,
+				wme:1,
+				mfp:1,
+				tdls:1;
 };
 extern void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
 

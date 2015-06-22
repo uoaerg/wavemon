@@ -215,10 +215,6 @@ struct iw_stat {
 	struct iw_range		range;
 	struct iw_statistics	stat;
 	struct iw_levelstat	dbm;
-	/*
-	 * Code below is for nl80211
-	 */
-	struct iw_nl80211_stat	*nls;
 };
 
 /*

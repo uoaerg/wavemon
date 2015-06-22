@@ -18,6 +18,7 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "iw_if.h"
+#include "iw_nl80211.h"
 
 /* Number of lines in the key window at the bottom */
 #define KEY_WIN_HEIGHT	3
@@ -117,6 +118,7 @@ static struct iw_levelstat iw_cache_get(const uint32_t index)
 	return iw_stats_cache[(count - index) % IW_STACKSIZE];
 }
 
+// XXX FIXME: rewrite in terms of struct iw_nl80211_linkstat
 void iw_cache_update(struct iw_stat *iw)
 {
 	static struct iw_levelstat prev, avg = IW_LSTAT_INIT;
