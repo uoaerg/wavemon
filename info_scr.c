@@ -163,10 +163,17 @@ static void display_stats(void)
 		waddstr(w_stats, tmp);
 	}
 
-	waddstr(w_stats, ", inactive: ");
-	sprintf(tmp, "%.1f s", (float)ls.inactive_time/1e3);
-	waddstr_b(w_stats, tmp);
+	if (ls.rx_drop_misc) {
+		waddstr(w_stats, ", drop: ");
+		sprintf(tmp, "%'llu", (unsigned long long)ls.rx_drop_misc);
+		waddstr_b(w_stats, tmp);
+	}
 
+	if (ls.beacon_loss) {
+		waddstr(w_stats, ", beacon loss: ");
+		sprintf(tmp, "%'u", ls.beacon_loss);
+		waddstr_b(w_stats, tmp);
+	}
 	wclrtoborder(w_stats);
 
 	/*
@@ -179,12 +186,6 @@ static void display_stats(void)
 
 	waddstr(w_stats, ", rate: ");
 	waddstr_b(w_stats, ls.tx_bitrate);
-
-	if (ls.tx_offset) {
-		waddstr(w_stats, ", offset: ");
-		sprintf(tmp, "%llu", (unsigned long long)ls.tx_offset);
-		waddstr_b(w_stats, tmp);
-	}
 
 	if (ls.tx_failed) {
 		waddstr(w_stats, ", failed: ");
@@ -240,6 +241,11 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		waddstr_b(w_if, "n/a");
 	}
 
+	if (ifs.ssid[0]) {
+		waddstr(w_if, ", SSID: ");
+		waddstr_b(w_if, ifs.ssid);
+	}
+
 	wclrtoborder(w_if);
 	wrefresh(w_if);
 
@@ -249,20 +255,21 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	wmove(w_info, 1, 1);
 	waddstr(w_info, "mode: ");
 	waddstr_b(w_info, iftype_name(ifs.iftype));
+	waddstr_b(w_info, ", ");
 
 	if (!ether_addr_is_zero(&ls.bssid)) {
 		switch (ls.status) {
 		case NL80211_BSS_STATUS_ASSOCIATED:
-			waddstr(w_info, ", connected to: ");
+			waddstr(w_info, "connected to: ");
 			break;
 		case NL80211_BSS_STATUS_AUTHENTICATED:
-			waddstr(w_info, ", authenticated with: ");
+			waddstr(w_info, "authenticated with: ");
 			break;
 		case NL80211_BSS_STATUS_IBSS_JOINED:
-			waddstr(w_info, ", joined IBSS: ");
+			waddstr(w_info, "joined IBSS: ");
 			break;
 		default:
-			waddstr(w_info, ", station: ");
+			waddstr(w_info, "station: ");
 		}
 		waddstr_b(w_info, ether_lookup(&ls.bssid));
 		/* XXX FIXME: tidy up */
@@ -271,14 +278,18 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 				ls.authorized, ls.authenticated, ls.wme, ls.mfp, ls.tdls);
 		waddstr_b(w_info, tmp);
 #endif
+		if (ls.status == NL80211_BSS_STATUS_ASSOCIATED) {
+			waddstr_b(w_info, ",");
+			waddstr(w_info, " since: ");
+			waddstr_b(w_info, pretty_time(ls.connected_time));
+
+			waddstr(w_info, ", inactive: ");
+			sprintf(tmp, "%.1fs", (float)ls.inactive_time/1e3);
+			waddstr_b(w_info, tmp);
+		}
 	}
 
-	if (ifs.ssid[0]) {
-		waddstr_b(w_info, ",");
-		waddstr(w_info, "  SSID: ");
-		waddstr_b(w_info, ifs.ssid);
-	}
-
+	wmove(w_info, 2, 1);
 	if (info.cap_sens) {
 		waddstr(w_info, ",  sensitivity: ");
 		if (info.sens < 0)
@@ -290,7 +301,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 2, 1);
+	wmove(w_info, 3, 1);
 	if (ifs.freq) {
 		waddstr(w_info, "freq: ");
 		sprintf(tmp, "%d MHz", ifs.freq);
@@ -325,7 +336,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	wclrtoborder(w_info);
 
-	wmove(w_info, 3, 1);
+	wmove(w_info, 4, 1);
 	waddstr(w_info, "power mgt: ");
 	if (info.cap_power)
 		waddstr_b(w_info, format_power(&info.power, &cur.range));
@@ -347,7 +358,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 4, 1);
+	wmove(w_info, 5, 1);
 	waddstr(w_info, "retry: ");
 	if (info.cap_retry)
 		waddstr_b(w_info, format_retry(&info.retry, &cur.range));
@@ -379,7 +390,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 5, 1);
+	wmove(w_info, 6, 1);
 	waddstr(w_info, "encryption: ");
 	if (info.keys) {
 		int cnt = dyn_info_active_keys(&info);

@@ -84,6 +84,31 @@ uint8_t prefix_len(const struct in_addr *netmask)
 	return bit_count(netmask->s_addr);
 }
 
+/* Pretty-print @sec into a string of up to 6 characters. */
+const char *pretty_time(const unsigned sec)
+{
+	static char buf[12];
+	unsigned d = sec / 86400,
+		 h = sec % 86400 / 3600,
+		 m = sec %  3600 /   60;
+
+	if (d) {
+		if (h) {
+			sprintf(buf, "%ud %uh", d, h);
+		} else if (m) {
+			sprintf(buf, "%ud %dm", d, m);
+		} else {
+			sprintf(buf, "%u day%s", d, d == 1 ? "" : "s");
+		}
+	} else if (h) {
+		sprintf(buf, "%u:%02uh", h, m);
+	} else if (m) {
+		sprintf(buf, "%u:%02um", m, sec % 60);
+	} else {
+		sprintf(buf, "%u sec",  sec);
+	}
+	return buf;
+}
 /* Absolute power measurement in dBm (IW_QUAL_DBM): map into -192 .. 63 range */
 int u8_to_dbm(const int power)
 {

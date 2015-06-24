@@ -305,15 +305,21 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 	struct nlattr *binfo[NL80211_STA_BSS_PARAM_MAX + 1];
 	struct nl80211_sta_flag_update *sta_flags;
 	static struct nla_policy stats_policy[NL80211_STA_INFO_MAX + 1] = {
+		[NL80211_STA_INFO_CONNECTED_TIME] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_INACTIVE_TIME] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_RX_BYTES] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_TX_BYTES] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_RX_PACKETS] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_TX_PACKETS] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_SIGNAL] = { .type = NLA_U8 },
+		[NL80211_STA_INFO_SIGNAL_AVG] = { .type = NLA_U8 },
 		[NL80211_STA_INFO_T_OFFSET] = { .type = NLA_U64 },
 		[NL80211_STA_INFO_TX_BITRATE] = { .type = NLA_NESTED },
 		[NL80211_STA_INFO_RX_BITRATE] = { .type = NLA_NESTED },
+		[NL80211_STA_INFO_RX_DROP_MISC] = { .type = NLA_U64 },
+		[NL80211_STA_INFO_BEACON_RX] = { .type = NLA_U64 },
+		[NL80211_STA_INFO_BEACON_LOSS] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_BEACON_SIGNAL_AVG] = { .type = NLA_U8 },
 		[NL80211_STA_INFO_LLID] = { .type = NLA_U16 },
 		[NL80211_STA_INFO_PLID] = { .type = NLA_U16 },
 		[NL80211_STA_INFO_PLINK_STATE] = { .type = NLA_U8 },
@@ -366,9 +372,6 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 			chain);
 			*/
 
-	if (sinfo[NL80211_STA_INFO_T_OFFSET])
-		ls->tx_offset = nla_get_u64(sinfo[NL80211_STA_INFO_T_OFFSET]);
-
 	if (sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]) {
 		ls->expected_thru = nla_get_u32(sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]);
 		/* convert in Mbps but scale by 1000 to save kbps units */
@@ -376,11 +379,16 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 	}
 	if (sinfo[NL80211_STA_INFO_INACTIVE_TIME])
 		ls->inactive_time = nla_get_u32(sinfo[NL80211_STA_INFO_INACTIVE_TIME]);
+	if (sinfo[NL80211_STA_INFO_CONNECTED_TIME])
+		ls->connected_time = nla_get_u32(sinfo[NL80211_STA_INFO_CONNECTED_TIME]);
 
 	if (sinfo[NL80211_STA_INFO_RX_BYTES])
 		ls->rx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]);
 	if (sinfo[NL80211_STA_INFO_RX_PACKETS])
 		ls->rx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]);
+	if (sinfo[NL80211_STA_INFO_RX_DROP_MISC])
+		ls->rx_drop_misc = nla_get_u64(sinfo[NL80211_STA_INFO_RX_DROP_MISC]);
+
 	if (sinfo[NL80211_STA_INFO_TX_BYTES])
 		ls->tx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]);
 	if (sinfo[NL80211_STA_INFO_TX_PACKETS])
@@ -388,6 +396,15 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 
 	if (sinfo[NL80211_STA_INFO_SIGNAL])
 		ls->signal = (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL]);
+	// XXX
+	if (sinfo[NL80211_STA_INFO_SIGNAL_AVG])
+		printf("Sig %d ", (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL_AVG]) );
+	if (sinfo[NL80211_STA_INFO_BEACON_RX])
+		printf(" beacon %llu ", nla_get_u64(sinfo[NL80211_STA_INFO_BEACON_RX]) );
+	if (sinfo[NL80211_STA_INFO_BEACON_LOSS])
+		ls->beacon_loss = nla_get_u32(sinfo[NL80211_STA_INFO_BEACON_LOSS]);
+	if (sinfo[NL80211_STA_INFO_BEACON_SIGNAL_AVG])
+		printf("bsig %d ", (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_BEACON_SIGNAL_AVG]) );
 
 	if (sinfo[NL80211_STA_INFO_TX_BITRATE])
 		parse_bitrate(sinfo[NL80211_STA_INFO_TX_BITRATE], ls->tx_bitrate, sizeof(ls->tx_bitrate));

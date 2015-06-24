@@ -81,11 +81,13 @@ extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
  * @status:           association status (%nl80211_bss_status)
  * @bssid:            station MAC address
  * @inactive_time:    inactivity in msec
+ * @connected_time:   time since last connecting in sec
+ * @beacon_loss:      count of time beacon loss was detected
  * @rx_bytes/packets: byte/packet counter for RX direction
+ * @rx_drop_misc:     packets dropped for unspecified reasons
  * @tx_bytes/packets: byte/packet counter for TX direction
  * @tx_retries:       TX retry counter
  * @tx_failed:        TX failure counter
- * @tx_offset:        FIXME
  * @expected_thru:    expected throughput in kpbs
  * @signal:           signal strength in dBm
  * @tx_bitrate:	      string describing current TX bitrate
@@ -104,14 +106,17 @@ struct iw_nl80211_linkstat {
 	 * Station details (not always filled in):
 	 */
 	uint32_t		inactive_time,
+				connected_time,
+				beacon_loss,
 				rx_bytes,
-				rx_packets,
-				tx_bytes,
+				rx_packets;
+	uint64_t		rx_drop_misc;
+
+	uint32_t		tx_bytes,
 				tx_packets,
 				tx_retries,
 				tx_failed;
 
-	uint64_t		tx_offset;
 	uint32_t		expected_thru;
 	int8_t			signal;
 
