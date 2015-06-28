@@ -93,7 +93,7 @@ static void display_levels(void)
 	if (cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID) {
 		line++;
 	} else {
-		signal = ewma(signal, ls.signal, conf.meter_decay / 100.0);
+		signal = ewma(signal, cur.dbm.signal, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
 		sprintf(tmp, "%.0f dBm (%s)      ", signal, dbm2units(signal));
@@ -155,8 +155,10 @@ static void display_stats(void)
 		byte_units(ls.rx_bytes));
 	waddstr_b(w_stats, tmp);
 
-	waddstr(w_stats, ", rate: ");
-	waddstr_b(w_stats, ls.rx_bitrate);
+	if (ls.rx_bitrate[0]) {
+		waddstr(w_stats, ", rate: ");
+		waddstr_b(w_stats, ls.rx_bitrate);
+	}
 
 	if (ls.expected_thru) {
 		sprintf(tmp, " (exp: %'u kB/s)",  ls.expected_thru);
@@ -169,11 +171,6 @@ static void display_stats(void)
 		waddstr_b(w_stats, tmp);
 	}
 
-	if (ls.beacon_loss) {
-		waddstr(w_stats, ", beacon loss: ");
-		sprintf(tmp, "%'u", ls.beacon_loss);
-		waddstr_b(w_stats, tmp);
-	}
 	wclrtoborder(w_stats);
 
 	/*
@@ -184,18 +181,19 @@ static void display_stats(void)
 		byte_units(ls.tx_bytes));
 	waddstr_b(w_stats, tmp);
 
-	waddstr(w_stats, ", rate: ");
-	waddstr_b(w_stats, ls.tx_bitrate);
+	if (ls.tx_bitrate[0]) {
+		waddstr(w_stats, ", rate: ");
+		waddstr_b(w_stats, ls.tx_bitrate);
+	}
+	if (ls.tx_retries) {
+		waddstr(w_stats, ", retries: ");
+		sprintf(tmp, "%'u", ls.tx_retries);
+		waddstr_b(w_stats, tmp);
+	}
 
 	if (ls.tx_failed) {
 		waddstr(w_stats, ", failed: ");
 		sprintf(tmp, "%'u", ls.tx_failed);
-		waddstr_b(w_stats, tmp);
-	}
-
-	if (ls.tx_retries) {
-		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%'u", ls.tx_retries);
 		waddstr_b(w_stats, tmp);
 	}
 
@@ -255,9 +253,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	wmove(w_info, 1, 1);
 	waddstr(w_info, "mode: ");
 	waddstr_b(w_info, iftype_name(ifs.iftype));
-	waddstr_b(w_info, ", ");
 
 	if (!ether_addr_is_zero(&ls.bssid)) {
+		waddstr_b(w_info, ", ");
+
 		switch (ls.status) {
 		case NL80211_BSS_STATUS_ASSOCIATED:
 			waddstr(w_info, "connected to: ");
@@ -280,7 +279,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 #endif
 		if (ls.status == NL80211_BSS_STATUS_ASSOCIATED) {
 			waddstr_b(w_info, ",");
-			waddstr(w_info, " since: ");
+			waddstr(w_info, " time: ");
 			waddstr_b(w_info, pretty_time(ls.connected_time));
 
 			waddstr(w_info, ", inactive: ");
@@ -288,20 +287,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr_b(w_info, tmp);
 		}
 	}
-
-	wmove(w_info, 2, 1);
-	if (info.cap_sens) {
-		waddstr(w_info, ",  sensitivity: ");
-		if (info.sens < 0)
-			sprintf(tmp, "%d dBm", info.sens);
-		else
-			sprintf(tmp, "%d/%d", info.sens,
-				cur.range.sensitivity);
-		waddstr_b(w_info, tmp);
-	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 3, 1);
+	wmove(w_info, 2, 1);
+	/* Frequency / channel */
 	if (ifs.freq) {
 		waddstr(w_info, "freq: ");
 		sprintf(tmp, "%d MHz", ifs.freq);
@@ -332,6 +321,45 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	} else {
 		waddstr(w_info, "frequency/channel: n/a");
+	}
+	wclrtoborder(w_info);
+
+	wmove(w_info, 3, 1);
+	/* Beacons */
+	waddstr(w_info, "beacons: ");
+
+	if (ls.beacons) {
+		sprintf(tmp, "%'llu", (unsigned long long)ls.beacons);
+		waddstr_b(w_info, tmp);
+
+		if (ls.beacon_loss) {
+			waddstr(w_info, ", lost: ");
+			sprintf(tmp, "%'u", ls.beacon_loss);
+			waddstr_b(w_info, tmp);
+		}
+		waddstr(w_info, ", avg sig: ");
+		sprintf(tmp, "%d dBm", (int8_t)ls.beacon_avg_sig);
+		waddstr_b(w_info, tmp);
+
+		waddstr(w_info, ", interval: ");
+		sprintf(tmp, "%.1fs", (ls.beacon_int * 1024.0)/1e6);
+		waddstr_b(w_info, tmp);
+
+		waddstr(w_info, ", DTIM: ");
+		sprintf(tmp, "%u", ls.dtim_period);
+		waddstr_b(w_info, tmp);
+	} else {
+		waddstr(w_info, "none");
+	}
+
+	if (info.cap_sens) {
+		waddstr(w_info, ",  sensitivity: ");
+		if (info.sens < 0)
+			sprintf(tmp, "%d dBm", info.sens);
+		else
+			sprintf(tmp, "%d/%d", info.sens,
+				cur.range.sensitivity);
+		waddstr_b(w_info, tmp);
 	}
 
 	wclrtoborder(w_info);

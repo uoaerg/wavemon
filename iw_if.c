@@ -203,11 +203,6 @@ void dyn_info_get(struct iw_dyn_info *info,
 		info->essid[iwr.u.essid.length] = '\0';
 	}
 
-	if (ioctl(skfd, SIOCGIWNWID, &iwr) >= 0) {
-		info->cap_nwid = 1;
-		memcpy(&info->nwid, &iwr.u.nwid, sizeof(info->nwid));
-	}
-
 	iwr.u.essid.pointer = (caddr_t) info->nickname;
 	iwr.u.essid.length  = sizeof(info->nickname);
 	iwr.u.essid.flags   = 0;
@@ -535,13 +530,6 @@ void dump_parameters(void)
 	if (info.cap_nickname)
 		printf("             nick: \"%s\"\n", info.nickname);
 
-	if (info.cap_nwid) {
-		if (info.nwid.disabled)
-			printf("             nwid: off/any\n");
-		else
-			printf("             nwid: %X\n", info.nwid.value);
-	}
-
 	/* Some drivers only return the channel (e.g. ipw2100) */
 	if (info.cap_freq && info.freq < 256)
 		info.freq = channel_to_freq(info.freq, &iw.range);
@@ -646,7 +634,6 @@ void dump_parameters(void)
 	/* RX stats */
 	printf("         RX total: %'llu packets (%s)\n", nstat.rx_packets,
 	       byte_units(nstat.rx_bytes));
-	printf("     invalid nwid: %'u\n", iw.stat.discard.nwid);
 	printf("      invalid key: %'u\n", iw.stat.discard.code);
 	printf("   invalid fragm.: %'u\n", iw.stat.discard.fragment);
 	printf("   missed beacons: %'u\n", iw.stat.miss.beacon);

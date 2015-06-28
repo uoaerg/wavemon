@@ -94,7 +94,6 @@ struct iw_key {
  * @essid:	Extended Service Set ID (network name)
  * @essid_ct:	index number of the @essid (starts at 1, 0 = off)
  * @nickname:	optional station nickname
- * @nwid:	Network ID (pre-802.11 hardware only)
  * @ap_addr:	BSSID or IBSSID
  *
  * @retry:	MAC-retransmission retry behaviour
@@ -117,7 +116,6 @@ struct iw_dyn_info {
 	uint8_t		mode;
 
 	bool		cap_essid:1,
-			cap_nwid:1,
 			cap_nickname:1,
 			cap_freq:1,
 			cap_sens:1,
@@ -133,7 +131,6 @@ struct iw_dyn_info {
 	char		essid[IW_ESSID_MAX_SIZE+2];
 	uint8_t		essid_ct;
 	char		nickname[IW_ESSID_MAX_SIZE+2];
-	struct iw_param nwid;
 	struct sockaddr ap_addr;
 
 	struct iw_param retry;

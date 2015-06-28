@@ -89,12 +89,19 @@ extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
  * @tx_retries:       TX retry counter
  * @tx_failed:        TX failure counter
  * @expected_thru:    expected throughput in kpbs
+ * @beacon_int:	      beacon interval in Time Units of 1024usec
+ * @dtim_period:      DTIM period for beaconing
+ * @beacon_avg_sig:   average beacon signal (in dBm)
+ * @beacons:	      number of beacons received
+ * @beacon_loss:      count of times beacon loss was detected
  * @signal:           signal strength in dBm
+ * @signal_avg:	      average signal strength in dBm
  * @tx_bitrate:	      string describing current TX bitrate
  * @rx_bitrate:	      string describing current RX bitrate
  * @authorized:       FIXME
  * @authenticated:    FIXME
  * @long_preamble:    whether using long or short preamble
+ * @short_slot_time:  whether short slots are enabled
  * @wme:              Wireless Multimedia Extensions / Wi-Fi Multimedia
  * @mfp:              Management Frame Protection
  * @tdls:             Tunneled Direct Link Setup
@@ -107,10 +114,15 @@ struct iw_nl80211_linkstat {
 	 */
 	uint32_t		inactive_time,
 				connected_time,
-				beacon_loss,
 				rx_bytes,
 				rx_packets;
 	uint64_t		rx_drop_misc;
+
+	uint16_t		beacon_int;
+	uint8_t			dtim_period,
+				beacon_avg_sig;
+	uint64_t		beacons;
+	uint32_t		beacon_loss;
 
 	uint32_t		tx_bytes,
 				tx_packets,
@@ -118,7 +130,8 @@ struct iw_nl80211_linkstat {
 				tx_failed;
 
 	uint32_t		expected_thru;
-	int8_t			signal;
+	int8_t			signal,
+				signal_avg;
 
 	char			tx_bitrate[100],
 				rx_bitrate[100];
@@ -126,6 +139,7 @@ struct iw_nl80211_linkstat {
 	bool			authorized:1,
 				authenticated:1,
 				long_preamble:1,
+				short_slot_time:1,
 				wme:1,
 				mfp:1,
 				tdls:1;

@@ -70,9 +70,6 @@ int handle_cmd(struct cmd *cmd)
 				     cmd->msg_args[idx].data);
 	}
 
-	// wdev identifier: wdev index
-	// NLA_PUT_U64(msg, NL80211_ATTR_WDEV, devidx);
-
 	/* Set callback for this message */
 	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
 
@@ -287,7 +284,7 @@ static int link_handler(struct nl_msg *msg, void *arg)
 
 	ls->status = nla_get_u32(bss[NL80211_BSS_STATUS]);
 	switch (ls->status) {
-	case NL80211_BSS_STATUS_ASSOCIATED:
+	case NL80211_BSS_STATUS_ASSOCIATED:	/* apparently no longer used */
 	case NL80211_BSS_STATUS_AUTHENTICATED:
 	case NL80211_BSS_STATUS_IBSS_JOINED:
 		memcpy(&ls->bssid, nla_data(bss[NL80211_BSS_BSSID]), ETH_ALEN);
@@ -357,20 +354,6 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 	if (sinfo[NL80211_STA_INFO_TX_FAILED])
 		ls->tx_failed = nla_get_u32(sinfo[NL80211_STA_INFO_TX_FAILED]);
 
-	/* XXX
-	char *chain;
-	chain = get_chain_signal(sinfo[NL80211_STA_INFO_CHAIN_SIGNAL]);
-	if (sinfo[NL80211_STA_INFO_SIGNAL])
-		printf("\n\tsignal:  \t%d %sdBm",
-			(int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL]),
-			chain);
-
-	chain = get_chain_signal(sinfo[NL80211_STA_INFO_CHAIN_SIGNAL_AVG]);
-	if (sinfo[NL80211_STA_INFO_SIGNAL_AVG])
-		printf("\n\tsignal avg:\t%d %sdBm",
-			(int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL_AVG]),
-			chain);
-			*/
 
 	if (sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]) {
 		ls->expected_thru = nla_get_u32(sinfo[NL80211_STA_INFO_EXPECTED_THROUGHPUT]);
@@ -396,15 +379,16 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 
 	if (sinfo[NL80211_STA_INFO_SIGNAL])
 		ls->signal = (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL]);
-	// XXX
 	if (sinfo[NL80211_STA_INFO_SIGNAL_AVG])
-		printf("Sig %d ", (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL_AVG]) );
+		ls->signal_avg = (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL_AVG]);
+
+
+	if (sinfo[NL80211_STA_INFO_BEACON_SIGNAL_AVG])
+		ls->beacon_avg_sig = nla_get_u8(sinfo[NL80211_STA_INFO_BEACON_SIGNAL_AVG]);
 	if (sinfo[NL80211_STA_INFO_BEACON_RX])
-		printf(" beacon %llu ", nla_get_u64(sinfo[NL80211_STA_INFO_BEACON_RX]) );
+		ls->beacons = nla_get_u64(sinfo[NL80211_STA_INFO_BEACON_RX]);
 	if (sinfo[NL80211_STA_INFO_BEACON_LOSS])
 		ls->beacon_loss = nla_get_u32(sinfo[NL80211_STA_INFO_BEACON_LOSS]);
-	if (sinfo[NL80211_STA_INFO_BEACON_SIGNAL_AVG])
-		printf("bsig %d ", (int8_t)nla_get_u8(sinfo[NL80211_STA_INFO_BEACON_SIGNAL_AVG]) );
 
 	if (sinfo[NL80211_STA_INFO_TX_BITRATE])
 		parse_bitrate(sinfo[NL80211_STA_INFO_TX_BITRATE], ls->tx_bitrate, sizeof(ls->tx_bitrate));
@@ -441,30 +425,21 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 			ls->tdls = true;
 	}
 
+	/* BSS Flags */
 	if (sinfo[NL80211_STA_INFO_BSS_PARAM]) {
 		if (nla_parse_nested(binfo, NL80211_STA_BSS_PARAM_MAX,
 				     sinfo[NL80211_STA_INFO_BSS_PARAM],
 				     bss_policy) == 0) {
-			// XXX FIXME: tbd
-#if 0
-			char *delim = "";
-			printf("\n\tbss flags:\t");
 			if (binfo[NL80211_STA_BSS_PARAM_CTS_PROT]) {
 				printf("CTS-protection");
-				delim = " ";
 			}
-			if (binfo[NL80211_STA_BSS_PARAM_SHORT_PREAMBLE]) {
-				printf("%sshort-preamble", delim);
-				delim = " ";
-			}
+			if (binfo[NL80211_STA_BSS_PARAM_SHORT_PREAMBLE])
+				ls->long_preamble = false;
 			if (binfo[NL80211_STA_BSS_PARAM_SHORT_SLOT_TIME])
-				printf("%sshort-slot-time", delim);
-			printf("\n\tdtim period:\t%d",
-			       nla_get_u8(binfo[NL80211_STA_BSS_PARAM_DTIM_PERIOD]));
-			printf("\n\tbeacon int:\t%d",
-			       nla_get_u16(binfo[NL80211_STA_BSS_PARAM_BEACON_INTERVAL]));
-			printf("\n");
-#endif
+				ls->short_slot_time = true;
+
+			ls->beacon_int  = nla_get_u16(binfo[NL80211_STA_BSS_PARAM_BEACON_INTERVAL]);
+			ls->dtim_period = nla_get_u8(binfo[NL80211_STA_BSS_PARAM_DTIM_PERIOD]);
 		}
 	}
 
