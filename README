@@ -15,7 +15,7 @@ See the man page for an in-depth description of operation and configuration.
 Apart from debian/ubuntu packages (apt-cache search wavemon) and slackbuild
 scripts for wavemon on slackbuilds.org, up-to-date sources are available at
 
-	http://www.erg.abdn.ac.uk/ergcms/wavemon/
+	https://github.com/uoaerg/wavemon
 
 Please check this page for updates and for further information.
 wavemon is distributed under the GPLv3, refer to the file COPYING.

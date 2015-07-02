@@ -583,7 +583,7 @@ PACKAGE_TARNAME='wavemon-current'
 PACKAGE_VERSION='0.7.6'
 PACKAGE_STRING='wavemon 0.7.6'
 PACKAGE_BUGREPORT='gerrit@erg.abdn.ac.uk'
-PACKAGE_URL='http://www.erg.abdn.ac.uk/ergcms/wavemon/'
+PACKAGE_URL='https://github.com/uoaerg/wavemon'
 
 # Factoring default headers for most tests.
 ac_includes_default="\
@@ -1318,7 +1318,7 @@ Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
 
 Report bugs to <gerrit@erg.abdn.ac.uk>.
-wavemon home page: <http://www.erg.abdn.ac.uk/ergcms/wavemon/>.
+wavemon home page: <https://github.com/uoaerg/wavemon>.
 _ACEOF
 ac_status=$?
 fi
@@ -4713,7 +4713,7 @@ Configuration files:
 $config_files
 
 Report bugs to <gerrit@erg.abdn.ac.uk>.
-wavemon home page: <http://www.erg.abdn.ac.uk/ergcms/wavemon/>."
+wavemon home page: <https://github.com/uoaerg/wavemon>."
 
 _ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
