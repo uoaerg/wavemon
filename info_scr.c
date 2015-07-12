@@ -151,9 +151,13 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 1, 1, "RX: ");
 
-	sprintf(tmp, "%'u (%s)",  ls.rx_packets,
-		byte_units(ls.rx_bytes));
-	waddstr_b(w_stats, tmp);
+	if (ls.rx_packets) {
+		sprintf(tmp, "%'u (%s)",  ls.rx_packets,
+			byte_units(ls.rx_bytes));
+		waddstr(w_stats, tmp);
+	} else {
+		waddstr(w_stats, "n/a");
+	}
 
 	if (ls.rx_bitrate[0]) {
 		waddstr(w_stats, ", rate: ");
@@ -177,9 +181,14 @@ static void display_stats(void)
 	 * Interface TX stats
 	 */
 	mvwaddstr(w_stats, 2, 1, "TX: ");
-	sprintf(tmp, "%'u (%s)",  ls.tx_packets,
-		byte_units(ls.tx_bytes));
-	waddstr_b(w_stats, tmp);
+
+	if (ls.tx_packets) {
+		sprintf(tmp, "%'u (%s)",  ls.tx_packets,
+			byte_units(ls.tx_bytes));
+		waddstr_b(w_stats, tmp);
+	} else {
+		waddstr(w_stats, "n/a");
+	}
 
 	if (ls.tx_bitrate[0]) {
 		waddstr(w_stats, ", rate: ");
@@ -349,7 +358,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		sprintf(tmp, "%u", ls.dtim_period);
 		waddstr_b(w_info, tmp);
 	} else {
-		waddstr(w_info, "none");
+		waddstr(w_info, "n/a");
 	}
 
 	if (info.cap_sens) {
@@ -546,7 +555,7 @@ static void display_netinfo(WINDOW *w_net)
 	waddstr(w_net, "ip: ");
 
 	if (!info.addr.s_addr) {
-		waddstr_b(w_net, "n/a");
+		waddstr(w_net, "n/a");
 	} else {
 		sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
 				      prefix_len(&info.netmask));
