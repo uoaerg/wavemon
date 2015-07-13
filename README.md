@@ -1,5 +1,4 @@
-![wavemon screenshot](https://cloud.githubusercontent.com/assets/5132989/8635845/56d13580-27fa-11e5-98a1-4506fd6ebde4.png)
-
+![wavemon screenshot](https://cloud.githubusercontent.com/assets/5132989/8640926/1f8436a0-28c6-11e5-9336-a79fd002c324.png)
 
 ## Synopsis
 
