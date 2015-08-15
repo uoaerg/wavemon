@@ -154,7 +154,7 @@ static void display_stats(void)
 	if (ls.rx_packets) {
 		sprintf(tmp, "%'u (%s)",  ls.rx_packets,
 			byte_units(ls.rx_bytes));
-		waddstr(w_stats, tmp);
+		waddstr_b(w_stats, tmp);
 	} else {
 		waddstr(w_stats, "n/a");
 	}
