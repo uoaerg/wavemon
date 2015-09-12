@@ -298,6 +298,12 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		sprintf(tmp, "%d MHz", ifs.freq);
 		waddstr_b(w_info, tmp);
 
+		/* The following condition should in theory never happen */
+		if (ls.survey.freq && ls.survey.freq != ifs.freq) {
+			sprintf(tmp, " [survey freq: %d MHz]", ls.survey.freq);
+			waddstr(w_info, tmp);
+		}
+
 		if (ifs.freq_ctr1 && ifs.freq_ctr1 != ifs.freq) {
 			waddstr(w_info, ", ctr1: ");
 			sprintf(tmp, "%d MHz", ifs.freq_ctr1);
@@ -320,7 +326,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			sprintf(tmp, " (%s)", channel_type_name(ifs.chan_type));
 			waddstr(w_info, tmp);
 		}
-
+	} else if (iw_nl80211_have_survey_data(&ls)) {
+		waddstr(w_info, "freq: ");
+		sprintf(tmp, "%d MHz", ls.survey.freq);
+		waddstr_b(w_info, tmp);
 	} else {
 		waddstr(w_info, "frequency/channel: n/a");
 	}
