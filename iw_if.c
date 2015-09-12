@@ -482,6 +482,7 @@ const char *we_version(void)
 	return buf;
 }
 
+#include "iw_nl80211.h"
 void dump_parameters(void)
 {
 	struct iw_dyn_info info;
@@ -493,6 +494,9 @@ void dump_parameters(void)
 	dyn_info_get(&info, conf_ifname(), &iw.range);
 	iw_getstat(&iw);
 	if_getstat(conf_ifname(), &nstat);
+	// XXX
+struct iw_nl80211_survey sd;
+iw_nl80211_get_survey(&sd);
 
 	printf("\n");
 	printf("Configured device: %s (%s)\n", conf_ifname(), info.name);

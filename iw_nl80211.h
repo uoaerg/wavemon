@@ -147,6 +147,34 @@ struct iw_nl80211_linkstat {
 extern void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
 
 /**
+ * struct iw_nl80211_survey_data - channel survey data
+ * @freq:  channel frequency (only filled in if it is in use)
+ * @noise: channel noise in dBm (0 means invalid data)
+ *
+ * @active:   amount of time that the radio was on
+ * @busy:     amount of the time the primary channel was sensed busy
+ * @ext_busy: amount of time the extension channel was sensed busy
+ * @rx:       amount of time the radio spent receiving data
+ * @tx:       amount of time the radio spent transmitting data
+ * @scan:     time the radio spent for scan
+ */
+struct iw_nl80211_survey {
+	uint32_t	freq;
+	int8_t		noise;
+
+	struct time_data_in_milliseconds {
+		uint64_t	active,
+				busy,
+				ext_busy,
+				rx,
+				tx,
+				scan;
+	} time;
+};
+extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
+// XXX end changes
+
+/**
  * struct iw_nl80211_reg - regulatory domain information
  * @region: 	regulatory DFS region (%nl80211_dfs_regions or -1)
  * @country:	two-character country code

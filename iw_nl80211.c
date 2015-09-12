@@ -95,6 +95,7 @@ int handle_cmd(struct cmd *cmd)
 nla_put_failure:
 	err(2, "failed to add attribute to netlink message");
 }
+
 /*
  * STATION COMMANDS
  */
@@ -169,7 +170,7 @@ void print_ssid_escaped(char *buf, const size_t buflen,
 	}
 }
 
-// stolen from iw:interface.c
+/* stolen from iw:interface.c */
 static int iface_handler(struct nl_msg *msg, void *arg)
 {
 	struct iw_nl80211_ifstat *ifs = (struct iw_nl80211_ifstat *)arg;
@@ -214,6 +215,90 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 		if (tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE])
 			ifs->chan_type = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE]);
 	}
+
+	return NL_SKIP;
+}
+
+/**
+ * survey_handler - channel survey data
+ * This handler will be called multiple times, for each channel.
+ * stolen from iw:survey.c
+ */
+static int survey_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_survey *sd = (struct iw_nl80211_survey *)arg;
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *sinfo[NL80211_SURVEY_INFO_MAX + 1];
+
+	static struct nla_policy survey_policy[NL80211_SURVEY_INFO_MAX + 1] = {
+		[NL80211_SURVEY_INFO_FREQUENCY]     = { .type = NLA_U32 },
+		[NL80211_SURVEY_INFO_NOISE]         = { .type = NLA_U8 },
+		[NL80211_SURVEY_INFO_IN_USE]        = { .type = NLA_FLAG },
+		[NL80211_SURVEY_INFO_TIME]          = { .type = NLA_U64 },
+		[NL80211_SURVEY_INFO_TIME_BUSY]     = { .type = NLA_U64 },
+		[NL80211_SURVEY_INFO_TIME_EXT_BUSY] = { .type = NLA_U64 },
+		[NL80211_SURVEY_INFO_TIME_RX]       = { .type = NLA_U64 },
+		[NL80211_SURVEY_INFO_TIME_TX]       = { .type = NLA_U64 },
+		[NL80211_SURVEY_INFO_TIME_SCAN]     = { .type = NLA_U64 },
+	};
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_SURVEY_INFO])
+		return NL_SKIP;
+
+	if (nla_parse_nested(sinfo, NL80211_SURVEY_INFO_MAX,
+			     tb[NL80211_ATTR_SURVEY_INFO], survey_policy))
+		return NL_SKIP;
+
+	/* The frequency is needed to match up with the associated station */
+	if (!sinfo[NL80211_SURVEY_INFO_FREQUENCY])
+		return NL_SKIP;
+
+	/* We are only interested in the data of the operating channel */
+	if (!sinfo[NL80211_SURVEY_INFO_IN_USE] && false) // XXX
+		return NL_SKIP;
+
+	sd->freq  = nla_get_u32(sinfo[NL80211_SURVEY_INFO_FREQUENCY]);
+
+	if (sinfo[NL80211_SURVEY_INFO_NOISE])
+		sd->noise = (int8_t)nla_get_u8(sinfo[NL80211_SURVEY_INFO_NOISE]);
+
+printf("\n\tfrequency:\t\t\t%u MHz%s\n", sd->freq,
+sinfo[NL80211_SURVEY_INFO_IN_USE] ? " [in use]" : "");
+printf("\tnoise:\t\t\t\t%d dBm\n", sd->noise);
+
+	if (sinfo[NL80211_SURVEY_INFO_TIME])
+		sd->time.active = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME]);
+
+printf("\tchannel active time:\t\t%llu ms\n", (unsigned long long)sd->time.active);
+
+	if (sinfo[NL80211_SURVEY_INFO_TIME_BUSY])
+		sd->time.busy = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_BUSY]);
+
+printf("\tchannel busy time:\t\t%llu ms\n", (unsigned long long)sd->time.busy);
+
+	if (sinfo[NL80211_SURVEY_INFO_TIME_EXT_BUSY])
+		sd->time.ext_busy = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_EXT_BUSY]);
+
+printf("\textension channel busy time:\t%llu ms\n", (unsigned long long)sd->time.ext_busy);
+
+	if (sinfo[NL80211_SURVEY_INFO_TIME_RX])
+		sd->time.rx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_RX]);
+
+printf("\tchannel receive time:\t\t%llu ms\n", (unsigned long long)sd->time.rx);
+
+	if (sinfo[NL80211_SURVEY_INFO_TIME_TX])
+		sd->time.tx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_RX]);
+
+printf("\tchannel transmit time:\t\t%llu ms\n", (unsigned long long)sd->time.tx);
+
+	if (sinfo[NL80211_SURVEY_INFO_TIME_SCAN])
+		sd->time.scan = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_SCAN]);
+
+printf("\tscan time:\t%llu ms\n",(unsigned long long)sd->time.scan);
 
 	return NL_SKIP;
 }
@@ -505,4 +590,17 @@ void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 	cmd_ifstat.handler_arg = ifs;
 	memset(ifs, 0, sizeof(*ifs));
 	handle_cmd(&cmd_ifstat);
+}
+
+void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)
+{
+	static struct cmd cmd_survey = {
+		.cmd	 = NL80211_CMD_GET_SURVEY,
+		.flags	 = NLM_F_DUMP,
+		.handler = survey_handler
+	};
+
+	cmd_survey.handler_arg = sd;
+	memset(sd, 0, sizeof(*sd));
+	handle_cmd(&cmd_survey);
 }
