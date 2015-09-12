@@ -304,6 +304,7 @@ extern char *format_bssid(const struct sockaddr *ap);
 extern uint8_t bit_count(uint32_t mask);
 extern uint8_t prefix_len(const struct in_addr *netmask);
 extern const char *pretty_time(const unsigned sec);
+extern const char *pretty_time_ms(const unsigned msec);
 extern int u8_to_dbm(const int power);
 extern uint8_t dbm_to_u8(const int dbm);
 extern double dbm2mw(const double in);

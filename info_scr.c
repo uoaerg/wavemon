@@ -335,8 +335,37 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
+	/* Channel data */
 	wmove(w_info, 3, 1);
+	waddstr(w_info, "channel survey: ");
+	if (iw_nl80211_have_survey_data(&ls)) {
+		waddstr(w_info, "active: ");
+		waddstr_b(w_info, pretty_time_ms(ls.survey.time.active));
+
+		waddstr(w_info, ", busy: ");
+		waddstr_b(w_info, pretty_time_ms(ls.survey.time.busy));
+
+		if (ls.survey.time.ext_busy) {
+			waddstr(w_info, ", ext-busy: ");
+			waddstr_b(w_info, pretty_time_ms(ls.survey.time.ext_busy));
+		}
+
+		waddstr(w_info, ", rx: ");
+		waddstr_b(w_info, pretty_time_ms(ls.survey.time.rx));
+
+		waddstr(w_info, ", tx: ");
+		waddstr_b(w_info, pretty_time_ms(ls.survey.time.tx));
+
+		if (ls.survey.time.scan) {
+			waddstr(w_info, ", scan: ");
+			waddstr_b(w_info, pretty_time_ms(ls.survey.time.scan));
+		}
+	} else {
+		waddstr(w_info, "n/a");
+	}
+
 	/* Beacons */
+	wmove(w_info, 4, 1);
 	waddstr(w_info, "beacons: ");
 
 	if (ls.beacons) {
@@ -375,7 +404,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	wclrtoborder(w_info);
 
-	wmove(w_info, 4, 1);
+	wmove(w_info, 5, 1);
 	waddstr(w_info, "power mgt: ");
 	if (info.cap_power)
 		waddstr_b(w_info, format_power(&info.power, &cur.range));
@@ -397,7 +426,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 5, 1);
+	wmove(w_info, 6, 1);
 	waddstr(w_info, "retry: ");
 	if (info.cap_retry)
 		waddstr_b(w_info, format_retry(&info.retry, &cur.range));
@@ -429,7 +458,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 6, 1);
+	wmove(w_info, 7, 1);
 	waddstr(w_info, "encryption: ");
 	if (info.keys) {
 		int cnt = dyn_info_active_keys(&info);
@@ -603,7 +632,7 @@ void scr_info_init(void)
 	if (LINES >= WH_INFO_SCR_MIN + (WH_NET_MAX - WH_NET_MIN))
 		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 	else
-		w_net = newwin_title(line, WH_NET_MIN, "Network", false);
+		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);

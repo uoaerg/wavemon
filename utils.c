@@ -109,6 +109,19 @@ const char *pretty_time(const unsigned sec)
 	}
 	return buf;
 }
+
+/* Like pretty_time, but allow milliseconds */
+const char *pretty_time_ms(const unsigned msec)
+{
+	static char buf[12];
+
+	if (msec < 1000) {
+		sprintf(buf, "%u ms",  msec);
+		return buf;
+	}
+	return pretty_time(msec/1000);
+}
+
 /* Absolute power measurement in dBm (IW_QUAL_DBM): map into -192 .. 63 range */
 int u8_to_dbm(const int power)
 {

@@ -279,7 +279,7 @@ static int survey_handler(struct nl_msg *msg, void *arg)
 		sd->time.rx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_RX]);
 
 	if (sinfo[NL80211_SURVEY_INFO_TIME_TX])
-		sd->time.tx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_RX]);
+		sd->time.tx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_TX]);
 
 	if (sinfo[NL80211_SURVEY_INFO_TIME_SCAN])
 		sd->time.scan = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_SCAN]);
