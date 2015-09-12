@@ -419,44 +419,21 @@ void iw_sanitize(struct iw_range *range, struct iw_quality *qual,
 		if (qual->updated & IW_QUAL_RCPI) {
 			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
 				dbm->signal = (double)(qual->level / 2.0) - 110.0;
-			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
-				dbm->noise  = (double)(qual->noise / 2.0) - 110.0;
 
 		} else if ((qual->updated & IW_QUAL_DBM) ||
 			   qual->level > range->max_qual.level) {
 			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
 				dbm->signal = u8_to_dbm(qual->level);
-			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
-				dbm->noise  = u8_to_dbm(qual->noise);
 		} else {
 			/*
 			 * Relative values (0 -> max)
 			 */
 			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
 				dbm->signal = mw2dbm(qual->level);
-			if (!(qual->updated & IW_QUAL_NOISE_INVALID))
-				dbm->noise  = mw2dbm(qual->noise);
 		}
 	} else {
 		qual->updated |= IW_QUAL_ALL_INVALID;
 	}
-
-	/*
-	 * Value sanity checks
-	 *
-	 * These rules serve to avoid "insensible" level displays. Please do send
-	 * comments and/or bug reports if you encounter room for improvement.
-	 *
-	 *  1) if noise level is valid, but signal level is not, displaying just
-	 *     the noise level does not reveal very much - can be omitted;
-	 *  2) if the noise level is below an "invalid" magic value (see iw_if.h),
-	 *     declare the noise value to be invalid;
-	 *  3) SNR is only displayed if both signal and noise values are valid.
-	 */
-	if (qual->updated & IW_QUAL_LEVEL_INVALID)
-		qual->updated |= IW_QUAL_NOISE_INVALID;
-	if (dbm->noise <= NOISE_DBM_SANE_MIN)
-		qual->updated |= IW_QUAL_NOISE_INVALID;
 }
 
 void iw_getstat(struct iw_stat *iw)
@@ -628,9 +605,6 @@ void dump_parameters(void)
 	       iw.range.max_qual.qual);
 	printf("     signal level: %.0f dBm (%s)\n", iw.dbm.signal,
 	       dbm2units(iw.dbm.signal));
-	printf("      noise level: %.0f dBm (%s)\n", iw.dbm.noise,
-	       dbm2units(iw.dbm.noise));
-	printf("              SNR: %.0f dB\n", iw.dbm.signal - iw.dbm.noise);
 
 	/* RX stats */
 	printf("         RX total: %'llu packets (%s)\n", nstat.rx_packets,

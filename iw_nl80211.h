@@ -181,7 +181,7 @@ extern void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
 /* Indicate whether @ls contains usable channel survey data */
 static inline bool iw_nl80211_have_survey_data(struct iw_nl80211_linkstat *ls)
 {
-	return true && ls->survey.freq != 0 && ls->survey.noise != 0;
+	return ls->survey.freq != 0 && ls->survey.noise != 0;
 }
 
 /**

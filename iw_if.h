@@ -39,16 +39,6 @@
 #define IW_MODE_MESH	7		/* introduced in 2.6.26-rc1 */
 #endif
 
-/*
- * Threshold for 'sane' noise levels.
- *
- * Some drivers simply set an arbitrary minimum noise level to mean 'invalid',
- * but do not set IW_QUAL_NOISE_INVALID so that the display gets stuck at a
- * "house number". The value below is suggested by and taken from the iwl3945
- * driver (constant IWL_NOISE_MEAS_NOT_AVAILABLE in iwl-3945.h).
- */
-#define NOISE_DBM_SANE_MIN	-127
-
 /**
  * struct if_info  -  wireless interface network information
  * @hwaddr:		MAC address
@@ -217,8 +207,11 @@ struct iw_stat {
 /*
  * 	Periodic sampling of wireless statistics via timer alarm
  */
+/* FIXME: remove forward declaration */
+struct iw_nl80211_linkstat;
+
 extern void iw_getstat(struct iw_stat *stat);
-extern void iw_cache_update(struct iw_stat *stat);
+extern void iw_cache_update(struct iw_stat *iw, struct iw_nl80211_linkstat *ls);
 
 extern void sampling_init(void (*sampling_handler)(int));
 extern void sampling_do_poll(void);

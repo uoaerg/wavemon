@@ -45,7 +45,7 @@ void sampling_do_poll(void)
 {
 	iw_getstat(&cur);
 	iw_nl80211_get_linkstat(&ls);
-	iw_cache_update(&cur);
+	iw_cache_update(&cur, &ls);
 }
 
 static void display_levels(void)

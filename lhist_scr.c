@@ -119,7 +119,8 @@ static struct iw_levelstat iw_cache_get(const uint32_t index)
 }
 
 // XXX FIXME: rewrite in terms of struct iw_nl80211_linkstat
-void iw_cache_update(struct iw_stat *iw)
+void iw_cache_update(struct iw_stat *iw,
+		     struct iw_nl80211_linkstat *ls)
 {
 	static struct iw_levelstat prev, avg = IW_LSTAT_INIT;
 	static int slot;
@@ -130,11 +131,10 @@ void iw_cache_update(struct iw_stat *iw)
 		track_extrema(iw->dbm.signal, &e_signal);
 	}
 
-	if (! (iw->stat.qual.updated & IW_QUAL_NOISE_INVALID)) {
-		avg.flags &= ~IW_QUAL_NOISE_INVALID;
-		avg.noise += iw->dbm.noise / conf.slotsize;
-		track_extrema(iw->dbm.noise, &e_noise);
-		track_extrema(iw->dbm.signal - iw->dbm.noise, &e_snr);
+	if (iw_nl80211_have_survey_data(ls)) {
+		avg.noise += (float)ls->survey.noise / conf.slotsize;
+		track_extrema(ls->survey.noise, &e_noise);
+		track_extrema(iw->dbm.signal - ls->survey.noise, &e_snr);
 	}
 
 	if (++slot >= conf.slotsize) {
