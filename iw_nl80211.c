@@ -258,7 +258,7 @@ static int survey_handler(struct nl_msg *msg, void *arg)
 		return NL_SKIP;
 
 	/* We are only interested in the data of the operating channel */
-	if (!sinfo[NL80211_SURVEY_INFO_IN_USE] && false) // XXX
+	if (!sinfo[NL80211_SURVEY_INFO_IN_USE])
 		return NL_SKIP;
 
 	sd->freq  = nla_get_u32(sinfo[NL80211_SURVEY_INFO_FREQUENCY]);
@@ -266,39 +266,23 @@ static int survey_handler(struct nl_msg *msg, void *arg)
 	if (sinfo[NL80211_SURVEY_INFO_NOISE])
 		sd->noise = (int8_t)nla_get_u8(sinfo[NL80211_SURVEY_INFO_NOISE]);
 
-printf("\n\tfrequency:\t\t\t%u MHz%s\n", sd->freq,
-sinfo[NL80211_SURVEY_INFO_IN_USE] ? " [in use]" : "");
-printf("\tnoise:\t\t\t\t%d dBm\n", sd->noise);
-
 	if (sinfo[NL80211_SURVEY_INFO_TIME])
 		sd->time.active = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME]);
-
-printf("\tchannel active time:\t\t%llu ms\n", (unsigned long long)sd->time.active);
 
 	if (sinfo[NL80211_SURVEY_INFO_TIME_BUSY])
 		sd->time.busy = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_BUSY]);
 
-printf("\tchannel busy time:\t\t%llu ms\n", (unsigned long long)sd->time.busy);
-
 	if (sinfo[NL80211_SURVEY_INFO_TIME_EXT_BUSY])
 		sd->time.ext_busy = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_EXT_BUSY]);
-
-printf("\textension channel busy time:\t%llu ms\n", (unsigned long long)sd->time.ext_busy);
 
 	if (sinfo[NL80211_SURVEY_INFO_TIME_RX])
 		sd->time.rx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_RX]);
 
-printf("\tchannel receive time:\t\t%llu ms\n", (unsigned long long)sd->time.rx);
-
 	if (sinfo[NL80211_SURVEY_INFO_TIME_TX])
 		sd->time.tx = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_RX]);
 
-printf("\tchannel transmit time:\t\t%llu ms\n", (unsigned long long)sd->time.tx);
-
 	if (sinfo[NL80211_SURVEY_INFO_TIME_SCAN])
 		sd->time.scan = nla_get_u64(sinfo[NL80211_SURVEY_INFO_TIME_SCAN]);
-
-printf("\tscan time:\t%llu ms\n",(unsigned long long)sd->time.scan);
 
 	return NL_SKIP;
 }
@@ -557,13 +541,20 @@ void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
 	memset(ls, 0, sizeof(*ls));
 	handle_cmd(&cmd_linkstat);
 
-	if (!ether_addr_is_zero(&ls->bssid)) {
-		cmd_getstation.handler_arg  = ls;
-		cmd_getstation.msg_args     = &station_addr;
-		cmd_getstation.msg_args_len = 1;
+	/* If not associated to another station, the bssid is zeroed out */
+	if (ether_addr_is_zero(&ls->bssid))
+		return;
+	/*
+	 * Details of the associated station
+	 */
+	cmd_getstation.handler_arg  = ls;
+	cmd_getstation.msg_args     = &station_addr;
+	cmd_getstation.msg_args_len = 1;
 
-		handle_cmd(&cmd_getstation);
-	}
+	handle_cmd(&cmd_getstation);
+
+	/* Channel survey data */
+	iw_nl80211_get_survey(&ls->survey);
 }
 
 void iw_nl80211_getreg(struct iw_nl80211_reg *ir)

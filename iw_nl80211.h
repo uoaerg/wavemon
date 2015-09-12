@@ -77,7 +77,34 @@ struct iw_nl80211_ifstat {
 };
 extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
 
-/* struct iw_nl80211_linkstat - link statistics
+/**
+ * struct iw_nl80211_survey_data - channel survey data
+ * @freq:  channel frequency (only filled in if it is in use)
+ * @noise: channel noise in dBm (0 means invalid data)
+ *
+ * @active:   amount of time that the radio was on
+ * @busy:     amount of the time the primary channel was sensed busy
+ * @ext_busy: amount of time the extension channel was sensed busy
+ * @rx:       amount of time the radio spent receiving data
+ * @tx:       amount of time the radio spent transmitting data
+ * @scan:     time the radio spent for scan
+ */
+struct iw_nl80211_survey {
+	uint32_t	freq;
+	int8_t		noise;
+
+	struct time_data_in_milliseconds {
+		uint64_t	active,
+				busy,
+				ext_busy,
+				rx,
+				tx,
+				scan;
+	} time;
+};
+extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
+
+/* struct iw_nl80211_linkstat - aggregate link statistics
  * @status:           association status (%nl80211_bss_status)
  * @bssid:            station MAC address
  * @inactive_time:    inactivity in msec
@@ -105,6 +132,7 @@ extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
  * @wme:              Wireless Multimedia Extensions / Wi-Fi Multimedia
  * @mfp:              Management Frame Protection
  * @tdls:             Tunneled Direct Link Setup
+ * @survey:           channel survey data (where present)
  */
 struct iw_nl80211_linkstat {
 	uint32_t	  	status;
@@ -143,36 +171,18 @@ struct iw_nl80211_linkstat {
 				wme:1,
 				mfp:1,
 				tdls:1;
+	/*
+	 * Channel survey data (requires suitable card, e.g. ath9k).
+	 */
+	struct iw_nl80211_survey	survey;
 };
 extern void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
 
-/**
- * struct iw_nl80211_survey_data - channel survey data
- * @freq:  channel frequency (only filled in if it is in use)
- * @noise: channel noise in dBm (0 means invalid data)
- *
- * @active:   amount of time that the radio was on
- * @busy:     amount of the time the primary channel was sensed busy
- * @ext_busy: amount of time the extension channel was sensed busy
- * @rx:       amount of time the radio spent receiving data
- * @tx:       amount of time the radio spent transmitting data
- * @scan:     time the radio spent for scan
- */
-struct iw_nl80211_survey {
-	uint32_t	freq;
-	int8_t		noise;
-
-	struct time_data_in_milliseconds {
-		uint64_t	active,
-				busy,
-				ext_busy,
-				rx,
-				tx,
-				scan;
-	} time;
-};
-extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
-// XXX end changes
+/* Indicate whether @ls contains usable channel survey data */
+static inline bool iw_nl80211_have_survey_data(struct iw_nl80211_linkstat *ls)
+{
+	return true && ls->survey.freq != 0 && ls->survey.noise != 0;
+}
 
 /**
  * struct iw_nl80211_reg - regulatory domain information

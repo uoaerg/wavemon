@@ -48,7 +48,7 @@
  */
 enum info_screen_geometry {
 	WH_IFACE    = 2,	/* 'Interface' area at the top */
-	WH_LEVEL    = 8,	/* Level meters */
+	WH_LEVEL    = 9,	/* Level meters */
 	WH_STATS    = 3,	/* WiFi statistics area */
 	WH_INFO_MIN = 7,	/* WiFi information area */
 	WH_NET_MIN  = 3,	/* Network interface information area */

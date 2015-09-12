@@ -51,8 +51,7 @@ void sampling_do_poll(void)
 static void display_levels(void)
 {
 	char nscale[2]   = { cur.dbm.signal - 20, cur.dbm.signal },
-	     lvlscale[2] = { -40, -20},
-	     snrscale[2] = { 6, 12 };
+	     lvlscale[2] = { -40, -20};
 	char tmp[0x100];
 	static float qual, signal, noise, ssnr;
 	int line;
@@ -69,7 +68,7 @@ static void display_levels(void)
 	line = 1;
 
 	/* Noise data is rare. Use the space for spreading out. */
-	if (cur.stat.qual.updated & IW_QUAL_NOISE_INVALID)
+	if (!iw_nl80211_have_survey_data(&ls))
 		line++;
 
 	if (cur.stat.qual.updated & IW_QUAL_QUAL_INVALID) {
@@ -87,12 +86,12 @@ static void display_levels(void)
 			lvlscale, true);
 	}
 
-	if (cur.stat.qual.updated & IW_QUAL_NOISE_INVALID)
+	/* Spacer */
+	line++;
+	if (!iw_nl80211_have_survey_data(&ls))
 		line++;
 
-	if (cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID) {
-		line++;
-	} else {
+	if (!(cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
 		signal = ewma(signal, cur.dbm.signal, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
@@ -107,32 +106,26 @@ static void display_levels(void)
 		if (conf.hthreshold_action)
 			waddthreshold(w_levels, line, signal, conf.hthreshold,
 				      conf.sig_min, conf.sig_max, lvlscale, '<');
-		line++;
 	}
 
-	if (! (cur.stat.qual.updated & IW_QUAL_NOISE_INVALID)) {
-		noise = ewma(noise, cur.dbm.noise, conf.meter_decay / 100.0);
+	line++;
+
+	if (iw_nl80211_have_survey_data(&ls)) {
+		noise = ewma(noise, ls.survey.noise, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");
-		sprintf(tmp, "%.0f dBm (%s)    ", noise, dbm2units(noise));
+		sprintf(tmp, "%.0f dBm (%s)", noise, dbm2units(noise));
 		waddstr_b(w_levels, tmp);
+
+		ssnr = ewma(ssnr, cur.dbm.signal - ls.survey.noise,
+				  conf.meter_decay / 100.0);
 
 		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
 			nscale, false);
-		/*
-		 * Since we make sure (in iw_if.c) that invalid signal levels always
-		 * imply invalid noise levels, we can display a valid SNR here.
-		 */
-		ssnr = ewma(ssnr, cur.dbm.signal - cur.dbm.noise,
-				  conf.meter_decay / 100.0);
 
-		mvwaddstr(w_levels, line++, 1, "signal-to-noise ratio: ");
-		if (ssnr > 0)
-			waddstr_b(w_levels, "+");
-		sprintf(tmp, "%.0f dB   ", ssnr);
+		mvwaddstr(w_levels, line++, 1, "SNR:           ");
+		sprintf(tmp, "%.0f dB", ssnr);
 		waddstr_b(w_levels, tmp);
-
-		waddbar(w_levels, line, ssnr, 0, 110, snrscale, true);
 	}
 
 done_levels:
