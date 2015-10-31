@@ -4,7 +4,7 @@ wavemon \- a wireless network monitor
 .SH SYNOPSIS
 .B wavemon [-h] [-i
 .I ifname
-.B ] [-l] [-r] [-v]
+.B ] [-g] [-v]
 .SH DESCRIPTION
 \fIwavemon\fR is a ncurses-based monitoring application for wireless network
 devices. It plots levels in real-time as well as showing wireless and network
@@ -117,8 +117,6 @@ override autodetection and use the specified \fIinterface\fR.
 check screen \fIgeometry\fR: a minimum size is required for proper display; this flag
 adds a check to ensure it is sufficiently large. Enable this if window does not display
 properly.
-.IP "\fB\-r\fR"
-generate random levels (for testing purposes).
 .IP "\fB\-h\fR"
 print help and exit.
 .IP "\fB\-v\fR"

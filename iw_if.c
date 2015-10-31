@@ -329,76 +329,6 @@ void iw_getinf_range(const char *ifname, struct iw_range *range)
 }
 
 /*
- *	Obtain periodic IW statistics
- */
-static int rand_wave(float *rlvl, float *step, float *rlvl_next, float range)
-{
-	int i;
-
-	for (i = 0; i < WAVE_RAND_SPREAD; i++)
-		if (*rlvl < *rlvl_next) {
-			if (*rlvl_next - *rlvl < *step)
-				*step /= 2.0;
-			*rlvl += *step;
-		} else if (*rlvl > *rlvl_next) {
-			if (*rlvl - *rlvl_next < *step)
-				*step /= 2.0;
-			*rlvl -= *step;
-		}
-	*step += (random() / (float)RAND_MAX) - 0.5;
-	if (*rlvl == *rlvl_next || *step < 0.05) {
-		*rlvl_next = (range * random()) / RAND_MAX;
-		*step      = random() / (float)RAND_MAX;
-	}
-	return *rlvl;
-}
-
-/* Random signal/noise/quality levels */
-static void iw_getstat_random(struct iw_stat *iw)
-{
-	static float rnd_sig, snext, sstep = 1.0, rnd_noise, nnext, nstep = 1.0;
-
-	rand_wave(&rnd_sig, &sstep, &snext, conf.sig_max - conf.sig_min);
-	rand_wave(&rnd_noise, &nstep, &nnext, conf.noise_max - conf.noise_min);
-
-	if (iw->range.max_qual.qual == 0)
-		iw->range.max_qual.qual = WAVE_RAND_QUAL_MAX;
-
-	iw->stat.qual.level	= dbm_to_u8(conf.sig_min + rnd_sig);
-	iw->stat.qual.noise	= dbm_to_u8(conf.noise_min + rnd_noise);
-	iw->stat.qual.updated	= IW_QUAL_DBM;
-	iw->stat.qual.qual	= map_range(conf.sig_min + rnd_sig,
-					    conf.sig_min, conf.sig_max,
-					    0, iw->range.max_qual.qual);
-}
-
-static void iw_getstat_real(struct iw_statistics *stat)
-{
-	struct iwreq wrq;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
-
-	wrq.u.data.pointer = (caddr_t) stat;
-	wrq.u.data.length  = sizeof(*stat);
-	wrq.u.data.flags   = 0;
-	strncpy(wrq.ifr_name, conf_ifname(), IFNAMSIZ);
-
-	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0) {
-		/*
-		 * iw_handler_get_iwstats() returns EOPNOTSUPP if
-		 * there are no statistics. Bail out in this case.
-		 */
-		if (errno != EOPNOTSUPP)
-			err_sys("can not obtain iw statistics");
-		errno = 0;
-		memset(&wrq, 0, sizeof(wrq));
-	}
-	close(skfd);
-}
-
-/*
  * Generate dBm values and perform sanity checks on values.
  * Code in part taken from wireless extensions #30
  * @range: range information, read-only
@@ -438,12 +368,30 @@ void iw_sanitize(struct iw_range *range, struct iw_quality *qual,
 
 void iw_getstat(struct iw_stat *iw)
 {
-	memset(&iw->stat, 0, sizeof(iw->stat));
+	struct iwreq wrq;
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-	if (conf.random)
-		iw_getstat_random(iw);
-	else
-		iw_getstat_real(&iw->stat);
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
+
+	wrq.u.data.pointer = (caddr_t)&iw->stat;
+	wrq.u.data.length  = sizeof(iw->stat);
+	wrq.u.data.flags   = 0;
+
+	memset(&iw->stat, 0, sizeof(iw->stat));
+	strncpy(wrq.ifr_name, conf_ifname(), IFNAMSIZ);
+
+	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0) {
+		/*
+		 * iw_handler_get_iwstats() returns EOPNOTSUPP if
+		 * there are no statistics. Bail out in this case.
+		 */
+		if (errno != EOPNOTSUPP)
+			err_sys("can not obtain iw statistics");
+		errno = 0;
+		memset(&wrq, 0, sizeof(wrq));
+	}
+	close(skfd);
 
 	iw_sanitize(&iw->range, &iw->stat.qual, &iw->dbm);
 }

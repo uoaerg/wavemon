@@ -63,7 +63,6 @@ struct wavemon_conf conf = {
 	.check_geometry		= false,
 	.cisco_mac		= false,
 	.override_bounds	= false,
-	.random			= false,
 
 	.sig_min		= -102,
 	.sig_max		= 10,
@@ -449,14 +448,6 @@ static void init_conf_items(void)
 	item->dep	= &conf.override_bounds;
 	ll_push(conf_items, "*", item);
 
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Random signals");
-	item->cfname	= strdup("random");
-	item->type	= t_list;
-	item->v.i	= &conf.random;
-	item->list	= on_off_names;
-	ll_push(conf_items, "*", item);
-
 	/* thresholds */
 	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Low threshold action");
@@ -537,7 +528,7 @@ void getconf(int argc, char *argv[])
 	init_conf_items();
 	read_cf();
 
-	while ((arg = getopt(argc, argv, "ghi:rv")) >= 0) {
+	while ((arg = getopt(argc, argv, "ghi:v")) >= 0) {
 		switch (arg) {
 		case 'g':
 			conf.check_geometry = true;
@@ -550,9 +541,6 @@ void getconf(int argc, char *argv[])
 			if (conf.if_idx < 0)
 				err_quit("no wireless extensions found on '%s'",
 					 optarg);
-			break;
-		case 'r':
-			conf.random = true;
 			break;
 		case 'v':
 			version++;
@@ -569,12 +557,10 @@ void getconf(int argc, char *argv[])
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
-		printf("usage: wavemon [ -dhlrv ] [ -i ifname ]\n");
-		printf("  -d            Dump the current device status to stdout and exit\n");
+		printf("usage: wavemon [ -hgv ] [ -i ifname ]\n");
 		printf("  -g            Ensure screen is sufficiently dimensioned\n");
 		printf("  -h            This help screen\n");
 		printf("  -i <ifname>   Use specified network interface (default: auto)\n");
-		printf("  -r            Generate random levels (for testing purposes)\n");
 		printf("  -v            Print version number\n");
 	}
 
