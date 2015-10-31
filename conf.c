@@ -128,93 +128,6 @@ static char *get_confname(void)
 	return full_path;
 }
 
-static void read_cf(void)
-{
-	char tmp[0x100], lv[0x20], rv[0x20];
-	struct conf_item *ci = NULL;
-	FILE *fd;
-	size_t len;
-	int lnum, found, v_int;
-	char *lp, *conv_err;
-	char *cfname = get_confname();
-
-	if (access(cfname, F_OK) != 0)
-		goto done;
-
-	fd = fopen(cfname, "r");
-	if (fd == NULL)
-		err_sys("can not read configuration file '%s'", cfname);
-
-	for (lnum = 1; fgets(tmp, sizeof(tmp), fd); lnum++) {
-		lp = tmp + strspn(tmp, " ");
-		if (*lp == '#' || *lp == '\n')
-			continue;
-
-		len = strcspn(lp, " =");
-		if (len > sizeof(lv))
-			err_quit("parse error in %s, line %d: identifier too long",
-				 cfname, lnum);
-		strncpy(lv, lp, len);
-		lv[len] = '\0';
-		lp += len;
-
-		ll_reset(conf_items);
-		for (found = 0; !found && (ci = ll_getall(conf_items)); )
-			found = (ci->type != t_sep && ci->type != t_func &&
-				 strcasecmp(ci->cfname, lv) == 0);
-		if (!found) {
-			err_msg("%s, line %d: ignoring unknown identifier '%s'",
-				cfname, lnum, lv);
-			continue;
-		}
-
-		lp += strspn(lp, " ");
-		if (*lp++ != '=')
-			err_quit("parse error in %s, line %d: missing '=' operator in assignment",
-				 cfname, lnum);
-		lp += strspn(lp, " ");
-
-		len = strcspn(lp, " \n");
-		if (len > sizeof(rv))
-			err_quit("parse error in %s, line %d: argument too long", cfname, lnum);
-		else if (*lp == '\n')
-			err_quit("parse error in %s, line %d: argument expected", cfname, lnum);
-		strncpy(rv, lp, len);
-		rv[len] = '\0';
-
-		switch (ci->type) {
-		case t_int:
-			v_int = strtol(rv, &conv_err, 10);
-			if (*conv_err != '\0') {
-				err_quit("parse error in %s, line %d: integer value expected, '%s' found instead",
-					 cfname, lnum, rv);
-			} else if (v_int > ci->max) {
-				err_quit("parse error in %s, line %d: value exceeds maximum of %d",
-					 cfname, lnum, (int)ci->max);
-			} else if (v_int < ci->min) {
-				err_quit("parse error in %s, line %d: value is below minimum of %d",
-					 cfname, lnum, (int)ci->min);
-			} else {
-				*ci->v.i = v_int;
-			}
-			break;
-		case t_list:
-			v_int = ci->list ? argv_find(ci->list, rv) : -1;
-			if (v_int < 0)
-				err_msg("%s, line %d: '%s = %s' is not valid - using defaults",
-					 cfname, lnum, lv, rv);
-			else
-				*ci->v.i = v_int;
-		case t_sep:	/* These two cases are missing from the enum, they are not handled */
-		case t_func:	/* To pacify gcc -Wall, fall through here */
-			break;
-		}
-	}
-	fclose(fd);
-done:
-	free(cfname);
-}
-
 static void write_cf(void)
 {
 	char tmp[0x100], rv[0x40];
@@ -283,6 +196,101 @@ static void write_cf(void)
 
 	ll_destroy(cfld);
 	free(cfname);
+}
+
+static void read_cf(void)
+{
+	char tmp[0x100], lv[0x20], rv[0x20];
+	struct conf_item *ci = NULL;
+	FILE *fd;
+	size_t len;
+	int lnum, found, v_int;
+	char *lp, *conv_err;
+	bool file_needs_update = false;
+	char *cfname = get_confname();
+
+	if (access(cfname, F_OK) != 0)
+		goto done;
+
+	fd = fopen(cfname, "r");
+	if (fd == NULL)
+		err_sys("can not read configuration file '%s'", cfname);
+
+	for (lnum = 1; fgets(tmp, sizeof(tmp), fd); lnum++) {
+		lp = tmp + strspn(tmp, " ");
+		if (*lp == '#' || *lp == '\n')
+			continue;
+
+		len = strcspn(lp, " =");
+		if (len > sizeof(lv))
+			err_quit("parse error in %s, line %d: identifier too long",
+				 cfname, lnum);
+		strncpy(lv, lp, len);
+		lv[len] = '\0';
+		lp += len;
+
+		ll_reset(conf_items);
+		for (found = 0; !found && (ci = ll_getall(conf_items)); )
+			found = (ci->type != t_sep && ci->type != t_func &&
+				 strcasecmp(ci->cfname, lv) == 0);
+		if (!found) {
+			err_msg("%s, line %d: ignoring unknown identifier '%s'",
+				cfname, lnum, lv);
+			file_needs_update = true;
+			continue;
+		}
+
+		lp += strspn(lp, " ");
+		if (*lp++ != '=')
+			err_quit("parse error in %s, line %d: missing '=' operator in assignment",
+				 cfname, lnum);
+		lp += strspn(lp, " ");
+
+		len = strcspn(lp, " \n");
+		if (len > sizeof(rv))
+			err_quit("parse error in %s, line %d: argument too long", cfname, lnum);
+		else if (*lp == '\n')
+			err_quit("parse error in %s, line %d: argument expected", cfname, lnum);
+		strncpy(rv, lp, len);
+		rv[len] = '\0';
+
+		switch (ci->type) {
+		case t_int:
+			v_int = strtol(rv, &conv_err, 10);
+			if (*conv_err != '\0') {
+				err_quit("parse error in %s, line %d: integer value expected, '%s' found instead",
+					 cfname, lnum, rv);
+			} else if (v_int > ci->max) {
+				err_quit("parse error in %s, line %d: value exceeds maximum of %d",
+					 cfname, lnum, (int)ci->max);
+			} else if (v_int < ci->min) {
+				err_quit("parse error in %s, line %d: value is below minimum of %d",
+					 cfname, lnum, (int)ci->min);
+			} else {
+				*ci->v.i = v_int;
+			}
+			break;
+		case t_list:
+			v_int = ci->list ? argv_find(ci->list, rv) : -1;
+			if (v_int < 0) {
+				err_msg("%s, line %d: '%s = %s' is not valid - using defaults",
+					 cfname, lnum, lv, rv);
+				file_needs_update = true;
+			} else {
+				*ci->v.i = v_int;
+			}
+		case t_sep:	/* These two cases are missing from the enum, they are not handled */
+		case t_func:	/* To pacify gcc -Wall, fall through here */
+			break;
+		}
+	}
+	fclose(fd);
+done:
+	free(cfname);
+
+	if (file_needs_update) {
+		write_cf();
+	}
 }
 
 static void init_conf_items(void)
