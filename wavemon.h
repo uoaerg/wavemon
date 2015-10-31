@@ -283,7 +283,6 @@ extern const char *we_version(void);
 extern const char *conf_ifname(void);
 extern void conf_get_interface_list(bool init);
 extern void iw_get_interface_list(char** if_list, size_t max_entries);
-extern void dump_parameters(void);
 
 /*
  *	Timers

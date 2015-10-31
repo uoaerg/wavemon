@@ -531,18 +531,14 @@ static void init_conf_items(void)
 
 void getconf(int argc, char *argv[])
 {
-	int arg, dump = 0, help = 0, version = 0;
+	int arg, help = 0, version = 0;
 
 	conf_get_interface_list(true);
 	init_conf_items();
 	read_cf();
 
-	while ((arg = getopt(argc, argv, "dghi:rv")) >= 0) {
+	while ((arg = getopt(argc, argv, "ghi:rv")) >= 0) {
 		switch (arg) {
-		case 'd':
-			if (if_list[0])
-				dump++;
-			break;
 		case 'g':
 			conf.check_geometry = true;
 			break;
@@ -580,11 +576,9 @@ void getconf(int argc, char *argv[])
 		printf("  -i <ifname>   Use specified network interface (default: auto)\n");
 		printf("  -r            Generate random levels (for testing purposes)\n");
 		printf("  -v            Print version number\n");
-	} else if (dump) {
-		dump_parameters();
 	}
 
-	if (version || help || dump)
+	if (version || help)
 		exit(EXIT_SUCCESS);
 	else if (if_list[0] == NULL)
 		err_quit("no supported wireless interfaces found");
