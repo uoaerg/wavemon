@@ -146,7 +146,6 @@ static void read_cf(void)
 		err_sys("can not read configuration file '%s'", cfname);
 
 	for (lnum = 1; fgets(tmp, sizeof(tmp), fd); lnum++) {
-
 		lp = tmp + strspn(tmp, " ");
 		if (*lp == '#' || *lp == '\n')
 			continue;
@@ -222,18 +221,12 @@ static void write_cf(void)
 	struct conf_item *ci = NULL;
 	char *lp, *cp;
 	int add, i;
-	FILE *fd;
 	char *cfname = get_confname();
 	int cfld = ll_create();
+	FILE *fd = fopen(cfname, "w");
 
-	if (access(cfname, F_OK) == 0) {
-		fd = fopen(cfname, "r");
-		if (fd == NULL)
-			err_sys("can not read configuration file '%s'", cfname);
-		while (fgets(tmp, sizeof(tmp), fd))
-			ll_push(cfld, "s", tmp);
-		fclose(fd);
-	}
+	if (fd == NULL)
+		err_sys("failed to open configuration file '%s'", cfname);
 
 	for (ll_reset(conf_items); (ci = ll_getall(conf_items)); ) {
 		if (ci->type != t_sep && ci->type != t_func &&
@@ -283,10 +276,6 @@ static void write_cf(void)
 			}
 		}
 	}
-
-	fd = fopen(cfname, "w");
-	if (fd == NULL)
-		err_sys("can not write to configuration file '%s'", cfname);
 
 	for (ll_reset(cfld); (lp = ll_getall(cfld)); )
 		fputs(lp, fd);
@@ -546,7 +535,6 @@ void getconf(int argc, char *argv[])
 			version++;
 			break;
 		default:
-			/* bad argument. bad bad */
 			exit(EXIT_FAILURE);
 		}
 	}
