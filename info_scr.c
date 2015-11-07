@@ -51,7 +51,7 @@ void sampling_do_poll(void)
 static void display_levels(void)
 {
 	static float qual, signal, noise, ssnr;
-	int8_t nscale[2]  = { cur.dbm.signal - 20, cur.dbm.signal },
+	int8_t nscale[2] = { cur.dbm.signal - 20, cur.dbm.signal },
 	     lvlscale[2] = { -40, -20};
 	char tmp[0x100];
 	int line;
@@ -125,7 +125,7 @@ static void display_levels(void)
 	}
 
 	if (noise_data_valid && sig_level != 0) {
-		ssnr = ewma(ssnr, cur.dbm.signal - ls.survey.noise,
+		ssnr = ewma(ssnr, sig_level - ls.survey.noise,
 				  conf.meter_decay / 100.0);
 
 		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,

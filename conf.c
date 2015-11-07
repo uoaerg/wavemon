@@ -64,10 +64,10 @@ struct wavemon_conf conf = {
 	.cisco_mac		= false,
 	.override_bounds	= false,
 
-	.sig_min		= -102,
-	.sig_max		= 10,
-	.noise_min		= -102,
-	.noise_max		= 10,
+	.sig_min		= -100,
+	.sig_max		= -10,
+	.noise_min		= -120,
+	.noise_max		= -40,
 
 	.scan_sort_order	= SO_CHAN_SIG,
 	.scan_sort_asc		= false,
@@ -261,11 +261,15 @@ static void read_cf(void)
 				err_quit("parse error in %s, line %d: integer value expected, '%s' found instead",
 					 cfname, lnum, rv);
 			} else if (v_int > ci->max) {
-				err_quit("parse error in %s, line %d: value exceeds maximum of %d",
+				err_msg("%s, line %d: value exceeds maximum of %d - using maximum",
 					 cfname, lnum, (int)ci->max);
+				*ci->v.i = ci->max;
+				file_needs_update = true;
 			} else if (v_int < ci->min) {
-				err_quit("parse error in %s, line %d: value is below minimum of %d",
+				err_msg("%s, line %d: value is below minimum of %d - using minimum",
 					 cfname, lnum, (int)ci->min);
+				*ci->v.i = ci->min;
+				file_needs_update = true;
 			} else {
 				*ci->v.i = v_int;
 			}
@@ -402,8 +406,8 @@ static void init_conf_items(void)
 	item->cfname	= strdup("min_signal_level");
 	item->type	= t_int;
 	item->v.i	= &conf.sig_min;
-	item->min	= -128;
-	item->max	= -60;
+	item->min	= -100;
+	item->max	= -39;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
@@ -414,8 +418,8 @@ static void init_conf_items(void)
 	item->cfname	= strdup("max_signal_level");
 	item->type	= t_int;
 	item->v.i	= &conf.sig_max;
-	item->min	= -59;
-	item->max	= 120;
+	item->min	= -40;
+	item->max	= -10;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
@@ -426,8 +430,8 @@ static void init_conf_items(void)
 	item->cfname	= strdup("min_noise_level");
 	item->type	= t_int;
 	item->v.i	= &conf.noise_min;
-	item->min	= -128;
-	item->max	= -60;
+	item->min	= -120;
+	item->max	= -69;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
@@ -438,8 +442,8 @@ static void init_conf_items(void)
 	item->cfname	= strdup("max_noise_level");
 	item->type	= t_int;
 	item->v.i	= &conf.noise_max;
-	item->min	= -60;
-	item->max	= 120;
+	item->min	= -70;
+	item->max	= -40;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
