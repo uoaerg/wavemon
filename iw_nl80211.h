@@ -16,7 +16,8 @@
 
 #define BIT(x) (1ULL<<(x))		/* from iw:iw.h */
 
-/** struct msg_attribute - attributes to nla_put into the message
+/**
+ * struct msg_attribute - attributes to nla_put into the message
  * @type:	type of the attribute
  * @len:	attribute length
  * @data:	pointer to data area of length @len
@@ -119,12 +120,14 @@ extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
  * @beacon_int:	      beacon interval in Time Units of 1024usec
  * @dtim_period:      DTIM period for beaconing
  * @beacon_avg_sig:   average beacon signal (in dBm)
- * @beacons:	      number of beacons received
+ * @beacons:          number of beacons received
  * @beacon_loss:      count of times beacon loss was detected
- * @signal:           signal strength in dBm
- * @signal_avg:	      average signal strength in dBm
- * @tx_bitrate:	      string describing current TX bitrate
- * @rx_bitrate:	      string describing current RX bitrate
+ * @signal:           signal strength in dBm (0 if not present)
+ * @signal_avg:       average signal strength in dBm
+ * @bss_signal:       signal strength of BSS probe in dBm (or 0)
+ * @bss_signal_qual:  unitless signal strength of BSS probe, 0..100
+ * @tx_bitrate:       string describing current TX bitrate
+ * @rx_bitrate:       string describing current RX bitrate
  * @authorized:       FIXME
  * @authenticated:    FIXME
  * @long_preamble:    whether using long or short preamble
@@ -161,6 +164,9 @@ struct iw_nl80211_linkstat {
 	int8_t			signal,
 				signal_avg;
 
+	int8_t			bss_signal;
+	uint8_t			bss_signal_qual;
+
 	char			tx_bitrate[100],
 				rx_bitrate[100];
 
@@ -177,6 +183,7 @@ struct iw_nl80211_linkstat {
 	struct iw_nl80211_survey	survey;
 };
 extern void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
+extern void iw_cache_update(struct iw_nl80211_linkstat *ls);
 
 /* Indicate whether @ls contains usable channel survey data */
 static inline bool iw_nl80211_have_survey_data(struct iw_nl80211_linkstat *ls)

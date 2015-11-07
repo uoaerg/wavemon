@@ -45,16 +45,22 @@ void sampling_do_poll(void)
 {
 	iw_getstat(&cur);
 	iw_nl80211_get_linkstat(&ls);
-	iw_cache_update(&cur, &ls);
+	iw_cache_update(&ls);
 }
 
 static void display_levels(void)
 {
+	static float qual, signal, noise, ssnr;
 	char nscale[2]   = { cur.dbm.signal - 20, cur.dbm.signal },
 	     lvlscale[2] = { -40, -20};
 	char tmp[0x100];
-	static float qual, signal, noise, ssnr;
 	int line;
+	bool noise_data_valid = iw_nl80211_have_survey_data(&ls);
+	int sig_level = ls.signal_avg ?: ls.signal;
+
+	/* See comments in iw_cache_update */
+	if (sig_level == 0)
+		sig_level = ls.bss_signal;
 
 	for (line = 1; line <= WH_LEVEL; line++)
 		mvwclrtoborder(w_levels, line, 1);
@@ -68,7 +74,7 @@ static void display_levels(void)
 	line = 1;
 
 	/* Noise data is rare. Use the space for spreading out. */
-	if (!iw_nl80211_have_survey_data(&ls))
+	if (!noise_data_valid)
 		line++;
 
 	if (cur.stat.qual.updated & IW_QUAL_QUAL_INVALID) {
@@ -88,11 +94,11 @@ static void display_levels(void)
 
 	/* Spacer */
 	line++;
-	if (!iw_nl80211_have_survey_data(&ls))
+	if (!noise_data_valid)
 		line++;
 
-	if (!(cur.stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
-		signal = ewma(signal, cur.dbm.signal, conf.meter_decay / 100.0);
+	if (sig_level != 0) {
+		signal = ewma(signal, sig_level, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
 		sprintf(tmp, "%.0f dBm (%s)      ", signal, dbm2units(signal));
@@ -110,7 +116,7 @@ static void display_levels(void)
 
 	line++;
 
-	if (iw_nl80211_have_survey_data(&ls)) {
+	if (noise_data_valid) {
 		noise = ewma(noise, ls.survey.noise, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");

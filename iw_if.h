@@ -207,11 +207,7 @@ struct iw_stat {
 /*
  * 	Periodic sampling of wireless statistics via timer alarm
  */
-/* FIXME: remove forward declaration */
-struct iw_nl80211_linkstat;
-
 extern void iw_getstat(struct iw_stat *stat);
-extern void iw_cache_update(struct iw_stat *iw, struct iw_nl80211_linkstat *ls);
 
 extern void sampling_init(void (*sampling_handler)(int));
 extern void sampling_do_poll(void);

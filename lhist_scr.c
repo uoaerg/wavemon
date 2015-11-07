@@ -118,24 +118,34 @@ static struct iw_levelstat iw_cache_get(const uint32_t index)
 	return iw_stats_cache[(count - index) % IW_STACKSIZE];
 }
 
-// XXX FIXME: rewrite in terms of struct iw_nl80211_linkstat
-void iw_cache_update(struct iw_stat *iw,
-		     struct iw_nl80211_linkstat *ls)
+void iw_cache_update(struct iw_nl80211_linkstat *ls)
 {
 	static struct iw_levelstat prev, avg = IW_LSTAT_INIT;
 	static int slot;
+	int sig_level = ls->signal_avg ?: ls->signal;
 
-	if (! (iw->stat.qual.updated & IW_QUAL_LEVEL_INVALID)) {
+	/*
+	 * If hardware does not support dBm signal level, it will not
+	 * be filled in, and show up as 0. Try to fall back to the BSS
+	 * probe where again a 0 dBm value reflects 'not initialized'.
+	 */
+	if (sig_level == 0)
+		sig_level = ls->bss_signal;
+
+	if (sig_level == 0) {
+		avg.flags  |= IW_QUAL_LEVEL_INVALID;
+	} else {
 		avg.flags  &= ~IW_QUAL_LEVEL_INVALID;
-		avg.signal += iw->dbm.signal / conf.slotsize;
-		track_extrema(iw->dbm.signal, &e_signal);
+		avg.signal += (float)sig_level / conf.slotsize;
+		track_extrema(sig_level, &e_signal);
 	}
 
 	if (iw_nl80211_have_survey_data(ls)) {
 		avg.flags  &= ~IW_QUAL_NOISE_INVALID;
 		avg.noise += (float)ls->survey.noise / conf.slotsize;
 		track_extrema(ls->survey.noise, &e_noise);
-		track_extrema(iw->dbm.signal - ls->survey.noise, &e_snr);
+		if (! (avg.flags & IW_QUAL_LEVEL_INVALID))
+			track_extrema(sig_level - ls->survey.noise, &e_snr);
 	}
 
 	if (++slot >= conf.slotsize) {

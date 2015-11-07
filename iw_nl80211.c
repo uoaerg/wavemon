@@ -351,6 +351,14 @@ static int link_handler(struct nl_msg *msg, void *arg)
 	if (!bss[NL80211_BSS_STATUS])
 		return NL_SKIP;
 
+	if (bss[NL80211_BSS_SIGNAL_UNSPEC])
+		ls->bss_signal_qual = nla_get_u8(bss[NL80211_BSS_SIGNAL_UNSPEC]);
+
+	if (bss[NL80211_BSS_SIGNAL_MBM]) {
+		int s = nla_get_u32(bss[NL80211_BSS_SIGNAL_MBM]);
+		ls->bss_signal = s / 100;
+	}
+
 	ls->status = nla_get_u32(bss[NL80211_BSS_STATUS]);
 	switch (ls->status) {
 	case NL80211_BSS_STATUS_ASSOCIATED:	/* apparently no longer used */
