@@ -23,7 +23,7 @@
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static struct timer dyn_updates;
-static struct iw_stat cur;
+struct iw_range	range;
 static struct iw_nl80211_linkstat ls;
 
 void sampling_init(void (*sampling_handler)(int))
@@ -32,7 +32,7 @@ void sampling_init(void (*sampling_handler)(int))
 	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
 
 	xsignal(SIGALRM, SIG_IGN);
-	iw_getinf_range(conf_ifname(), &cur.range);
+	iw_getinf_range(conf_ifname(), &range);
 	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
 	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
 	xsignal(SIGALRM, sampling_handler);
@@ -43,7 +43,6 @@ void sampling_init(void (*sampling_handler)(int))
 
 void sampling_do_poll(void)
 {
-	iw_getstat(&cur);
 	iw_nl80211_get_linkstat(&ls);
 	iw_cache_update(&ls);
 }
@@ -57,10 +56,12 @@ static void display_levels(void)
 	 *        solution using 3 levels of different colour.
 	 */
 	int8_t nscale[2] = { conf.noise_min, conf.noise_max },
-	     lvlscale[2] = { 0, 0.7 * cur.range.max_qual.qual };
+	     lvlscale[2] = { 0, 0.7 * range.max_qual.qual };
 	char tmp[0x100];
 	int line;
 	bool noise_data_valid = iw_nl80211_have_survey_data(&ls);
+	int sig_qual = -1;
+	int sig_qual_max = range.max_qual.qual;
 	int sig_level = ls.signal_avg ?: ls.signal;
 
 	/* See comments in iw_cache_update */
@@ -70,7 +71,21 @@ static void display_levels(void)
 	for (line = 1; line <= WH_LEVEL; line++)
 		mvwclrtoborder(w_levels, line, 1);
 
-	if ((cur.stat.qual.updated & IW_QUAL_ALL_INVALID) == IW_QUAL_ALL_INVALID) {
+	if (ls.bss_signal_qual) {
+		/* BSS_SIGNAL_UNSPEC is scaled 0..100 */
+		sig_qual     = ls.bss_signal_qual;
+		sig_qual_max = 100;
+	} else if (sig_level) {
+		if (sig_level < -110)
+			sig_qual = 0;
+		else if (sig_level > -40)
+			sig_qual = 70;
+		else
+			sig_qual = sig_level + 110;
+		sig_qual_max = 70;
+	}
+	
+	if (sig_qual == -1 && !sig_level && !noise_data_valid) {
 		wattron(w_levels, A_BOLD);
 		waddstr_center(w_levels, (WH_LEVEL + 1)/2, "NO INTERFACE DATA");
 		goto done_levels;
@@ -82,19 +97,18 @@ static void display_levels(void)
 	if (!noise_data_valid)
 		line++;
 
-	if (cur.stat.qual.updated & IW_QUAL_QUAL_INVALID) {
+	if (sig_qual == -1) {
 		line++;
 	} else {
-		qual = ewma(qual, cur.stat.qual.qual, conf.meter_decay / 100.0);
+		qual = ewma(qual, sig_qual, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "link quality: ");
-		sprintf(tmp, "%0.f%%  ", (1e2 * qual)/cur.range.max_qual.qual);
+		sprintf(tmp, "%0.f%%  ", (1e2 * qual)/sig_qual_max);
 		waddstr_b(w_levels, tmp);
-		sprintf(tmp, "(%0.f/%d)  ", qual, cur.range.max_qual.qual);
+		sprintf(tmp, "(%0.f/%d)  ", qual, sig_qual_max);
 		waddstr(w_levels, tmp);
 
-		waddbar(w_levels, line++, qual, 0, cur.range.max_qual.qual,
-			lvlscale, true);
+		waddbar(w_levels, line++, qual, 0, sig_qual_max, lvlscale, true);
 	}
 
 	/* Spacer */
@@ -106,7 +120,7 @@ static void display_levels(void)
 		signal = ewma(signal, sig_level, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
-		sprintf(tmp, "%.0f dBm (%s)      ", signal, dbm2units(signal));
+		sprintf(tmp, "%.0f %d dBm (%s)      ", signal, sig_qual, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
 
 		waddbar(w_levels, line, signal, conf.sig_min, conf.sig_max,
@@ -227,7 +241,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	char tmp[0x100];
 	int i;
 
-	dyn_info_get(&info, conf_ifname(), &cur.range);
+	dyn_info_get(&info, conf_ifname(), &range);
 	iw_nl80211_getifstat(&ifs);
 	iw_nl80211_getreg(&ir);
 
@@ -236,8 +250,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	 */
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
-	if (cur.range.enc_capa & IW_WPA_MASK)
-		sprintf(tmp, " (%s, %s)", info.name, format_wpa(&cur.range));
+	if (range.enc_capa & IW_WPA_MASK)
+		sprintf(tmp, " (%s, %s)", info.name, format_wpa(&range));
 	else
 		sprintf(tmp, " (%s)", info.name);
 	waddstr(w_if, tmp);
@@ -414,7 +428,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			sprintf(tmp, "%d dBm", info.sens);
 		else
 			sprintf(tmp, "%d/%d", info.sens,
-				cur.range.sensitivity);
+				range.sensitivity);
 		waddstr_b(w_info, tmp);
 	}
 
@@ -423,7 +437,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	wmove(w_info, 5, 1);
 	waddstr(w_info, "power mgt: ");
 	if (info.cap_power)
-		waddstr_b(w_info, format_power(&info.power, &cur.range));
+		waddstr_b(w_info, format_power(&info.power, &range));
 	else
 		waddstr(w_info, "n/a");
 
@@ -445,7 +459,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	wmove(w_info, 6, 1);
 	waddstr(w_info, "retry: ");
 	if (info.cap_retry)
-		waddstr_b(w_info, format_retry(&info.retry, &cur.range));
+		waddstr_b(w_info, format_retry(&info.retry, &range));
 	else
 		waddstr(w_info, "n/a");
 
