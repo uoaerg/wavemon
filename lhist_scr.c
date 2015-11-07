@@ -132,6 +132,7 @@ void iw_cache_update(struct iw_stat *iw,
 	}
 
 	if (iw_nl80211_have_survey_data(ls)) {
+		avg.flags  &= ~IW_QUAL_NOISE_INVALID;
 		avg.noise += (float)ls->survey.noise / conf.slotsize;
 		track_extrema(ls->survey.noise, &e_noise);
 		track_extrema(iw->dbm.signal - ls->survey.noise, &e_snr);
