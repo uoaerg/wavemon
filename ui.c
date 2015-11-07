@@ -127,7 +127,7 @@ void waddbar(WINDOW *win, int y, float v, float min, float max,
 }
 
 void waddthreshold(WINDOW *win, int y, float v, float tv,
-		   float minv, float maxv, char *cscale, chtype tch)
+		   float minv, float maxv, int8_t *cscale, chtype tch)
 {
 	if (tv > minv && tv < maxv) {
 		if (v > tv)

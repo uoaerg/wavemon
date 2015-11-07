@@ -238,7 +238,7 @@ extern const char *curtail(const char *str, const char *sep, int len);
 extern void waddbar(WINDOW *win, int y, float v, float min, float max,
 		    int8_t *cscale, bool rev);
 extern void waddthreshold(WINDOW *win, int y, float v, float tv,
-			  float minv, float maxv, char *cscale, chtype tch);
+			  float minv, float maxv, int8_t *cscale, chtype tch);
 enum colour_pair {
 	CP_STANDARD = 1,
 	CP_SCALEHI,
