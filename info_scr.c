@@ -353,7 +353,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	/* Channel data */
 	wmove(w_info, 3, 1);
-	waddstr(w_info, "channel survey: ");
+	waddstr(w_info, "channel ");
 	if (iw_nl80211_have_survey_data(&ls)) {
 		waddstr(w_info, "active: ");
 		waddstr_b(w_info, pretty_time_ms(ls.survey.time.active));
@@ -377,7 +377,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr_b(w_info, pretty_time_ms(ls.survey.time.scan));
 		}
 	} else {
-		waddstr(w_info, "n/a");
+		waddstr(w_info, "survey: n/a");
 	}
 
 	/* Beacons */
