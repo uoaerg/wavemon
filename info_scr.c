@@ -51,8 +51,13 @@ void sampling_do_poll(void)
 static void display_levels(void)
 {
 	static float qual, signal, noise, ssnr;
-	int8_t nscale[2] = { cur.dbm.signal - 20, cur.dbm.signal },
-	     lvlscale[2] = { -40, -20};
+	/*
+	 * FIXME: revise the scale implementation. It does not work
+	 *        satisfactorily, maybe it is better to have a simple
+	 *        solution using 3 levels of different colour.
+	 */
+	int8_t nscale[2] = { conf.noise_min, conf.noise_max },
+	     lvlscale[2] = { 0, 0.7 * cur.range.max_qual.qual };
 	char tmp[0x100];
 	int line;
 	bool noise_data_valid = iw_nl80211_have_survey_data(&ls);
@@ -122,14 +127,14 @@ static void display_levels(void)
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");
 		sprintf(tmp, "%.0f dBm (%s)", noise, dbm2units(noise));
 		waddstr_b(w_levels, tmp);
+
+		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
+			nscale, false);
 	}
 
 	if (noise_data_valid && sig_level != 0) {
 		ssnr = ewma(ssnr, sig_level - ls.survey.noise,
 				  conf.meter_decay / 100.0);
-
-		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
-			nscale, false);
 
 		mvwaddstr(w_levels, line++, 1, "SNR:           ");
 		sprintf(tmp, "%.0f dB", ssnr);
