@@ -130,6 +130,7 @@ extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
  * @rx_bitrate:       string describing current RX bitrate
  * @authorized:       FIXME
  * @authenticated:    FIXME
+ * @cts_protection:   whether CTS protection is set
  * @long_preamble:    whether using long or short preamble
  * @short_slot_time:  whether short slots are enabled
  * @wme:              Wireless Multimedia Extensions / Wi-Fi Multimedia
@@ -172,6 +173,7 @@ struct iw_nl80211_linkstat {
 
 	bool			authorized:1,
 				authenticated:1,
+				cts_protection:1,
 				long_preamble:1,
 				short_slot_time:1,
 				wme:1,

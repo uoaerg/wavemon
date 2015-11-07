@@ -508,7 +508,7 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 				     sinfo[NL80211_STA_INFO_BSS_PARAM],
 				     bss_policy) == 0) {
 			if (binfo[NL80211_STA_BSS_PARAM_CTS_PROT]) {
-				printf("CTS-protection");
+				ls->cts_protection = true;
 			}
 			if (binfo[NL80211_STA_BSS_PARAM_SHORT_PREAMBLE])
 				ls->long_preamble = false;

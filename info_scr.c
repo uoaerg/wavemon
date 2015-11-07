@@ -304,6 +304,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		}
 		waddstr_b(w_info, ether_lookup(&ls.bssid));
 		/* XXX FIXME: tidy up */
+		if (ls.cts_protection) {
+			waddstr(w_info, " CTS-Protection");
+		}
 #if 0
 		sprintf(tmp, " autho: %d authe %d wme %d mfp %d tdls %d",
 				ls.authorized, ls.authenticated, ls.wme, ls.mfp, ls.tdls);
