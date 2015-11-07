@@ -51,7 +51,7 @@ void sampling_do_poll(void)
 static void display_levels(void)
 {
 	static float qual, signal, noise, ssnr;
-	char nscale[2]   = { cur.dbm.signal - 20, cur.dbm.signal },
+	int8_t nscale[2]  = { cur.dbm.signal - 20, cur.dbm.signal },
 	     lvlscale[2] = { -40, -20};
 	char tmp[0x100];
 	int line;
@@ -122,7 +122,9 @@ static void display_levels(void)
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");
 		sprintf(tmp, "%.0f dBm (%s)", noise, dbm2units(noise));
 		waddstr_b(w_levels, tmp);
+	}
 
+	if (noise_data_valid && sig_level != 0) {
 		ssnr = ewma(ssnr, cur.dbm.signal - ls.survey.noise,
 				  conf.meter_decay / 100.0);
 
@@ -164,7 +166,10 @@ static void display_stats(void)
 	}
 
 	if (ls.expected_thru) {
-		sprintf(tmp, " (exp: %'u kB/s)",  ls.expected_thru);
+		if (ls.expected_thru >= 1024)
+			sprintf(tmp, " (exp: %.1f MB/s)",  ls.expected_thru/1024.0);
+		else
+			sprintf(tmp, " (exp: %u kB/s)",  ls.expected_thru);
 		waddstr(w_stats, tmp);
 	}
 

@@ -116,7 +116,7 @@ extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
  * @tx_bytes/packets: byte/packet counter for TX direction
  * @tx_retries:       TX retry counter
  * @tx_failed:        TX failure counter
- * @expected_thru:    expected throughput in kpbs
+ * @expected_thru:    expected throughput in kB/s
  * @beacon_int:	      beacon interval in Time Units of 1024usec
  * @dtim_period:      DTIM period for beaconing
  * @beacon_avg_sig:   average beacon signal (in dBm)

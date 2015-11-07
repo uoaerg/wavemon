@@ -236,7 +236,7 @@ extern void waddstr_center(WINDOW * win, int y, const char *s);
 extern const char *curtail(const char *str, const char *sep, int len);
 
 extern void waddbar(WINDOW *win, int y, float v, float min, float max,
-		    char *cscale, bool rev);
+		    int8_t *cscale, bool rev);
 extern void waddthreshold(WINDOW *win, int y, float v, float tv,
 			  float minv, float maxv, char *cscale, chtype tch);
 enum colour_pair {
@@ -261,7 +261,7 @@ enum colour_pair {
 	CP_SCAN_NON_AP
 };
 
-static inline int cp_from_scale(float value, const char *cscale, bool reverse)
+static inline int cp_from_scale(float value, int8_t const *cscale, bool reverse)
 {
 	enum colour_pair cp;
 

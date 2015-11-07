@@ -117,7 +117,7 @@ static double interpolate(const double val, const double min, const double max)
 }
 
 void waddbar(WINDOW *win, int y, float v, float min, float max,
-		    char *cscale, bool rev)
+		    int8_t *cscale, bool rev)
 {
 	chtype ch = '=' | A_BOLD | cp_from_scale(v, cscale, rev);
 	int len = MAXXLEN * interpolate(v, min, max);
