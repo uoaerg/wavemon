@@ -78,7 +78,7 @@ enum info_screen_geometry {
 #define MAXYLEN		(WAV_HEIGHT - 2)
 
 /* Number of seconds to display a warning message outside ncurses mode */
-#define WARN_DISPLAY_DELAY	3
+#define WARN_DISPLAY_DELAY	1
 
 /* Minimum SSID length */
 #define MAX_ESSID_LEN		16
