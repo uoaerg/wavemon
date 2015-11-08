@@ -128,8 +128,6 @@ extern void iw_nl80211_get_survey(struct iw_nl80211_survey *sd);
  * @bss_signal_qual:  unitless signal strength of BSS probe, 0..100
  * @tx_bitrate:       string describing current TX bitrate
  * @rx_bitrate:       string describing current RX bitrate
- * @authorized:       FIXME
- * @authenticated:    FIXME
  * @cts_protection:   whether CTS protection is set
  * @long_preamble:    whether using long or short preamble
  * @short_slot_time:  whether short slots are enabled
@@ -171,9 +169,7 @@ struct iw_nl80211_linkstat {
 	char			tx_bitrate[100],
 				rx_bitrate[100];
 
-	bool			authorized:1,
-				authenticated:1,
-				cts_protection:1,
+	bool			cts_protection:1,
 				long_preamble:1,
 				short_slot_time:1,
 				wme:1,

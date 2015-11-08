@@ -146,7 +146,7 @@ static void display_levels(void)
 			nscale, false);
 	}
 
-	if (noise_data_valid && sig_level != 0) {
+	if (noise_data_valid && sig_level) {
 		ssnr = ewma(ssnr, sig_level - ls.survey.noise,
 				  conf.meter_decay / 100.0);
 
@@ -303,15 +303,29 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, "station: ");
 		}
 		waddstr_b(w_info, ether_lookup(&ls.bssid));
-		/* XXX FIXME: tidy up */
-		if (ls.cts_protection) {
-			waddstr(w_info, " CTS-Protection");
+
+		if (ls.cts_protection | ls.wme | ls.mfp | ls.tdls) {
+			i = 0;
+			waddstr_b(w_info, " (");
+			if (ls.cts_protection) {
+				waddstr(w_info, "cts");
+				i++;
+			}
+			if (ls.wme) {
+				waddstr(w_info, (i ? " wme" : "wme"));
+				i++;
+			}
+			if (ls.mfp) {
+				waddstr(w_info, (i ? " mfp" : "mfp"));
+				i++;
+			}
+			if (ls.tdls) {
+				waddstr(w_info, (i ? " tdls" : "tdls"));
+				i++;
+			}
+			waddstr_b(w_info, ")");
 		}
-#if 0
-		sprintf(tmp, " autho: %d authe %d wme %d mfp %d tdls %d",
-				ls.authorized, ls.authenticated, ls.wme, ls.mfp, ls.tdls);
-		waddstr_b(w_info, tmp);
-#endif
+
 		if (ls.status == NL80211_BSS_STATUS_ASSOCIATED) {
 			waddstr_b(w_info, ",");
 			waddstr(w_info, " time: ");

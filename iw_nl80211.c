@@ -477,14 +477,6 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 		sta_flags = (struct nl80211_sta_flag_update *)
 			    nla_data(sinfo[NL80211_STA_INFO_STA_FLAGS]);
 
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_AUTHORIZED) &&
-		    sta_flags->set & BIT(NL80211_STA_FLAG_AUTHORIZED))
-			ls->authorized = true;
-
-		if (sta_flags->mask & BIT(NL80211_STA_FLAG_AUTHENTICATED) &&
-		    sta_flags->set & BIT(NL80211_STA_FLAG_AUTHENTICATED))
-			ls->authenticated = true;
-
 		if (sta_flags->mask & BIT(NL80211_STA_FLAG_SHORT_PREAMBLE) &&
 		    sta_flags->set & BIT(NL80211_STA_FLAG_SHORT_PREAMBLE))
 			ls->long_preamble = true;
