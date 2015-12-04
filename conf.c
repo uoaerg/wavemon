@@ -80,7 +80,7 @@ struct wavemon_conf conf = {
 };
 
 /** Populate interface list */
-void conf_get_interface_list(bool init)
+void conf_get_interface_list(void)
 {
 	char *old_if = NULL;
 	int idx;
@@ -92,8 +92,8 @@ void conf_get_interface_list(bool init)
 			free(if_list[idx]);
 	}
 	iw_get_interface_list(if_list, MAX_IFLIST_ENTRIES);
-	if (!if_list[0] && !init)
-		err_quit("no wireless interfaces found!");
+	if (!if_list[0])
+		err_quit("no supported wireless interfaces found!");
 
 	conf.if_idx = 0;
 	if (old_if) {
@@ -529,7 +529,7 @@ void getconf(int argc, char *argv[])
 {
 	int arg, help = 0, version = 0;
 
-	conf_get_interface_list(true);
+	conf_get_interface_list();
 	init_conf_items();
 	read_cf();
 
@@ -570,6 +570,4 @@ void getconf(int argc, char *argv[])
 
 	if (version || help)
 		exit(EXIT_SUCCESS);
-	else if (if_list[0] == NULL)
-		err_quit("no supported wireless interfaces found");
 }

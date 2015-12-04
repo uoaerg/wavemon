@@ -159,7 +159,7 @@ static int m_pref(WINDOW *w_conf, int list_offset, int active_item, int num_item
 void scr_conf_init(void)
 {
 	struct conf_item *item;
-	conf_get_interface_list(false);	/* may have changed in the meantime */
+	conf_get_interface_list();	/* may have changed in the meantime */
 
 	num_items = ll_size(conf_items);
 	w_conf    = newwin_title(0, WAV_HEIGHT, "Preferences", false);

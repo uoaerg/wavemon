@@ -280,7 +280,7 @@ static inline int cp_from_scale(float value, int8_t const *cscale, bool reverse)
  */
 extern const char *we_version(void);
 extern const char *conf_ifname(void);
-extern void conf_get_interface_list(bool init);
+extern void conf_get_interface_list(void);
 extern void iw_get_interface_list(char** if_list, size_t max_entries);
 
 /*
