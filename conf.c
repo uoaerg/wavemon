@@ -149,10 +149,11 @@ static void write_cf(void)
 				sprintf(rv, "%d", *ci->v.i);
 				break;
 			case t_list:
+				if (!argv_count(ci->list))
+					continue;
 				sprintf(rv, "%s", ci->list[*ci->v.i]);
 				str_tolower(rv);
 				break;
-				/* Fall through, the rest are dummy statements to pacify gcc -Wall */
 			case t_sep:
 			case t_func:
 				break;
@@ -275,7 +276,10 @@ static void read_cf(void)
 			}
 			break;
 		case t_list:
-			v_int = ci->list ? argv_find(ci->list, rv) : -1;
+			assert(ci->list != NULL);
+			if (!argv_count(ci->list))
+				err_quit("no usable %s candidates available for '%s'", ci->name, rv);
+			v_int = argv_find(ci->list, rv);
 			if (v_int < 0) {
 				err_msg("%s, line %d: '%s = %s' is not valid - using defaults",
 					 cfname, lnum, lv, rv);
@@ -283,8 +287,8 @@ static void read_cf(void)
 			} else {
 				*ci->v.i = v_int;
 			}
-		case t_sep:	/* These two cases are missing from the enum, they are not handled */
-		case t_func:	/* To pacify gcc -Wall, fall through here */
+		case t_sep:
+		case t_func:
 			break;
 		}
 	}
