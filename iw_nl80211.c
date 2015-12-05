@@ -4,7 +4,6 @@
 #include "wavemon.h"
 #include <net/if.h>
 #include <errno.h>
-#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -29,33 +28,33 @@ int handle_cmd(struct cmd *cmd)
 	if (!cmd->sk) {
 		cmd->sk = nl_socket_alloc();
 		if (!cmd->sk)
-			err(1, "Failed to allocate netlink socket");
+			err_sys("failed to allocate netlink socket");
 
 		/* NB: not setting sk buffer size, using default 32Kb */
 		if (genl_connect(cmd->sk))
-			err(1, "failed to connect to GeNetlink");
+			err_sys("failed to connect to GeNetlink");
 	}
 
 	if (nl80211_id < 0) {
 		nl80211_id = genl_ctrl_resolve(cmd->sk, "nl80211");
 		if (nl80211_id < 0)
-			err(1, "nl80211 not found");
+			err_sys("nl80211 not found");
 	}
 
 	ifindex = if_nametoindex(conf_ifname());
 	if (ifindex == 0 && errno)
-		err(1, "failed to look up interface %s", conf_ifname());
+		err_sys("failed to look up interface %s", conf_ifname());
 
 	/*
 	 * Message Preparation
 	 */
 	msg = nlmsg_alloc();
 	if (!msg)
-		err(2, "failed to allocate netlink message");
+		err_sys("failed to allocate netlink message");
 
 	cb = nl_cb_alloc(0 ? NL_CB_DEBUG : NL_CB_DEFAULT);
 	if (!cb)
-		err(2, "failed to allocate netlink callback");
+		err_sys("failed to allocate netlink callback");
 
 	genlmsg_put(msg, 0, 0, nl80211_id, 0, cmd->flags, cmd->cmd, 0);
 
@@ -75,7 +74,7 @@ int handle_cmd(struct cmd *cmd)
 
 	ret = nl_send_auto_complete(cmd->sk, msg);
 	if (ret < 0)
-		err(2, "failed to send station-dump message");
+		err_sys("failed to send station-dump message");
 
 	/*-------------------------------------------------------------------------
 	 * Receive loop
@@ -93,7 +92,8 @@ int handle_cmd(struct cmd *cmd)
 	return 0;
 
 nla_put_failure:
-	err(2, "failed to add attribute to netlink message");
+	err_sys("failed to add attribute to netlink message");
+	return 1;
 }
 
 /*
