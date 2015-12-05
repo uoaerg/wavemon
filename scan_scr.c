@@ -36,29 +36,38 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 {
 	size_t len = 0;
 
-	if (!(cur->qual.updated & (IW_QUAL_QUAL_INVALID|IW_QUAL_LEVEL_INVALID)))
-		len += snprintf(buf + len, buflen - len, "%3.0f%%, %.0f dBm",
-				1E2 * cur->qual.qual / sr.range.max_qual.qual,
-				cur->dbm.signal);
-	else if (!(cur->qual.updated & IW_QUAL_QUAL_INVALID))
-		len += snprintf(buf + len, buflen - len, "%2d/%d",
-				cur->qual.qual, sr.range.max_qual.qual);
-	else if (!(cur->qual.updated & IW_QUAL_LEVEL_INVALID))
-		len += snprintf(buf + len, buflen - len, "%.0f dBm",
-				cur->dbm.signal);
-	else
-		len += snprintf(buf + len, buflen - len, "? dBm");
+	if (cur->bss_signal) {
+		float sig_qual, sig_qual_max;
 
-	if (cur->freq < 1e3)
-		len += snprintf(buf + len, buflen - len, ", Chan %2.0f",
-				cur->freq);
-	else if (cur->chan >= 0)
-		len += snprintf(buf + len, buflen - len, ", %s %3d, %g MHz",
-				cur->freq < 5e9 ? "ch" : "CH",
-				cur->chan, cur->freq / 1e6);
+		if (cur->bss_signal_qual) {
+			/* BSS_SIGNAL_UNSPEC is scaled 0..100 */
+			sig_qual     = cur->bss_signal_qual;
+			sig_qual_max = 100;
+		} else {
+			if (cur->bss_signal < -110)
+				sig_qual = 0;
+			else if (cur->bss_signal > -40)
+				sig_qual = 70;
+			else
+				sig_qual = cur->bss_signal + 110;
+			sig_qual_max = 70;
+		}
+		len += snprintf(buf + len, buflen - len, "%3.0f%%, %d dBm",
+				(1E2 * sig_qual)/ sig_qual_max, cur->bss_signal);
+	} else if (cur->bss_signal_qual) {
+		len += snprintf(buf + len, buflen - len, "%2d/%d",
+				cur->bss_signal_qual, 100);
+	} else {
+		len += snprintf(buf + len, buflen - len, "? dBm");
+	}
+
+	if (cur->chan >= 0)
+		len += snprintf(buf + len, buflen - len, ", %s %3d, %d MHz",
+				cur->freq < 5e6 ? "ch" : "CH",
+				cur->chan, cur->freq);
 	else
 		len += snprintf(buf + len, buflen - len, ", %g GHz",
-				cur->freq / 1e9);
+				cur->freq / 1e3);
 
 	/* Access Points are marked by CP_SCAN_CRYPT/CP_SCAN_UNENC already */
 	if (cur->mode != IW_MODE_MASTER)

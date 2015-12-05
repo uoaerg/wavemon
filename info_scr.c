@@ -84,7 +84,7 @@ static void display_levels(void)
 			sig_qual = sig_level + 110;
 		sig_qual_max = 70;
 	}
-	
+
 	if (sig_qual == -1 && !sig_level && !noise_data_valid) {
 		wattron(w_levels, A_BOLD);
 		waddstr_center(w_levels, (WH_LEVEL + 1)/2, "NO INTERFACE DATA");

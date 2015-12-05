@@ -7,8 +7,18 @@
 #include "iw_if.h"
 #include <search.h>		/* lsearch(3) */
 
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "iw_nl80211.h"
+
+// FIXME: declarations
+extern void handle_cmd(struct cmd *cmd);
+
 #define MAX_SCAN_WAIT	10000	/* maximum milliseconds spent waiting */
 
+// FIXME: old WEXT stuff
 /*
  * Meta-data about all the additional standard Wireless Extension events
  * we know about.
@@ -60,492 +70,6 @@ struct iw_ioctl_description {
 	__u32 flags;		/* Special handling of the request */
 };
 
-/*
- * Meta-data about all the standard Wireless Extension request we
- * know about.
- */
-static const struct iw_ioctl_description standard_ioctl_descr[] = {
-	[SIOCSIWCOMMIT	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_NULL,
-	},
-	[SIOCGIWNAME	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_CHAR,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWNWID	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-		.flags		= IW_DESCR_FLAG_EVENT,
-	},
-	[SIOCGIWNWID	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWFREQ	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_FREQ,
-		.flags		= IW_DESCR_FLAG_EVENT,
-	},
-	[SIOCGIWFREQ	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_FREQ,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWMODE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_UINT,
-		.flags		= IW_DESCR_FLAG_EVENT,
-	},
-	[SIOCGIWMODE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_UINT,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWSENS	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWSENS	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWRANGE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_NULL,
-	},
-	[SIOCGIWRANGE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= sizeof(struct iw_range),
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWPRIV	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_NULL,
-	},
-	[SIOCGIWPRIV	- SIOCIWFIRST] = { /* (handled directly by us) */
-		.header_type	= IW_HEADER_TYPE_NULL,
-	},
-	[SIOCSIWSTATS	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_NULL,
-	},
-	[SIOCGIWSTATS	- SIOCIWFIRST] = { /* (handled directly by us) */
-		.header_type	= IW_HEADER_TYPE_NULL,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWSPY	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= sizeof(struct sockaddr),
-		.max_tokens	= IW_MAX_SPY,
-	},
-	[SIOCGIWSPY	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= sizeof(struct sockaddr) +
-				  sizeof(struct iw_quality),
-		.max_tokens	= IW_MAX_SPY,
-	},
-	[SIOCSIWTHRSPY	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= sizeof(struct iw_thrspy),
-		.min_tokens	= 1,
-		.max_tokens	= 1,
-	},
-	[SIOCGIWTHRSPY	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= sizeof(struct iw_thrspy),
-		.min_tokens	= 1,
-		.max_tokens	= 1,
-	},
-	[SIOCSIWAP	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_ADDR,
-	},
-	[SIOCGIWAP	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_ADDR,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWMLME	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.min_tokens	= sizeof(struct iw_mlme),
-		.max_tokens	= sizeof(struct iw_mlme),
-	},
-	[SIOCGIWAPLIST	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= sizeof(struct sockaddr) +
-				  sizeof(struct iw_quality),
-		.max_tokens	= IW_MAX_AP,
-		.flags		= IW_DESCR_FLAG_NOMAX,
-	},
-	[SIOCSIWSCAN	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.min_tokens	= 0,
-		.max_tokens	= sizeof(struct iw_scan_req),
-	},
-	[SIOCGIWSCAN	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_SCAN_MAX_DATA,
-		.flags		= IW_DESCR_FLAG_NOMAX,
-	},
-	[SIOCSIWESSID	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_ESSID_MAX_SIZE + 1,
-		.flags		= IW_DESCR_FLAG_EVENT,
-	},
-	[SIOCGIWESSID	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_ESSID_MAX_SIZE + 1,
-		.flags		= IW_DESCR_FLAG_DUMP,
-	},
-	[SIOCSIWNICKN	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_ESSID_MAX_SIZE + 1,
-	},
-	[SIOCGIWNICKN	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_ESSID_MAX_SIZE + 1,
-	},
-	[SIOCSIWRATE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWRATE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWRTS	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWRTS	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWFRAG	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWFRAG	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWTXPOW	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWTXPOW	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWRETRY	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWRETRY	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWENCODE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_ENCODING_TOKEN_MAX,
-		.flags		= IW_DESCR_FLAG_EVENT | IW_DESCR_FLAG_RESTRICT,
-	},
-	[SIOCGIWENCODE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_ENCODING_TOKEN_MAX,
-		.flags		= IW_DESCR_FLAG_DUMP | IW_DESCR_FLAG_RESTRICT,
-	},
-	[SIOCSIWPOWER	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWPOWER	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-#ifdef SIOCSIWMODUL
-	[SIOCSIWMODUL	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-#endif
-#ifdef SIOCGIWMODUL
-	[SIOCGIWMODUL	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-#endif
-	[SIOCSIWGENIE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_GENERIC_IE_MAX,
-	},
-	[SIOCGIWGENIE	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_GENERIC_IE_MAX,
-	},
-	[SIOCSIWAUTH	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCGIWAUTH	- SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_PARAM,
-	},
-	[SIOCSIWENCODEEXT - SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.min_tokens	= sizeof(struct iw_encode_ext),
-		.max_tokens	= sizeof(struct iw_encode_ext) +
-				  IW_ENCODING_TOKEN_MAX,
-	},
-	[SIOCGIWENCODEEXT - SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.min_tokens	= sizeof(struct iw_encode_ext),
-		.max_tokens	= sizeof(struct iw_encode_ext) +
-				  IW_ENCODING_TOKEN_MAX,
-	},
-	[SIOCSIWPMKSA - SIOCIWFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.min_tokens	= sizeof(struct iw_pmksa),
-		.max_tokens	= sizeof(struct iw_pmksa),
-	},
-};
-
-static const struct iw_ioctl_description standard_event_descr[] = {
-	[IWEVTXDROP - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_ADDR,
-	},
-	[IWEVQUAL - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_QUAL,
-	},
-	[IWEVCUSTOM - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_CUSTOM_MAX,
-	},
-	[IWEVREGISTERED - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_ADDR,
-	},
-	[IWEVEXPIRED - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_ADDR,
-	},
-	[IWEVGENIE - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_GENERIC_IE_MAX,
-	},
-	[IWEVMICHAELMICFAILURE - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= sizeof(struct iw_michaelmicfailure),
-	},
-	[IWEVASSOCREQIE - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_GENERIC_IE_MAX,
-	},
-	[IWEVASSOCRESPIE - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= IW_GENERIC_IE_MAX,
-	},
-	[IWEVPMKIDCAND - IWEVFIRST] = {
-		.header_type	= IW_HEADER_TYPE_POINT,
-		.token_size	= 1,
-		.max_tokens	= sizeof(struct iw_pmkid_cand),
-	},
-};
-
-struct stream_descr {
-	char *current;		/* Current event in stream of events */
-	char *value;		/* Current value in event */
-	char *end;		/* End of the stream */
-};
-
-/*
- * Extract the next event from the event stream.
- */
-static int iw_extract_event_stream(struct stream_descr *stream,
-				   struct iw_event *iwe, int we_version)
-{
-	const struct iw_ioctl_description *descr = NULL;
-	int event_type;
-	unsigned int event_len = 1;	/* Invalid */
-	unsigned cmd_index;	/* *MUST* be unsigned */
-	char *pointer;
-
-	if (stream->current + IW_EV_LCP_PK_LEN > stream->end)
-		return 0;
-
-	/* Extract the event header to get the event id.
-	 * Note : the event may be unaligned, therefore copy... */
-	memcpy((char *)iwe, stream->current, IW_EV_LCP_PK_LEN);
-
-	if (iwe->len <= IW_EV_LCP_PK_LEN)
-		return -1;
-
-	/* Get the type and length of that event */
-	if (iwe->cmd <= SIOCIWLAST) {
-		cmd_index = iwe->cmd - SIOCIWFIRST;
-		if (cmd_index < ARRAY_SIZE(standard_ioctl_descr))
-			descr = standard_ioctl_descr + cmd_index;
-	} else {
-		cmd_index = iwe->cmd - IWEVFIRST;
-		if (cmd_index < ARRAY_SIZE(standard_event_descr))
-			descr = standard_event_descr + cmd_index;
-	}
-
-	/* Unknown events -> event_type = 0  =>  IW_EV_LCP_PK_LEN */
-	event_type = descr ? descr->header_type : 0;
-	event_len  = event_type_size[event_type];
-
-	/* Check if we know about this event */
-	if (event_len <= IW_EV_LCP_PK_LEN) {
-		stream->current += iwe->len;			/* Skip to next event */
-		return 2;
-	}
-	event_len -= IW_EV_LCP_PK_LEN;
-
-	/* Fixup for earlier version of WE */
-	if (we_version <= 18 && event_type == IW_HEADER_TYPE_POINT)
-		event_len += IW_EV_POINT_OFF;
-
-	if (stream->value != NULL)
-		pointer = stream->value;			/* Next value in event */
-	else
-		pointer = stream->current + IW_EV_LCP_PK_LEN;	/* First value in event */
-
-	/* Copy the rest of the event (at least, fixed part) */
-	if (pointer + event_len > stream->end) {
-		stream->current += iwe->len;			/* Skip to next event */
-		return -2;
-	}
-
-	/* Fixup for WE-19 and later: pointer no longer in the stream */
-	/* Beware of alignment. Dest has local alignment, not packed */
-	if (we_version > 18 && event_type == IW_HEADER_TYPE_POINT)
-		memcpy((char *)iwe + IW_EV_LCP_LEN + IW_EV_POINT_OFF, pointer, event_len);
-	else
-		memcpy((char *)iwe + IW_EV_LCP_LEN, pointer, event_len);
-
-	/* Skip event in the stream */
-	pointer += event_len;
-
-	/* Special processing for iw_point events */
-	if (event_type == IW_HEADER_TYPE_POINT) {
-		unsigned int extra_len = iwe->len - (event_len + IW_EV_LCP_PK_LEN);
-
-		if (extra_len > 0) {
-			/* Set pointer on variable part (warning : non aligned) */
-			iwe->u.data.pointer = pointer;
-
-			/* Check that we have a descriptor for the command */
-			if (descr == NULL) {
-				/* Can't check payload -> unsafe... */
-				iwe->u.data.pointer = NULL;	/* Discard paylod */
-			} else {
-				unsigned int token_len = iwe->u.data.length * descr->token_size;
-				/*
-				 * Ugly fixup for alignment issues.
-				 * If the kernel is 64 bits and userspace 32 bits, we have an extra 4 + 4
-				 * bytes. Fixing that in the kernel would break 64 bits userspace.
-				 */
-				if (token_len != extra_len && extra_len >= 4) {
-					union iw_align_u16 {
-						__u16 value;
-						unsigned char byte[2];
-					} alt_dlen;
-					unsigned int alt_token_len;
-
-					/* Userspace seems to not always like unaligned access,
-					 * so be careful and make sure to align value.
-					 * I hope gcc won't play any of its aliasing tricks... */
-					alt_dlen.byte[0] = *(pointer);
-					alt_dlen.byte[1] = *(pointer + 1);
-					alt_token_len = alt_dlen.value * descr->token_size;
-
-					/* Verify that data is consistent if assuming 64 bit alignment... */
-					if (alt_token_len + 8 == extra_len) {
-
-						/* Ok, let's redo everything */
-						pointer -= event_len;
-						pointer += 4;
-
-						/* Dest has local alignment, not packed */
-						memcpy((char *)iwe + IW_EV_LCP_LEN + IW_EV_POINT_OFF, pointer, event_len);
-						pointer += event_len + 4;
-						token_len = alt_token_len;
-
-						/* We may have no payload */
-						if (alt_token_len)
-							iwe->u.data.pointer = pointer;
-						else
-							iwe->u.data.pointer = NULL;
-					}
-				}
-
-				/* Discard bogus events which advertise more tokens than they carry ... */
-				if (token_len > extra_len)
-					iwe->u.data.pointer = NULL;	/* Discard paylod */
-
-				/* Check that the advertised token size is not going to
-				 * produce buffer overflow to our caller... */
-				if (iwe->u.data.length > descr->max_tokens
-				    && !(descr->flags & IW_DESCR_FLAG_NOMAX))
-					iwe->u.data.pointer = NULL;	/* Discard payload */
-
-				/* Same for underflows... */
-				if (iwe->u.data.length < descr->min_tokens)
-					iwe->u.data.pointer = NULL;	/* Discard paylod */
-			}
-		} else {
-			/* No data */
-			iwe->u.data.pointer = NULL;
-		}
-
-		stream->current += iwe->len;			/* Go to next event */
-	} else {
-		/*
-		 * Ugly fixup for alignment issues.
-		 * If the kernel is 64 bits and userspace 32 bits, we have an extra 4 bytes.
-		 * Fixing that in the kernel would break 64 bits userspace.
-		 */
-		if (stream->value == NULL &&
-		    ((iwe->len - IW_EV_LCP_PK_LEN) % event_len == 4 ||
-		     (iwe->len == 12 && (event_type == IW_HEADER_TYPE_UINT ||
-					 event_type == IW_HEADER_TYPE_QUAL)))) {
-
-			pointer -= event_len;
-			pointer += 4;
-
-			/* Beware of alignment. Dest has local alignment, not packed */
-			memcpy((char *)iwe + IW_EV_LCP_LEN, pointer, event_len);
-			pointer += event_len;
-		}
-
-		if (pointer + event_len <= stream->current + iwe->len) {
-			stream->value = pointer;		/* Go to next value */
-		} else {
-			stream->value = NULL;
-			stream->current += iwe->len;		/* Go to next event */
-		}
-	}
-	return 1;
-}
-
-static void iw_extract_ie(struct iw_event *iwe, struct scan_entry *sr)
-{
-	const uint8_t wpa1_oui[3] = { 0x00, 0x50, 0xf2 };
-	uint8_t *buffer = iwe->u.data.pointer;
-	int ielen = 0, ietype, i;
-
-	/* Loop on each IE, each is min. 2 bytes TLV: IE-ID - Length - Value */
-	for (i = 0; i <= iwe->u.data.length - 2;  i += ielen + 2) {
-		ietype = buffer[i];
-		ielen  = buffer[i + 1];
-
-		switch (ietype) {
-		case 0x30:
-			if (ielen < 4)	/* make sure we have enough data */
-				continue;
-			sr->flags |= IW_ENC_CAPA_WPA2;
-			break;
-		case 0xdd:
-			/* Not all IEs that start with 0xdd are WPA1 */
-			if (ielen < 8 || memcmp(buffer + i + 2, wpa1_oui, 3) ||
-			    buffer[i + 5] != 1)
-				continue;
-			sr->flags |= IW_ENC_CAPA_WPA;
-			break;
-		}
-	}
-}
 /*----------------- End of code copied from iwlib -----------------------*/
 
 /*
@@ -561,7 +85,9 @@ static bool cmp_freq(const struct scan_entry *a, const struct scan_entry *b)
 /* Order by signal strength. */
 static bool cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
 {
-	return a->qual.level < b->qual.level;
+	if (!a->bss_signal && !b->bss_signal)
+		return a->bss_signal_qual < b->bss_signal_qual;
+	return a->bss_signal < b->bss_signal;
 }
 
 /* Order by ESSID, organize entries with same ESSID by frequency and signal. */
@@ -606,69 +132,55 @@ static bool (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) 
 	[SO_OPEN_SIG]	= cmp_open_sig
 };
 
-/**
- * Produce ranked list of scan results.
- * @ifname:     interface name to run scan on
- * @we_version: version of the WE extensions (needed internally)
- */
-static struct scan_entry *get_scan_list(const char *ifname, int we_version)
+// FIXME:
+void iw_nl80211_scan_trigger();
+void iw_nl80211_get_scan_data(struct scan_result *sr);
+
+/* stolen from iw:scan.c */
+int scan_dump_handler(struct nl_msg *msg, void *arg)
 {
-	struct scan_entry *head = NULL, **tailp = &head;
-	struct iwreq wrq;
-	int wait, waited = 0;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct scan_result *sr = (struct scan_result *)arg;
+	struct scan_entry *new = calloc(1, sizeof(*new));
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct nlattr *bss[NL80211_BSS_MAX + 1];
+	static struct nla_policy bss_policy[NL80211_BSS_MAX + 1] = {
+		[NL80211_BSS_TSF]                  = { .type = NLA_U64 },
+		[NL80211_BSS_FREQUENCY]            = { .type = NLA_U32 },
+		[NL80211_BSS_BSSID]                = { },
+		[NL80211_BSS_BEACON_INTERVAL]      = { .type = NLA_U16 },
+		[NL80211_BSS_CAPABILITY]           = { .type = NLA_U16 },
+		[NL80211_BSS_INFORMATION_ELEMENTS] = { },
+		[NL80211_BSS_SIGNAL_MBM]           = { .type = NLA_U32 },
+		[NL80211_BSS_SIGNAL_UNSPEC]        = { .type = NLA_U8  },
+		[NL80211_BSS_STATUS]               = { .type = NLA_U32 },
+		[NL80211_BSS_SEEN_MS_AGO]          = { .type = NLA_U32 },
+		[NL80211_BSS_BEACON_IES]           = { },
+	};
 
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
-	/*
-	 * Some drivers may return very large scan results, either because there
-	 * are many cells, or there are many large elements. Do not bother to
-	 * guess buffer size, use maximum u16 wrq.u.data.length size.
-	 */
-	char scan_buf[0xffff];
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
 
-	/* We are checking errno when returning NULL, so reset it here */
-	errno = 0;
+	if (!tb[NL80211_ATTR_BSS])
+		return NL_SKIP;
 
-	memset(&wrq, 0, sizeof(wrq));
-	strncpy(wrq.ifr_ifrn.ifrn_name, ifname, IFNAMSIZ);
-	if (ioctl(skfd, SIOCSIWSCAN, &wrq) < 0)
-		goto done;
+	if (nla_parse_nested(bss, NL80211_BSS_MAX,
+			     tb[NL80211_ATTR_BSS],
+			     bss_policy))
+		return NL_SKIP;
 
-	/* Larger initial timeout of 250ms between set and first get */
-	for (wait = 250; (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
-		struct timeval tv = { 0, wait * 1000 };
+	if (!bss[NL80211_BSS_BSSID])
+		return NL_SKIP;
 
-		while (select(0, NULL, NULL, NULL, &tv) < 0)
-			if (errno != EINTR && errno != EAGAIN)
-				return NULL;
+	new = calloc(1, sizeof(*new));
+	if (!new)
+		err_sys("failed to allocate scan entry");
 
-		wrq.u.data.pointer = scan_buf;
-		wrq.u.data.length  = sizeof(scan_buf);
-		wrq.u.data.flags   = 0;
-
-		if (ioctl(skfd, SIOCGIWSCAN, &wrq) == 0)
-			break;
-	}
-
-	if (wrq.u.data.length) {
-		struct iw_event iwe;
-		struct stream_descr stream;
-		struct scan_entry *new = NULL;
-		int f = 0;		/* Idea taken from waproamd */
-
-		memset(&stream, 0, sizeof(stream));
-		stream.current = scan_buf;
-		stream.end     = scan_buf + wrq.u.data.length;
-
-		while (iw_extract_event_stream(&stream, &iwe, we_version) > 0) {
-        		if (!new)
-				new = calloc(1, sizeof(*new));
-
+	// FIXME:
+#if 0
 			switch (iwe.cmd) {
 			case SIOCGIWAP:
                 		f = 1;
-				memcpy(&new->ap_addr, &iwe.u.ap_addr.sa_data, sizeof(new->ap_addr));
 				break;
 			case SIOCGIWESSID:
                 		f |= 2;
@@ -698,18 +210,142 @@ static struct scan_entry *get_scan_list(const char *ifname, int we_version)
 				iw_extract_ie(&iwe, new);
 				break;
 			}
-			if (f == 127) {
-				f      = 0;
-				*tailp = new;
-				tailp  = &new->next;
-				new    = NULL;
-			}
 		}
-		free(new);	/* may have been allocated, but not filled in */
+#endif
+	memcpy(&new->ap_addr, nla_data(bss[NL80211_BSS_BSSID]), sizeof(new->ap_addr));
+
+	/*
+	if (bss[NL80211_BSS_STATUS]) {
+		switch (nla_get_u32(bss[NL80211_BSS_STATUS])) {
+		case NL80211_BSS_STATUS_AUTHENTICATED:
+			printf(" -- authenticated");
+			break;
+		case NL80211_BSS_STATUS_ASSOCIATED:
+			printf(" -- associated");
+			break;
+		case NL80211_BSS_STATUS_IBSS_JOINED:
+			printf(" -- joined");
+			break;
+		default:
+			printf(" -- unknown status: %d",
+				nla_get_u32(bss[NL80211_BSS_STATUS]));
+			break;
+		}
 	}
-done:
-	close(skfd);
-	return head;
+	printf("\n");
+*/
+#ifdef __LATER
+	if (bss[NL80211_BSS_TSF]) {
+		unsigned long long tsf;
+		tsf = (unsigned long long)nla_get_u64(bss[NL80211_BSS_TSF]);
+		printf("\tTSF: %llu usec (%llud, %.2lld:%.2llu:%.2llu)\n",
+			tsf, tsf/1000/1000/60/60/24, (tsf/1000/1000/60/60) % 24,
+			(tsf/1000/1000/60) % 60, (tsf/1000/1000) % 60);
+	}
+	if (bss[NL80211_BSS_BEACON_INTERVAL])
+		printf("\tbeacon interval: %d TUs\n",
+			nla_get_u16(bss[NL80211_BSS_BEACON_INTERVAL]));
+	if (bss[NL80211_BSS_CAPABILITY]) {
+		__u16 capa = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
+		/*
+		printf("\tcapability:");
+
+		if (new->freq > 45000)
+			print_capa_dmg(capa);
+		else
+			print_capa_non_dmg(capa);
+		printf(" (0x%.4x)\n", capa);
+		*/
+	}
+
+	if (bss[NL80211_BSS_SEEN_MS_AGO]) {
+		int age = nla_get_u32(bss[NL80211_BSS_SEEN_MS_AGO]);
+		printf("\tlast seen: %d ms ago\n", age);
+	}
+
+#endif /* LATER */
+
+	if (bss[NL80211_BSS_FREQUENCY]) {
+		new->freq = nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
+		new->chan = ieee80211_frequency_to_channel(new->freq);
+	}
+
+	if (bss[NL80211_BSS_SIGNAL_UNSPEC])
+		new->bss_signal_qual = nla_get_u8(bss[NL80211_BSS_SIGNAL_UNSPEC]);
+
+
+	if (bss[NL80211_BSS_SIGNAL_MBM]) {
+		int s = nla_get_u32(bss[NL80211_BSS_SIGNAL_MBM]);
+		new->bss_signal = s / 100;
+	}
+
+	if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
+		unsigned char *ie = (unsigned char *)bss[NL80211_BSS_INFORMATION_ELEMENTS];
+		int ielen = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
+		uint8_t len = ie[1];
+
+ 		while (ielen >= 2 && ielen >= ie[1]) {
+		// FIXME: check min/max length
+		switch (ie[0]) {
+			case 0:
+				 print_ssid_escaped(new->essid, sizeof(new->essid),
+						 ie+2,
+						 ie[1]);
+		}
+#ifdef __HAVE_TIME_TO_DO_THIS_LATER
+                if (ie[0] < ARRAY_SIZE(ieprinters) &&
+                    ieprinters[ie[0]].name &&
+                    ieprinters[ie[0]].flags & BIT(ptype)) {
+                        print_ie(&ieprinters[ie[0]], ie[0], ie[1], ie + 2);
+                } else if (ie[0] == 221 /* vendor */) {
+                        print_vendor(ie[1], ie + 2, unknown, ptype);
+                } else if (unknown) {
+                        int i;
+
+                        printf("\tUnknown IE (%d):", ie[0]);
+                        for (i=0; i<ie[1]; i++)
+                                printf(" %.2x", ie[2+i]);
+                        printf("\n");
+                }
+#endif
+                ielen -= ie[1] + 2;
+                ie += ie[1] + 2;
+        	}
+	}
+	if (bss[NL80211_BSS_BEACON_IES]) {
+	//	printf("\tInformation elements from Beacon frame:\n");
+	}
+
+	pthread_mutex_lock(&sr->mutex);
+	new->next = sr->head;
+	sr->head  = new;
+	pthread_mutex_unlock(&sr->mutex);
+
+	return NL_SKIP;
+}
+
+// FIXME:
+static void get_scan_list(struct scan_result *sr)
+{
+	int wait, waited = 0;
+
+	/* We are checking errno when returning NULL, so reset it here */
+	errno = 0;
+
+	iw_nl80211_scan_trigger();
+
+	/* Larger initial timeout of 250ms between set and first get */
+	for (wait = 250; (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
+		struct timeval tv = { 0, wait * 1000 };
+
+		while (select(0, NULL, NULL, NULL, &tv) < 0)
+			if (errno != EINTR && errno != EAGAIN)
+				return;
+
+		break;
+	}
+	iw_nl80211_get_scan_data(sr);
+
 }
 
 /*
@@ -828,8 +464,9 @@ void *do_scan(void *sr_ptr)
 		sr->msg[0]        = '\0';
 		sr->max_essid_len = MAX_ESSID_LEN;
 		memset(&(sr->num), 0, sizeof(sr->num));
+		pthread_mutex_unlock(&sr->mutex);
 
-		sr->head = get_scan_list(conf_ifname(), sr->range.we_version_compiled);
+		get_scan_list(sr);
 		if (!sr->head) {
 			switch(errno) {
 			case EPERM:
@@ -877,8 +514,6 @@ void *do_scan(void *sr_ptr)
 				sr->max_essid_len = clamp(strlen(cur->essid),
 							  sr->max_essid_len,
 							  IW_ESSID_MAX_SIZE);
-			iw_sanitize(&sr->range, &cur->qual, &cur->dbm);
-			cur->chan = freq_to_channel(cur->freq, &sr->range);
 			if (cur->freq >= 5e9)
 				sr->num.five_gig++;
 			else if (cur->freq >= 2e9)
