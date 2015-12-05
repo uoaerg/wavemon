@@ -56,12 +56,12 @@ static void display_levels(void)
 	 *        solution using 3 levels of different colour.
 	 */
 	int8_t nscale[2] = { conf.noise_min, conf.noise_max },
-	     lvlscale[2] = { 0, 0.7 * range.max_qual.qual };
+	     lvlscale[2] = { -40, -20};
 	char tmp[0x100];
 	int line;
 	bool noise_data_valid = iw_nl80211_have_survey_data(&ls);
 	int sig_qual = -1;
-	int sig_qual_max = range.max_qual.qual;
+	int sig_qual_max;
 	int sig_level = ls.signal_avg ?: ls.signal;
 
 	/* See comments in iw_cache_update */
@@ -120,7 +120,7 @@ static void display_levels(void)
 		signal = ewma(signal, sig_level, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
-		sprintf(tmp, "%.0f %d dBm (%s)      ", signal, sig_qual, dbm2units(signal));
+		sprintf(tmp, "%.0f dBm (%s)", signal, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
 
 		waddbar(w_levels, line, signal, conf.sig_min, conf.sig_max,
