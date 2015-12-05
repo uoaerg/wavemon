@@ -11,7 +11,7 @@
 
 
 /* stolen/modified from iw:iw.c */
-int handle_cmd(struct cmd *cmd)
+void handle_cmd(struct cmd *cmd)
 {
 	struct nl_cb *cb;
 	struct nl_msg *msg;
@@ -89,11 +89,8 @@ int handle_cmd(struct cmd *cmd)
 	nl_cb_put(cb);
 	nlmsg_free(msg);
 
-	return 0;
-
 nla_put_failure:
 	err_sys("failed to add attribute to netlink message");
-	return 1;
 }
 
 /*
