@@ -179,17 +179,19 @@ static void display_stats(void)
 		waddstr(w_stats, "n/a");
 	}
 
-	if (ls.rx_bitrate[0]) {
-		waddstr(w_stats, ", rate: ");
-		waddstr_b(w_stats, ls.rx_bitrate);
-	}
+	if (iw_nl80211_have_survey_data(&ls)) {
+		if (ls.rx_bitrate[0]) {
+			waddstr(w_stats, ", rate: ");
+			waddstr_b(w_stats, ls.rx_bitrate);
+		}
 
-	if (ls.expected_thru) {
-		if (ls.expected_thru >= 1024)
-			sprintf(tmp, " (exp: %.1f MB/s)",  ls.expected_thru/1024.0);
-		else
-			sprintf(tmp, " (exp: %u kB/s)",  ls.expected_thru);
-		waddstr(w_stats, tmp);
+		if (ls.expected_thru) {
+			if (ls.expected_thru >= 1024)
+				sprintf(tmp, " (exp: %.1f MB/s)",  ls.expected_thru/1024.0);
+			else
+				sprintf(tmp, " (exp: %u kB/s)",  ls.expected_thru);
+			waddstr(w_stats, tmp);
+		}
 	}
 
 	if (ls.rx_drop_misc) {
@@ -213,10 +215,11 @@ static void display_stats(void)
 		waddstr(w_stats, "n/a");
 	}
 
-	if (ls.tx_bitrate[0]) {
+	if (iw_nl80211_have_survey_data(&ls) && ls.tx_bitrate[0]) {
 		waddstr(w_stats, ", rate: ");
 		waddstr_b(w_stats, ls.tx_bitrate);
 	}
+
 	if (ls.tx_retries) {
 		waddstr(w_stats, ", retries: ");
 		sprintf(tmp, "%'u", ls.tx_retries);
@@ -228,7 +231,6 @@ static void display_stats(void)
 		sprintf(tmp, "%'u", ls.tx_failed);
 		waddstr_b(w_stats, tmp);
 	}
-
 	wclrtoborder(w_stats);
 	wrefresh(w_stats);
 }
@@ -304,28 +306,6 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		}
 		waddstr_b(w_info, ether_lookup(&ls.bssid));
 
-		if (ls.cts_protection | ls.wme | ls.mfp | ls.tdls) {
-			i = 0;
-			waddstr_b(w_info, " (");
-			if (ls.cts_protection) {
-				waddstr(w_info, "cts");
-				i++;
-			}
-			if (ls.wme) {
-				waddstr(w_info, (i ? " wme" : "wme"));
-				i++;
-			}
-			if (ls.mfp) {
-				waddstr(w_info, (i ? " mfp" : "mfp"));
-				i++;
-			}
-			if (ls.tdls) {
-				waddstr(w_info, (i ? " tdls" : "tdls"));
-				i++;
-			}
-			waddstr_b(w_info, ")");
-		}
-
 		if (ls.status == NL80211_BSS_STATUS_ASSOCIATED) {
 			waddstr_b(w_info, ",");
 			waddstr(w_info, " time: ");
@@ -384,8 +364,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	/* Channel data */
 	wmove(w_info, 3, 1);
-	waddstr(w_info, "channel ");
 	if (iw_nl80211_have_survey_data(&ls)) {
+		waddstr(w_info, "channel ");
 		waddstr(w_info, "active: ");
 		waddstr_b(w_info, pretty_time_ms(ls.survey.time.active));
 
@@ -407,15 +387,26 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, ", scan: ");
 			waddstr_b(w_info, pretty_time_ms(ls.survey.time.scan));
 		}
-	} else {
-		waddstr(w_info, "survey: n/a");
+	} else if (ls.tx_bitrate[0] && ls.rx_bitrate[0]) {
+		waddstr(w_info, "rx rate: ");
+		waddstr_b(w_info, ls.rx_bitrate);
+
+		if (ls.expected_thru) {
+			if (ls.expected_thru >= 1024)
+				sprintf(tmp, " (exp: %.1f MB/s)",  ls.expected_thru/1024.0);
+			else
+				sprintf(tmp, " (exp: %u kB/s)",  ls.expected_thru);
+			waddstr(w_info, tmp);
+		}
+		waddstr(w_info, ", tx rate: ");
+		waddstr_b(w_info, ls.tx_bitrate);
 	}
 
 	/* Beacons */
 	wmove(w_info, 4, 1);
-	waddstr(w_info, "beacons: ");
 
 	if (ls.beacons) {
+		waddstr(w_info, "beacons: ");
 		sprintf(tmp, "%'llu", (unsigned long long)ls.beacons);
 		waddstr_b(w_info, tmp);
 
@@ -436,7 +427,27 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		sprintf(tmp, "%u", ls.dtim_period);
 		waddstr_b(w_info, tmp);
 	} else {
-		waddstr(w_info, "n/a");
+		waddstr(w_info, "station flags:");
+		if (ls.cts_protection)
+			waddstr_b(w_info, " CTS");
+		if (ls.wme)
+			waddstr_b(w_info, " WME");
+		if (ls.tdls)
+			waddstr_b(w_info, " TDLS");
+		if (ls.mfp)
+			waddstr_b(w_info, " MFP");
+		if (!(ls.cts_protection | ls.wme | ls.tdls | ls.mfp))
+			waddstr_b(w_info, " (none)");
+		waddstr(w_info, ", preamble:");
+		if (ls.long_preamble)
+			waddstr_b(w_info, " long");
+		else
+			waddstr_b(w_info, " short");
+		waddstr(w_info, ", slot:");
+		if (ls.short_slot_time)
+			waddstr_b(w_info, " short");
+		else
+			waddstr_b(w_info, " long");
 	}
 
 	if (info.cap_sens) {
