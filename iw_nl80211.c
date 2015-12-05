@@ -1,4 +1,5 @@
 /*
+ * FIXME:
  * PROTOTYPE: add nl80211 calls to iw_if. Mostly copied/stolen from iw
  */
 #include "wavemon.h"
@@ -74,7 +75,7 @@ void handle_cmd(struct cmd *cmd)
 
 	ret = nl_send_auto_complete(cmd->sk, msg);
 	if (ret < 0)
-		err_sys("failed to send station-dump message");
+		err_sys("failed to send netlink message");
 
 	/*-------------------------------------------------------------------------
 	 * Receive loop
@@ -88,6 +89,7 @@ void handle_cmd(struct cmd *cmd)
 
 	nl_cb_put(cb);
 	nlmsg_free(msg);
+	return;
 
 nla_put_failure:
 	err_sys("failed to add attribute to netlink message");
