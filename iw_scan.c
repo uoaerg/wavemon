@@ -238,30 +238,6 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
-// FIXME:
-static void get_scan_list(struct scan_result *sr)
-{
-	int wait, waited = 0;
-
-	/* We are checking errno when returning NULL, so reset it here */
-	errno = 0;
-
-	iw_nl80211_scan_trigger();
-
-	/* Larger initial timeout of 250ms between set and first get */
-	for (wait = 250; (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
-		struct timeval tv = { 0, wait * 1000 };
-
-		while (select(0, NULL, NULL, NULL, &tv) < 0)
-			if (errno != EINTR && errno != EAGAIN)
-				return;
-
-		break;
-	}
-	iw_nl80211_get_scan_data(sr);
-
-}
-
 /*
  * Simple sort routine.
  * FIXME: use hash or tree to store entries, a list to display them.
@@ -288,6 +264,19 @@ static void free_scan_list(struct scan_entry *head)
 		free_scan_list(head->next);
 		free(head);
 	}
+}
+
+static void clear_scan_list(struct scan_result *sr)
+{
+	pthread_mutex_lock(&sr->mutex);
+	free_scan_list(sr->head);
+	free(sr->channel_stats);
+	sr->head          = NULL;
+	sr->channel_stats = NULL;
+	sr->msg[0]        = '\0';
+	sr->max_essid_len = MAX_ESSID_LEN;
+	memset(&(sr->num), 0, sizeof(sr->num));
+	pthread_mutex_unlock(&sr->mutex);
 }
 
 /*
@@ -364,25 +353,31 @@ void *do_scan(void *sr_ptr)
 {
 	struct scan_result *sr = (struct scan_result *)sr_ptr;
 	struct scan_entry *cur;
+	int wait, waited;
 
 	pthread_detach(pthread_self());
 
 	do {
-		pthread_mutex_lock(&sr->mutex);
+		clear_scan_list(sr);
+		iw_nl80211_scan_trigger();
 
-		free_scan_list(sr->head);
-		free(sr->channel_stats);
+		/* We are checking errno when returning NULL, so reset it here */
+		errno = 0;
 
-		sr->head          = NULL;
-		sr->channel_stats = NULL;
-		sr->msg[0]        = '\0';
-		sr->max_essid_len = MAX_ESSID_LEN;
-		memset(&(sr->num), 0, sizeof(sr->num));
-		pthread_mutex_unlock(&sr->mutex);
+		/* Larger initial timeout of 250ms between trigger and first poll */
+		for (wait = 250, waited = 0; !sr->head && (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
+			struct timeval tv = { 0, wait * 1000 };
 
-		get_scan_list(sr);
+			while (select(0, NULL, NULL, NULL, &tv) < 0)
+				if (errno != EINTR && errno != EAGAIN)
+					break;
+
+			iw_nl80211_get_scan_data(sr);
+		}
+
 		if (!sr->head) {
 			switch(errno) {
+#ifdef FIGURED_OUT_ERROR_CASES
 			case EPERM:
 				/* Don't try to read leftover results, it does not work reliably. */
 				if (!has_net_admin_capability())
@@ -394,12 +389,6 @@ void *do_scan(void *sr_ptr)
 				 * EFAULT can occur after a window resizing event and is temporary.
 				 * It may also occur when the interface is down, hence defer handling.
 				 */
-				break;
-			case EINTR:
-			case EBUSY:
-			case EAGAIN:
-				/* Temporary errors. */
-				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data on %s ...", conf_ifname());
 				break;
 			case ENETDOWN:
 				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
@@ -414,6 +403,13 @@ void *do_scan(void *sr_ptr)
 				snprintf(sr->msg, sizeof(sr->msg),
 					 "No scan on %s: Driver returned too much data", conf_ifname());
 				break;
+#endif
+			case EINTR:
+			case EBUSY:
+			case EAGAIN:
+				/* Temporary errors. */
+				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data on %s ...", conf_ifname());
+				break;
 			case 0:
 				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
 				break;
@@ -423,6 +419,7 @@ void *do_scan(void *sr_ptr)
 			}
 		}
 
+		pthread_mutex_lock(&sr->mutex);
 		for (cur = sr->head; cur; cur = cur->next) {
 			if (str_is_ascii(cur->essid))
 				sr->max_essid_len = clamp(strlen(cur->essid),
@@ -436,8 +433,8 @@ void *do_scan(void *sr_ptr)
 			sr->num.open    += !cur->has_key;
 		}
 		compute_channel_stats(sr);
-
 		pthread_mutex_unlock(&sr->mutex);
+
 	} while (usleep(conf.stat_iv * 1000) == 0);
 
 	return NULL;

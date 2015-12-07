@@ -199,6 +199,8 @@ struct iw_nl80211_reg {
 	char	country[3];
 };
 extern void iw_nl80211_getreg(struct iw_nl80211_reg *ir);
+extern void print_ssid_escaped(char *buf, const size_t buflen,
+			       const uint8_t *data, const size_t datalen);
 
 /*
  * utils.c
