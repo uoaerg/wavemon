@@ -594,3 +594,31 @@ void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)
 	memset(sd, 0, sizeof(*sd));
 	handle_cmd(&cmd_survey);
 }
+
+/*
+ * Scan Commands
+ */
+// FIXME: move into this file when done
+extern int scan_dump_handler(struct nl_msg *msg, void *arg);
+
+void iw_nl80211_scan_trigger(void)
+{
+	static struct cmd cmd_trigger_scan = {
+		.cmd = NL80211_CMD_TRIGGER_SCAN,
+	};
+
+	handle_cmd(&cmd_trigger_scan);
+}
+
+void iw_nl80211_get_scan_data(struct iw_nl80211_survey *sd)
+{
+	static struct cmd cmd_scan_dump = {
+		.cmd	 = NL80211_CMD_GET_SCAN,
+		.flags	 = NLM_F_DUMP,
+		.handler = scan_dump_handler
+	};
+
+	cmd_scan_dump.handler_arg = sd;
+	memset(sd, 0, sizeof(*sd));
+	handle_cmd(&cmd_scan_dump);
+}
