@@ -18,60 +18,6 @@ extern void handle_cmd(struct cmd *cmd);
 
 #define MAX_SCAN_WAIT	10000	/* maximum milliseconds spent waiting */
 
-// FIXME: old WEXT stuff
-/*
- * Meta-data about all the additional standard Wireless Extension events
- * we know about.
- */
-/* Type of headers we know about (basically union iwreq_data) */
-#define IW_HEADER_TYPE_NULL	0	/* Not available */
-#define IW_HEADER_TYPE_CHAR	2	/* char [IFNAMSIZ] */
-#define IW_HEADER_TYPE_UINT	4	/* __u32 */
-#define IW_HEADER_TYPE_FREQ	5	/* struct iw_freq */
-#define IW_HEADER_TYPE_ADDR	6	/* struct sockaddr */
-#define IW_HEADER_TYPE_POINT	8	/* struct iw_point */
-#define IW_HEADER_TYPE_PARAM	9	/* struct iw_param */
-#define IW_HEADER_TYPE_QUAL	10	/* struct iw_quality */
-
-/* Size (in bytes) of various events */
-static const int event_type_size[] = {
-	[IW_HEADER_TYPE_NULL]  = IW_EV_LCP_PK_LEN,
-	[IW_HEADER_TYPE_CHAR]  = IW_EV_CHAR_PK_LEN,
-	[IW_HEADER_TYPE_UINT]  = IW_EV_UINT_PK_LEN,
-	[IW_HEADER_TYPE_FREQ]  = IW_EV_FREQ_PK_LEN,
-	[IW_HEADER_TYPE_ADDR]  = IW_EV_ADDR_PK_LEN,
-	/*
-	 * Fix IW_EV_POINT_PK_LEN: some wireless.h versions define this
-	 * erroneously as IW_EV_LCP_LEN + 4 (e.g. ESSID will disappear).
-	 * The value below is from wireless tools 30.
-	 */
-	[IW_HEADER_TYPE_POINT] = IW_EV_LCP_PK_LEN + 4,
-	[IW_HEADER_TYPE_PARAM] = IW_EV_PARAM_PK_LEN,
-	[IW_HEADER_TYPE_QUAL]  = IW_EV_QUAL_PK_LEN
-};
-
-/* Handling flags */
-#define IW_DESCR_FLAG_NONE	0x0000	/* Obvious */
-/* Wrapper level flags */
-#define IW_DESCR_FLAG_DUMP	0x0001	/* Not part of the dump command */
-#define IW_DESCR_FLAG_EVENT	0x0002	/* Generate an event on SET */
-#define IW_DESCR_FLAG_RESTRICT	0x0004	/* GET : request is ROOT only */
-				/* SET : Omit payload from generated iwevent */
-#define IW_DESCR_FLAG_NOMAX	0x0008	/* GET : no limit on request size */
-/* Driver level flags */
-#define IW_DESCR_FLAG_WAIT	0x0100	/* Wait for driver event */
-
-struct iw_ioctl_description {
-	__u8 header_type;	/* NULL, iw_point or other */
-	__u8 token_type;	/* Future */
-	__u16 token_size;	/* Granularity of payload */
-	__u16 min_tokens;	/* Min acceptable token number */
-	__u16 max_tokens;	/* Max acceptable token number */
-	__u32 flags;		/* Special handling of the request */
-};
-
-/*----------------- End of code copied from iwlib -----------------------*/
-
 /*
  * Ordering functions for scan results: all return true for a < b.
  */

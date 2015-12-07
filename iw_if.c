@@ -328,81 +328,13 @@ void iw_getinf_range(const char *ifname, struct iw_range *range)
 	close(skfd);
 }
 
-/*
- * Generate dBm values and perform sanity checks on values.
- * Code in part taken from wireless extensions #30
- * @range: range information, read-only
- * @qual:  wireless statistics, read-write
- * @dbm:   dBm level information, write-only
- */
-void iw_sanitize(struct iw_range *range, struct iw_quality *qual,
-		 struct iw_levelstat *dbm)
-{
-	memset(dbm, 0, sizeof(*dbm));
-
-	if (qual->level != 0 || (qual->updated & (IW_QUAL_DBM | IW_QUAL_RCPI))) {
-		/*
-		 * RCPI (IEEE 802.11k) statistics:
-		 *    RCPI = int{(Power in dBm +110)*2}
-		 *    for 0 dBm > Power > -110 dBm
-		 */
-		if (qual->updated & IW_QUAL_RCPI) {
-			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
-				dbm->signal = (double)(qual->level / 2.0) - 110.0;
-
-		} else if ((qual->updated & IW_QUAL_DBM) ||
-			   qual->level > range->max_qual.level) {
-			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
-				dbm->signal = u8_to_dbm(qual->level);
-		} else {
-			/*
-			 * Relative values (0 -> max)
-			 */
-			if (!(qual->updated & IW_QUAL_LEVEL_INVALID))
-				dbm->signal = mw2dbm(qual->level);
-		}
-	} else {
-		qual->updated |= IW_QUAL_ALL_INVALID;
-	}
-}
-
-void iw_getstat(struct iw_stat *iw)
-{
-	struct iwreq wrq;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
-
-	wrq.u.data.pointer = (caddr_t)&iw->stat;
-	wrq.u.data.length  = sizeof(iw->stat);
-	wrq.u.data.flags   = 0;
-
-	memset(&iw->stat, 0, sizeof(iw->stat));
-	strncpy(wrq.ifr_name, conf_ifname(), IFNAMSIZ);
-
-	if (ioctl(skfd, SIOCGIWSTATS, &wrq) < 0) {
-		/*
-		 * iw_handler_get_iwstats() returns EOPNOTSUPP if
-		 * there are no statistics. Bail out in this case.
-		 */
-		if (errno != EOPNOTSUPP)
-			err_sys("can not obtain iw statistics");
-		errno = 0;
-		memset(&wrq, 0, sizeof(wrq));
-	}
-	close(skfd);
-
-	iw_sanitize(&iw->range, &iw->stat.qual, &iw->dbm);
-}
-
 const char *we_version(void)
 {
 	static char buf[BUFSIZ];
-	struct iw_stat iw;
+	struct iw_range	range;
 
-	iw_getinf_range(conf_ifname(), &iw.range);
+	iw_getinf_range(conf_ifname(), &range);
 	sprintf(buf, "wireless extensions v%d (source v%d)",
-	       iw.range.we_version_compiled, iw.range.we_version_source);
+		range.we_version_compiled, range.we_version_source);
 	return buf;
 }
