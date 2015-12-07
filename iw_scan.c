@@ -179,23 +179,9 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	// FIXME:
 #if 0
 			switch (iwe.cmd) {
-			case SIOCGIWAP:
-                		f = 1;
-				break;
-			case SIOCGIWESSID:
-                		f |= 2;
-				memset(new->essid, 0, sizeof(new->essid));
-
-				if (iwe.u.essid.flags && iwe.u.essid.pointer && iwe.u.essid.length)
-					memcpy(new->essid, iwe.u.essid.pointer, iwe.u.essid.length);
-				break;
 			case SIOCGIWMODE:
 				new->mode = iwe.u.mode;
                     		f |= 4;
-				break;
-			case SIOCGIWFREQ:
-                		f |= 8;
-				new->freq = freq_to_hz(&iwe.u.freq);
 				break;
 			case SIOCGIWENCODE:
                 		f |= 16;
@@ -280,40 +266,22 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	}
 
 	if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
-		unsigned char *ie = (unsigned char *)bss[NL80211_BSS_INFORMATION_ELEMENTS];
-		int ielen = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
+		uint8_t *ie = nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
 		uint8_t len = ie[1];
+		int ielen   = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
 
  		while (ielen >= 2 && ielen >= ie[1]) {
-		// FIXME: check min/max length
-		switch (ie[0]) {
+			// FIXME: check min/max length
+			switch (ie[0]) {
 			case 0:
-				 print_ssid_escaped(new->essid, sizeof(new->essid),
+				print_ssid_escaped(new->essid, sizeof(new->essid),
 						 ie+2,
-						 ie[1]);
-		}
-#ifdef __HAVE_TIME_TO_DO_THIS_LATER
-                if (ie[0] < ARRAY_SIZE(ieprinters) &&
-                    ieprinters[ie[0]].name &&
-                    ieprinters[ie[0]].flags & BIT(ptype)) {
-                        print_ie(&ieprinters[ie[0]], ie[0], ie[1], ie + 2);
-                } else if (ie[0] == 221 /* vendor */) {
-                        print_vendor(ie[1], ie + 2, unknown, ptype);
-                } else if (unknown) {
-                        int i;
-
-                        printf("\tUnknown IE (%d):", ie[0]);
-                        for (i=0; i<ie[1]; i++)
-                                printf(" %.2x", ie[2+i]);
-                        printf("\n");
-                }
-#endif
-                ielen -= ie[1] + 2;
-                ie += ie[1] + 2;
+						 len);
+				break;
+			}
+			ielen -= ie[1] + 2;
+			ie    += ie[1] + 2;
         	}
-	}
-	if (bss[NL80211_BSS_BEACON_IES]) {
-	//	printf("\tInformation elements from Beacon frame:\n");
 	}
 
 	pthread_mutex_lock(&sr->mutex);
