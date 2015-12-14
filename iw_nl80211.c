@@ -154,12 +154,17 @@ void print_ssid_escaped(char *buf, const size_t buflen,
 {
 	int i, l;
 
+	memset(buf, '\0', buflen);
+	/* Treat zeroed-out SSIDs separately */
+	for (i = 0; i < datalen && data[i] == '\0'; i++)
+		;
+	if (i == datalen)
+		return;
+
 	for (i = l= 0; i < datalen; i++) {
-		if (l + 4 >= buflen) {
-			buf[buflen-1] = '\0';
+		if (l + 4 >= buflen)
 			return;
-		}
-		if (isprint(data[i]) && data[i] != ' ' && data[i] != '\\')
+		else if (isprint(data[i]) && data[i] != ' ' && data[i] != '\\')
 			l += sprintf(buf + l, "%c", data[i]);
 		else if (data[i] == ' ' && i != 0 && i != datalen -1)
 			l += sprintf(buf + l, " ");

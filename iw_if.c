@@ -40,9 +40,15 @@ static int if_get_flags(int skfd, const char *ifname)
 }
 
 /* Return true if @ifname is known to be up. */
-bool if_is_up(int skfd, const char *ifname)
+bool if_is_up(const char *ifname)
 {
-	return if_get_flags(skfd, ifname) & IFF_UP;
+	int ret, skfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
+	ret = if_get_flags(skfd, ifname) & IFF_UP;
+	close(skfd);
+	return ret;
 }
 
 /** Bring @ifname up if not already up. Return 0 if ok, < 0 on error. */
