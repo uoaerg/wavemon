@@ -16,6 +16,10 @@
 
 #define BIT(x) (1ULL<<(x))		/* from iw:iw.h */
 
+/* Set to 1 to enable callback debugging */
+#define IW_NL_CB_DEBUG 0
+
+
 /**
  * struct msg_attribute - attributes to nla_put into the message
  * @type:	type of the attribute
@@ -204,7 +208,7 @@ extern void print_ssid_escaped(char *buf, const size_t buflen,
 			       const uint8_t *data, const size_t datalen);
 
 /*
- * Multicast event handling (taken from iw:event.c and iw:scan.c) 
+ * Multicast event handling (taken from iw:event.c and iw:scan.c)
  */
 /**
  * struct wait_event - wait for arrival of a specified message
@@ -261,7 +265,7 @@ static inline int ack_handler(struct nl_msg *msg, void *arg)
 	return NL_STOP;
 }
 
-static int no_seq_check(struct nl_msg *msg, void *arg)
+static inline int no_seq_check(struct nl_msg *msg, void *arg)
 {
 	return NL_OK;
 }

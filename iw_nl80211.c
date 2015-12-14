@@ -10,7 +10,6 @@
 
 #include "iw_nl80211.h"
 
-
 /* stolen/modified from iw:iw.c */
 void handle_cmd(struct cmd *cmd)
 {
@@ -53,7 +52,7 @@ void handle_cmd(struct cmd *cmd)
 	if (!msg)
 		err_sys("failed to allocate netlink message");
 
-	cb = nl_cb_alloc(0 ? NL_CB_DEBUG : NL_CB_DEFAULT);
+	cb = nl_cb_alloc(IW_NL_CB_DEBUG ? NL_CB_DEBUG : NL_CB_DEFAULT);
 	if (!cb)
 		err_sys("failed to allocate netlink callback");
 
@@ -709,9 +708,9 @@ struct nl_sock *alloc_nl_mcast_sk(const char *grp)
 	if (genl_connect(sk))
 		err_sys("failed to connect to GeNetlink");
 
-	mcid = nl_get_multicast_id(sk, "nl80211", "scan");
+	mcid = nl_get_multicast_id(sk, "nl80211", grp);
 	if (mcid < 0)
-		err_sys("failed to resolve nl80211 '%s' multicast group", grp);
+		err_quit("failed to resolve nl80211 '%s' multicast group", grp);
 
 	ret = nl_socket_add_membership(sk, mcid);
 	if (ret)

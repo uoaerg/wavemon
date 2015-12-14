@@ -94,6 +94,38 @@ static int wait_event(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
+/**
+ * Wait for scan result notification sent by the kernel
+ * Returns true if scan results are available, false if scan was aborted.
+ * Taken from iw:event.c:__do_listen_events
+ */
+bool wait_for_scan_events(struct scan_result *sr)
+{
+	static const uint32_t cmds[] = {
+		NL80211_CMD_NEW_SCAN_RESULTS,
+		NL80211_CMD_SCAN_ABORTED,
+	};
+	struct wait_event wait_ev = {
+		.cmds   = cmds,
+		.n_cmds = ARRAY_SIZE(cmds),
+		.cmd    = 0
+	};
+	struct nl_cb *cb = nl_cb_alloc(IW_NL_CB_DEBUG ? NL_CB_DEBUG : NL_CB_DEFAULT);
+
+	if (!cb)
+		err_sys("failed to allocate netlink callbacks");
+
+	/* no sequence checking for multicast messages */
+	nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, no_seq_check, NULL);
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, wait_event, &wait_ev);
+
+	while (!wait_ev.cmd)
+		nl_recvmsgs(sr->wait_sk, cb);
+	nl_cb_put(cb);
+
+	return wait_ev.cmd == NL80211_CMD_NEW_SCAN_RESULTS;
+}
+
 /*
  * Scan Commands
  */
@@ -270,9 +302,11 @@ void iw_nl80211_get_scan_data(struct scan_result *sr)
 		.flags	 = NLM_F_DUMP,
 		.handler = scan_dump_handler
 	};
+	struct nl_sock *wait_sk = sr->wait_sk;
 
 	cmd_scan_dump.handler_arg = sr;
 	memset(sr, 0, sizeof(*sr));
+	sr->wait_sk = wait_sk;
 	handle_cmd(&cmd_scan_dump);
 }
 
@@ -393,7 +427,6 @@ void *do_scan(void *sr_ptr)
 {
 	struct scan_result *sr = sr_ptr;
 	struct scan_entry *cur;
-	int wait, waited;
 
 	pthread_detach(pthread_self());
 
@@ -404,16 +437,8 @@ void *do_scan(void *sr_ptr)
 		/* We are checking errno when returning NULL, so reset it here */
 		errno = 0;
 
-		/* Larger initial timeout of 250ms between trigger and first poll */
-		for (wait = 250, waited = 0; !sr->head && (waited += wait) < MAX_SCAN_WAIT; wait = 100) {
-			struct timeval tv = { 0, wait * 1000 };
-
-			while (select(0, NULL, NULL, NULL, &tv) < 0)
-				if (errno != EINTR && errno != EAGAIN)
-					break;
-
+		if (wait_for_scan_events(sr))
 			iw_nl80211_get_scan_data(sr);
-		}
 
 		if (!sr->head) {
 			switch(errno) {
