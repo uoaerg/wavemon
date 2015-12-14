@@ -48,6 +48,7 @@ struct cmd {
 	struct msg_attribute	*msg_args;
 	uint8_t			msg_args_len;
 };
+extern void handle_cmd(struct cmd *cmd);
 
 /**
  * iw_nl80211_ifstat - interface statistics
@@ -203,6 +204,22 @@ extern void print_ssid_escaped(char *buf, const size_t buflen,
 			       const uint8_t *data, const size_t datalen);
 
 /*
+ * Multicast event handling (taken from iw:event.c and iw:scan.c) 
+ */
+/**
+ * struct wait_event - wait for arrival of a specified message
+ * @cmds:   array of GeNetlink commands (>0) to match
+ * @n_cmds: length of @cmds
+ * @cmd:    matched element of @cmds (if message arrived), else 0
+ */
+struct wait_event {
+	const uint32_t	*cmds;
+	uint8_t		n_cmds;
+	uint32_t	cmd;
+};
+extern struct nl_sock *alloc_nl_mcast_sk(const char *grp);
+
+/*
  * utils.c
  */
 extern bool ether_addr_is_zero(const struct ether_addr *ea);
@@ -242,4 +259,9 @@ static inline int ack_handler(struct nl_msg *msg, void *arg)
 	int *ret = arg;
 	*ret = 0;
 	return NL_STOP;
+}
+
+static int no_seq_check(struct nl_msg *msg, void *arg)
+{
+	return NL_OK;
 }

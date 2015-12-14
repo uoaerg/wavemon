@@ -596,29 +596,126 @@ void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)
 }
 
 /*
- * Scan Commands
+ * Multicast Handling
  */
-// FIXME: move into this file when done
-extern int scan_dump_handler(struct nl_msg *msg, void *arg);
+/**
+ * struct handler_args - arguments to resolve multicast group
+ * @group: group name to resolve
+ * @id:    ID it resolves into
+ */
+struct handler_args {
+	const char	*group;
+	int		id;
+};
 
-void iw_nl80211_scan_trigger(void)
+/* stolen from iw:genl.c */
+static int family_handler(struct nl_msg *msg, void *arg)
 {
-	static struct cmd cmd_trigger_scan = {
-		.cmd = NL80211_CMD_TRIGGER_SCAN,
-	};
+	struct handler_args *grp = arg;
+	struct nlattr *tb[CTRL_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *mcgrp;
+	int rem_mcgrp;
 
-	handle_cmd(&cmd_trigger_scan);
+	nla_parse(tb, CTRL_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[CTRL_ATTR_MCAST_GROUPS])
+		return NL_SKIP;
+
+	nla_for_each_nested(mcgrp, tb[CTRL_ATTR_MCAST_GROUPS], rem_mcgrp) {
+		struct nlattr *tb_mcgrp[CTRL_ATTR_MCAST_GRP_MAX + 1];
+
+		nla_parse(tb_mcgrp, CTRL_ATTR_MCAST_GRP_MAX,
+			  nla_data(mcgrp), nla_len(mcgrp), NULL);
+
+		if (!tb_mcgrp[CTRL_ATTR_MCAST_GRP_NAME] ||
+		    !tb_mcgrp[CTRL_ATTR_MCAST_GRP_ID])
+			continue;
+		if (strncmp(nla_data(tb_mcgrp[CTRL_ATTR_MCAST_GRP_NAME]),
+			    grp->group, nla_len(tb_mcgrp[CTRL_ATTR_MCAST_GRP_NAME])))
+			continue;
+		grp->id = nla_get_u32(tb_mcgrp[CTRL_ATTR_MCAST_GRP_ID]);
+		break;
+	}
+
+	return NL_SKIP;
 }
 
-void iw_nl80211_get_scan_data(struct iw_nl80211_survey *sd)
+/* stolen from iw:genl.c */
+int nl_get_multicast_id(struct nl_sock *sock, const char *family, const char *group)
 {
-	static struct cmd cmd_scan_dump = {
-		.cmd	 = NL80211_CMD_GET_SCAN,
-		.flags	 = NLM_F_DUMP,
-		.handler = scan_dump_handler
+	struct nl_msg *msg;
+	struct nl_cb *cb;
+	int ret, ctrlid;
+	struct handler_args grp = {
+		.group = group,
+		.id = -ENOENT,
 	};
 
-	cmd_scan_dump.handler_arg = sd;
-	memset(sd, 0, sizeof(*sd));
-	handle_cmd(&cmd_scan_dump);
+	msg = nlmsg_alloc();
+	if (!msg)
+		return -ENOMEM;
+
+	cb = nl_cb_alloc(NL_CB_DEFAULT);
+	if (!cb) {
+		ret = -ENOMEM;
+		goto out_fail_cb;
+	}
+
+	ctrlid = genl_ctrl_resolve(sock, "nlctrl");
+
+	genlmsg_put(msg, 0, 0, ctrlid, 0,
+		    0, CTRL_CMD_GETFAMILY, 0);
+
+	ret = -ENOBUFS;
+	NLA_PUT_STRING(msg, CTRL_ATTR_FAMILY_NAME, family);
+
+	ret = nl_send_auto_complete(sock, msg);
+	if (ret < 0)
+		goto out;
+
+	ret = 1;
+
+	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &ret);
+	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &ret);
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, family_handler, &grp);
+
+	while (ret > 0)
+		nl_recvmsgs(sock, cb);
+
+	if (ret == 0)
+		ret = grp.id;
+nla_put_failure:
+out:
+	nl_cb_put(cb);
+out_fail_cb:
+	nlmsg_free(msg);
+	return ret;
+}
+
+/**
+ * Allocate a GeNetlink socket ready to listen for nl80211 multicast group @grp
+ * @grp: identifier of an nl80211 multicast group (e.g. "scan")
+ */
+struct nl_sock *alloc_nl_mcast_sk(const char *grp)
+{
+	int mcid, ret;
+	struct nl_sock *sk = nl_socket_alloc();
+
+	if (!sk)
+		err_sys("failed to allocate netlink socket");
+
+	if (genl_connect(sk))
+		err_sys("failed to connect to GeNetlink");
+
+	mcid = nl_get_multicast_id(sk, "nl80211", "scan");
+	if (mcid < 0)
+		err_sys("failed to resolve nl80211 '%s' multicast group", grp);
+
+	ret = nl_socket_add_membership(sk, mcid);
+	if (ret)
+		err_sys("failed to join nl80211 multicast group %s", grp);
+
+	return sk;
 }

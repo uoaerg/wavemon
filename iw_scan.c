@@ -13,8 +13,6 @@
 
 #include "iw_nl80211.h"
 
-// FIXME: declarations
-extern void handle_cmd(struct cmd *cmd);
 
 #define MAX_SCAN_WAIT	10000	/* maximum milliseconds spent waiting */
 
@@ -78,11 +76,29 @@ static bool (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) 
 	[SO_OPEN_SIG]	= cmp_open_sig
 };
 
-// FIXME:
-void iw_nl80211_scan_trigger();
-void iw_nl80211_get_scan_data(struct scan_result *sr);
+/*
+ * Scan event handling
+ */
 
-/* stolen from iw:scan.c */
+/* Callback event handler */
+static int wait_event(struct nl_msg *msg, void *arg)
+{
+	struct wait_event *wait = arg;
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	int i;
+
+	for (i = 0; i < wait->n_cmds; i++) {
+		if (gnlh->cmd == wait->cmds[i])
+			wait->cmd = gnlh->cmd;
+	}
+	return NL_SKIP;
+}
+
+/*
+ * Scan Commands
+ */
+
+/* Scan result handler. Stolen from iw:scan.c */
 int scan_dump_handler(struct nl_msg *msg, void *arg)
 {
 	struct scan_result *sr = (struct scan_result *)arg;
@@ -238,6 +254,28 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
+void iw_nl80211_scan_trigger(void)
+{
+	static struct cmd cmd_trigger_scan = {
+		.cmd = NL80211_CMD_TRIGGER_SCAN,
+	};
+
+	handle_cmd(&cmd_trigger_scan);
+}
+
+void iw_nl80211_get_scan_data(struct scan_result *sr)
+{
+	static struct cmd cmd_scan_dump = {
+		.cmd	 = NL80211_CMD_GET_SCAN,
+		.flags	 = NLM_F_DUMP,
+		.handler = scan_dump_handler
+	};
+
+	cmd_scan_dump.handler_arg = sr;
+	memset(sr, 0, sizeof(*sr));
+	handle_cmd(&cmd_scan_dump);
+}
+
 /*
  * Simple sort routine.
  * FIXME: use hash or tree to store entries, a list to display them.
@@ -337,6 +375,7 @@ static void compute_channel_stats(struct scan_result *sr)
 void scan_result_init(struct scan_result *sr)
 {
 	memset(sr, 0, sizeof(*sr));
+	sr->wait_sk = alloc_nl_mcast_sk("scan");
 	iw_getinf_range(conf_ifname(), &sr->range);
 	pthread_mutex_init(&sr->mutex, NULL);
 }
@@ -345,13 +384,14 @@ void scan_result_fini(struct scan_result *sr)
 {
 	free_scan_list(sr->head);
 	free(sr->channel_stats);
+	nl_socket_free(sr->wait_sk);
 	pthread_mutex_destroy(&sr->mutex);
 }
 
 /** The actual scan thread. */
 void *do_scan(void *sr_ptr)
 {
-	struct scan_result *sr = (struct scan_result *)sr_ptr;
+	struct scan_result *sr = sr_ptr;
 	struct scan_entry *cur;
 	int wait, waited;
 
