@@ -441,46 +441,11 @@ void *do_scan(void *sr_ptr)
 			iw_nl80211_get_scan_data(sr);
 
 		if (!sr->head) {
-			switch(errno) {
-#ifdef FIGURED_OUT_ERROR_CASES
-			case EPERM:
-				/* Don't try to read leftover results, it does not work reliably. */
-				if (!has_net_admin_capability())
-					snprintf(sr->msg, sizeof(sr->msg),
-						 "This screen requires CAP_NET_ADMIN permissions");
-				break;
-			case EFAULT:
-				/*
-				 * EFAULT can occur after a window resizing event and is temporary.
-				 * It may also occur when the interface is down, hence defer handling.
-				 */
-				break;
-			case ENETDOWN:
-				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
-				if (if_set_up(conf_ifname()) < 0)
-					err_sys("Can not bring up interface '%s'", conf_ifname());
-				break;
-			case E2BIG:
-				/*
-				 * This is a driver issue, since already using the largest possible
-				 * scan buffer. See comments in iwlist.c of wireless tools.
-				 */
-				snprintf(sr->msg, sizeof(sr->msg),
-					 "No scan on %s: Driver returned too much data", conf_ifname());
-				break;
-#endif
-			case EINTR:
-			case EBUSY:
-			case EAGAIN:
-				/* Temporary errors. */
-				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data on %s ...", conf_ifname());
-				break;
-			case 0:
-				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
-				break;
-			default:
+			if (errno) {
 				snprintf(sr->msg, sizeof(sr->msg),
 					 "Scan failed on %s: %s", conf_ifname(), strerror(errno));
+			} else {
+				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
 			}
 		}
 
