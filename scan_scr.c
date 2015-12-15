@@ -84,6 +84,7 @@ static void display_aplist(WINDOW *w_aplst)
 	const char *sort_type[] = {
 		[SO_CHAN]	= "Chan",
 		[SO_SIGNAL]	= "Sig",
+		[SO_MAC]        = "Mac",
 		[SO_ESSID]	= "Essid",
 		[SO_OPEN]	= "Open",
 		[SO_CHAN_SIG]	= "Ch/Sg",
@@ -217,6 +218,9 @@ int scr_aplst_loop(WINDOW *w_menu)
 		return -1;
 	case 'e':	/* ESSID */
 		conf.scan_sort_order = SO_ESSID;
+		return -1;
+	case 'm':	/* MAC address */
+		conf.scan_sort_order = SO_MAC;
 		return -1;
 	case 'o':	/* open (descending is default) */
 		conf.scan_sort_order = SO_OPEN;

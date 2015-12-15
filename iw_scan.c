@@ -43,6 +43,12 @@ static bool cmp_essid(const struct scan_entry *a, const struct scan_entry *b)
 			: res < 0;
 }
 
+/* Order by MAC address */
+static bool cmp_mac(const struct scan_entry *a, const struct scan_entry *b)
+{
+	return memcmp(&a->ap_addr, &b->ap_addr, sizeof(a->ap_addr)) < 0;
+}
+
 /* Order by frequency, grouping channels by ESSID. */
 static bool cmp_chan(const struct scan_entry *a, const struct scan_entry *b)
 {
@@ -70,6 +76,7 @@ static bool cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
 static bool (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) = {
 	[SO_CHAN]	= cmp_chan,
 	[SO_SIGNAL]	= cmp_sig,
+	[SO_MAC]        = cmp_mac,
 	[SO_ESSID]	= cmp_essid,
 	[SO_OPEN]	= cmp_open,
 	[SO_CHAN_SIG]	= cmp_chan_sig,
