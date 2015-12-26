@@ -59,6 +59,7 @@ struct if_info {
 	uint16_t		txqlen;
 	uint16_t		flags;
 };
+extern bool if_is_up(const char *ifname);
 extern int  if_set_up(const char *ifname);
 extern void if_getinf(const char *ifname, struct if_info *info);
 

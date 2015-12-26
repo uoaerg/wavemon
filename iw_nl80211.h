@@ -52,7 +52,7 @@ struct cmd {
 	struct msg_attribute	*msg_args;
 	uint8_t			msg_args_len;
 };
-extern void handle_cmd(struct cmd *cmd);
+extern int handle_cmd(struct cmd *cmd);
 
 /**
  * iw_nl80211_ifstat - interface statistics

@@ -10,8 +10,12 @@
 
 #include "iw_nl80211.h"
 
-/* stolen/modified from iw:iw.c */
-void handle_cmd(struct cmd *cmd)
+/**
+ * handle_cmd: process @cmd
+ * Returns 0 if ok, -errno < 0 on failure
+ * stolen/modified from iw:iw.c 
+ */
+int handle_cmd(struct cmd *cmd)
 {
 	struct nl_cb *cb;
 	struct nl_msg *msg;
@@ -88,10 +92,12 @@ void handle_cmd(struct cmd *cmd)
 
 	nl_cb_put(cb);
 	nlmsg_free(msg);
-	return;
+	goto out;
 
 nla_put_failure:
-	err_sys("failed to add attribute to netlink message");
+	err_quit("failed to add attribute to netlink message");
+out:
+	return ret;
 }
 
 /*

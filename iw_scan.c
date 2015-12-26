@@ -293,16 +293,16 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
-void iw_nl80211_scan_trigger(void)
+static int iw_nl80211_scan_trigger(void)
 {
 	static struct cmd cmd_trigger_scan = {
 		.cmd = NL80211_CMD_TRIGGER_SCAN,
 	};
 
-	handle_cmd(&cmd_trigger_scan);
+	return handle_cmd(&cmd_trigger_scan);
 }
 
-void iw_nl80211_get_scan_data(struct scan_result *sr)
+static int iw_nl80211_get_scan_data(struct scan_result *sr)
 {
 	static struct cmd cmd_scan_dump = {
 		.cmd	 = NL80211_CMD_GET_SCAN,
@@ -311,10 +311,11 @@ void iw_nl80211_get_scan_data(struct scan_result *sr)
 	};
 	struct nl_sock *wait_sk = sr->wait_sk;
 
-	cmd_scan_dump.handler_arg = sr;
 	memset(sr, 0, sizeof(*sr));
 	sr->wait_sk = wait_sk;
-	handle_cmd(&cmd_scan_dump);
+	cmd_scan_dump.handler_arg = sr;
+
+	return handle_cmd(&cmd_scan_dump);
 }
 
 /*
@@ -415,14 +416,21 @@ static void compute_channel_stats(struct scan_result *sr)
  */
 void scan_result_init(struct scan_result *sr)
 {
+	pthread_mutexattr_t ma;
+
 	memset(sr, 0, sizeof(*sr));
 	sr->wait_sk = alloc_nl_mcast_sk("scan");
+	
+	pthread_mutexattr_init(&ma);
+	if (pthread_mutexattr_setrobust(&ma, PTHREAD_MUTEX_ROBUST) < 0)
+		err_sys("Failed to set the mutex robust attribute");
+	pthread_mutex_init(&sr->mutex, &ma);
 	iw_getinf_range(conf_ifname(), &sr->range);
-	pthread_mutex_init(&sr->mutex, NULL);
 }
 
 void scan_result_fini(struct scan_result *sr)
 {
+	/* FIXME: this may have a bug on resource de-allocation, if the main thread still holds the lock */
 	free_scan_list(sr->head);
 	free(sr->channel_stats);
 	nl_socket_free(sr->wait_sk);
@@ -434,25 +442,57 @@ void *do_scan(void *sr_ptr)
 {
 	struct scan_result *sr = sr_ptr;
 	struct scan_entry *cur;
+	int ret = 0;
 
 	pthread_detach(pthread_self());
-
 	do {
 		clear_scan_list(sr);
-		iw_nl80211_scan_trigger();
 
-		/* We are checking errno when returning NULL, so reset it here */
-		errno = 0;
+		//if (ret == 0 || ret == -EBUSY) // && 
+		//if (wait_for_scan_events(sr))
+		//	ret = iw_nl80211_get_scan_data(sr);
 
-		if (wait_for_scan_events(sr))
-			iw_nl80211_get_scan_data(sr);
-
-		if (!sr->head) {
-			if (errno) {
+		ret = iw_nl80211_scan_trigger();
+		if (ret == 0 || ret == -EBUSY) {
+			/* Trigger returns -EBUSY if a scan request is pending or ready. */
+			ret = iw_nl80211_get_scan_data(sr);
+			if (ret < 0) {
 				snprintf(sr->msg, sizeof(sr->msg),
-					 "Scan failed on %s: %s", conf_ifname(), strerror(errno));
-			} else {
+					 "Scan failed on %s: %s", conf_ifname(), strerror(-ret));
+			} else if (!sr->head) {
 				snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
+			}
+		} else {
+			switch(-ret) {
+			case EPERM:
+				if (!has_net_admin_capability())
+					snprintf(sr->msg, sizeof(sr->msg),
+						 "This screen requires CAP_NET_ADMIN permissions");
+				return NULL;
+			case EFAULT:
+				/*
+				 * EFAULT can occur after a window resizing event and is temporary.
+				 * It may also occur when the interface is down, hence defer handling.
+				 */
+				err_quit("FAULT");
+				break;
+			case EINTR:
+			case EAGAIN:
+				/* Temporary errors. */
+				snprintf(sr->msg, sizeof(sr->msg), "Waiting for device to become ready ...");
+				break;
+			case ENETDOWN:
+				if (!if_is_up(conf_ifname())) {
+					snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
+					if (if_set_up(conf_ifname()) < 0)
+						err_sys("Can not bring up interface '%s'", conf_ifname());
+					sleep(3);
+					break;
+				}
+				/* fall through */
+			default:
+				snprintf(sr->msg, sizeof(sr->msg),
+					 "Scan trigger failed on %s: %s", conf_ifname(), strerror(-ret));
 			}
 		}
 
