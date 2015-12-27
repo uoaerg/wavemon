@@ -37,10 +37,12 @@
 #endif
 
 /* Definitions from linux/ieee80211.h (not necessarily part of distro headers) */
-#define WLAN_CAPABILITY_ESS             (1<<0)
-#define WLAN_CAPABILITY_IBSS            (1<<1)
+#define WLAN_CAPABILITY_ESS	(1<<0)
+#define WLAN_CAPABILITY_IBSS	(1<<1)
 #define WLAN_CAPABILITY_IS_STA_BSS(cap) \
 		(!((cap) & (WLAN_CAPABILITY_ESS | WLAN_CAPABILITY_IBSS)))
+#define WLAN_CAPABILITY_PRIVACY	(1<<4)
+
 
 /**
  * struct if_info  -  wireless interface network information

@@ -177,31 +177,9 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	if (!new)
 		err_sys("failed to allocate scan entry");
 
-	// FIXME:
-#if 0
-			switch (iwe.cmd) {
-			case SIOCGIWMODE:
-				new->mode = iwe.u.mode;
-                    		f |= 4;
-				break;
-			case SIOCGIWENCODE:
-                		f |= 16;
-				new->has_key = !(iwe.u.data.flags & IW_ENCODE_DISABLED);
-				break;
-			case IWEVQUAL:
-				f |= 32;
-				memcpy(&new->qual, &iwe.u.qual, sizeof(struct iw_quality));
-				break;
-			case IWEVGENIE:
-				f |= 64;
-				iw_extract_ie(&iwe, new);
-				break;
-			}
-		}
-#endif
 	memcpy(&new->ap_addr, nla_data(bss[NL80211_BSS_BSSID]), sizeof(new->ap_addr));
 
-	/*
+	/* FIXME:
 	if (bss[NL80211_BSS_STATUS]) {
 		switch (nla_get_u32(bss[NL80211_BSS_STATUS])) {
 		case NL80211_BSS_STATUS_AUTHENTICATED:
@@ -219,7 +197,6 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 			break;
 		}
 	}
-	printf("\n");
 */
 #ifdef __LATER
 	if (bss[NL80211_BSS_TSF]) {
@@ -254,13 +231,15 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 		new->bss_signal = s / 100;
 	}
 
-	if (bss[NL80211_BSS_CAPABILITY])
+	if (bss[NL80211_BSS_CAPABILITY]) {
 		new->bss_capa = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
+		new->has_key  = (new->bss_capa & WLAN_CAPABILITY_PRIVACY) != 0;
+	}
 
 	if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
 		uint8_t *ie = nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
-		uint8_t len = ie[1];
 		int ielen   = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
+		uint8_t len = ie[1];
 
  		while (ielen >= 2 && ielen >= ie[1]) {
 			// FIXME: check min/max length
