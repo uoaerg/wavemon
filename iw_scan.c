@@ -106,7 +106,7 @@ static int wait_event(struct nl_msg *msg, void *arg)
  * Returns true if scan results are available, false if scan was aborted.
  * Taken from iw:event.c:__do_listen_events
  */
-bool wait_for_scan_events(struct scan_result *sr)
+static bool wait_for_scan_events(struct scan_result *sr)
 {
 	static const uint32_t cmds[] = {
 		NL80211_CMD_NEW_SCAN_RESULTS,
@@ -232,18 +232,6 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	if (bss[NL80211_BSS_BEACON_INTERVAL])
 		printf("\tbeacon interval: %d TUs\n",
 			nla_get_u16(bss[NL80211_BSS_BEACON_INTERVAL]));
-	if (bss[NL80211_BSS_CAPABILITY]) {
-		__u16 capa = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
-		/*
-		printf("\tcapability:");
-
-		if (new->freq > 45000)
-			print_capa_dmg(capa);
-		else
-			print_capa_non_dmg(capa);
-		printf(" (0x%.4x)\n", capa);
-		*/
-	}
 
 	if (bss[NL80211_BSS_SEEN_MS_AGO]) {
 		int age = nla_get_u32(bss[NL80211_BSS_SEEN_MS_AGO]);
@@ -266,6 +254,9 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 		new->bss_signal = s / 100;
 	}
 
+	if (bss[NL80211_BSS_CAPABILITY])
+		new->bss_capa = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
+
 	if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
 		uint8_t *ie = nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
 		uint8_t len = ie[1];
@@ -276,8 +267,7 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 			switch (ie[0]) {
 			case 0:
 				print_ssid_escaped(new->essid, sizeof(new->essid),
-						 ie+2,
-						 len);
+						   ie+2, len);
 				break;
 			}
 			ielen -= ie[1] + 2;
@@ -448,10 +438,6 @@ void *do_scan(void *sr_ptr)
 	do {
 		clear_scan_list(sr);
 
-		//if (ret == 0 || ret == -EBUSY) // && 
-		//if (wait_for_scan_events(sr))
-		//	ret = iw_nl80211_get_scan_data(sr);
-
 		ret = iw_nl80211_scan_trigger();
 		if (ret == 0 || ret == -EBUSY) {
 			/* Trigger returns -EBUSY if a scan request is pending or ready. */
@@ -470,12 +456,7 @@ void *do_scan(void *sr_ptr)
 						 "This screen requires CAP_NET_ADMIN permissions");
 				return NULL;
 			case EFAULT:
-				/*
-				 * EFAULT can occur after a window resizing event and is temporary.
-				 * It may also occur when the interface is down, hence defer handling.
-				 */
-				err_quit("FAULT");
-				break;
+				/* EFAULT can occur after a window resizing event: temporary, fall through. */
 			case EINTR:
 			case EAGAIN:
 				/* Temporary errors. */
@@ -486,7 +467,6 @@ void *do_scan(void *sr_ptr)
 					snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
 					if (if_set_up(conf_ifname()) < 0)
 						err_sys("Can not bring up interface '%s'", conf_ifname());
-					sleep(3);
 					break;
 				}
 				/* fall through */
@@ -502,9 +482,12 @@ void *do_scan(void *sr_ptr)
 				sr->max_essid_len = clamp(strlen(cur->essid),
 							  sr->max_essid_len,
 							  IW_ESSID_MAX_SIZE);
-			if (cur->freq >= 5e9)
+
+			if (cur->freq > 45000)	/* 802.11ad 60GHz spectrum */
+				err_quit("FIXME: can not handle %d MHz spectrum yet", cur->freq);
+			else if (cur->freq >= 5000)
 				sr->num.five_gig++;
-			else if (cur->freq >= 2e9)
+			else if (cur->freq >= 2000)
 				sr->num.two_gig++;
 			sr->num.entries += 1;
 			sr->num.open    += !cur->has_key;

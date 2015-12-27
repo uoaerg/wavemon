@@ -70,9 +70,13 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 				cur->freq / 1e3);
 
 	/* Access Points are marked by CP_SCAN_CRYPT/CP_SCAN_UNENC already */
-	if (cur->mode != IW_MODE_MASTER)
-		len += snprintf(buf + len, buflen - len, " %s",
-				iw_opmode(cur->mode));
+	if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa)) {
+		/* Taken from net/wireless/scan.c:ieee80211_bss() */
+		if (cur->bss_capa & WLAN_CAPABILITY_ESS)
+			len += snprintf(buf + len, buflen - len, " Master");
+		else
+			len += snprintf(buf + len, buflen - len, " Ad-Hoc");
+	}
 	if (cur->flags)
 		len += snprintf(buf + len, buflen - len, ", %s",
 				 format_enc_capab(cur->flags, "/"));
@@ -110,8 +114,9 @@ static void display_aplist(WINDOW *w_aplst)
 	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
 		col = CP_SCAN_NON_AP;
 
-		if (cur->mode == IW_MODE_MASTER)
+		if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa) && (cur->bss_capa & WLAN_CAPABILITY_ESS)) {
 			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
+		}
 
 		wmove(w_aplst, line, 1);
 		if (!*cur->essid) {

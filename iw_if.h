@@ -35,9 +35,12 @@
 #ifndef IW_POWER_SAVING
 #define IW_POWER_SAVING	0x4000		/* version 20 -> 21 */
 #endif
-#ifndef IW_MODE_MESH
-#define IW_MODE_MESH	7		/* introduced in 2.6.26-rc1 */
-#endif
+
+/* Definitions from linux/ieee80211.h (not necessarily part of distro headers) */
+#define WLAN_CAPABILITY_ESS             (1<<0)
+#define WLAN_CAPABILITY_IBSS            (1<<1)
+#define WLAN_CAPABILITY_IS_STA_BSS(cap) \
+		(!((cap) & (WLAN_CAPABILITY_ESS | WLAN_CAPABILITY_IBSS)))
 
 /**
  * struct if_info  -  wireless interface network information
@@ -202,27 +205,28 @@ static inline void sampling_stop(void)	{ alarm(0); }
  */
 /**
  * struct scan_entry  -  Representation of a single scan result.
- * @ap_addr:	MAC address
- * @essid:	station SSID (may be empty)
- * @mode:	operation mode (type of station)
- * @freq:	frequency/channel information
- * @chan:       channel corresponding to @freq (where applicable)
- * @bss_signal:       signal strength of BSS probe in dBm (or 0)
- * @bss_signal_qual:  unitless signal strength of BSS probe, 0..100
- * @has_key:	whether using encryption or not
- * @flags:	properties gathered from Information Elements
- * @next:	next entry in list
+ * @ap_addr:	     MAC address
+ * @essid:	     station SSID (may be empty)
+ * @freq:	     frequency in MHz
+ * @chan:	     channel corresponding to @freq (where applicable)
+ * @bss_signal:	     signal strength of BSS probe in dBm (or 0)
+ * @bss_signal_qual: unitless signal strength of BSS probe, 0..100
+ * @has_key:	     whether using encryption or not
+ * @bss_capa:	     BSS capability flags
+ * @flags:	     properties gathered from Information Elements
+ * @next:	     next entry in list
  */
 struct scan_entry {
 	struct ether_addr	ap_addr;
 	char			essid[IW_ESSID_MAX_SIZE + 2];
-	int			mode;
 	uint32_t		freq;
 	int			chan;
+
 	int8_t			bss_signal;
 	uint8_t			bss_signal_qual;
 
 	int 			has_key:1;
+	uint16_t		bss_capa;
 	uint32_t		flags;
 
 	struct scan_entry	*next;
@@ -303,22 +307,6 @@ extern const char *iftype_name(enum nl80211_iftype iftype);
 /*
  *	WEXT helper routines
  */
-static inline const char *iw_opmode(const uint8_t mode)
-{
-	static char *modes[] = {
-		[IW_MODE_AUTO]	  = "Auto",
-		[IW_MODE_ADHOC]	  = "Ad-Hoc",
-		[IW_MODE_INFRA]	  = "Managed",
-		[IW_MODE_MASTER]  = "Master",
-		[IW_MODE_REPEAT]  = "Repeater",
-		[IW_MODE_SECOND]  = "Secondary",
-		[IW_MODE_MONITOR] = "Monitor",
-		[IW_MODE_MESH]	  = "Mesh"
-	};
-
-	return mode < ARRAY_SIZE(modes) ? modes[mode] : "Unknown/bug";
-}
-
 /* Format driver TX power information */
 static inline char *format_txpower(const struct iw_param *txpwr)
 {
