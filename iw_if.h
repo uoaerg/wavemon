@@ -211,10 +211,12 @@ static inline void sampling_stop(void)	{ alarm(0); }
  * @essid:	     station SSID (may be empty)
  * @freq:	     frequency in MHz
  * @chan:	     channel corresponding to @freq (where applicable)
+ * @has_key:	     whether using encryption or not
  * @bss_signal:	     signal strength of BSS probe in dBm (or 0)
  * @bss_signal_qual: unitless signal strength of BSS probe, 0..100
- * @has_key:	     whether using encryption or not
  * @bss_capa:	     BSS capability flags
+ * @bss_sta_count:   BSS station count
+ * @bss_chan_usage:  BSS channel utilisation
  * @flags:	     properties gathered from Information Elements
  * @next:	     next entry in list
  */
@@ -223,12 +225,14 @@ struct scan_entry {
 	char			essid[IW_ESSID_MAX_SIZE + 2];
 	uint32_t		freq;
 	int			chan;
+	uint8_t			has_key:1;
 
 	int8_t			bss_signal;
 	uint8_t			bss_signal_qual;
-
-	int 			has_key:1;
 	uint16_t		bss_capa;
+	uint8_t			bss_sta_count,
+				bss_chan_usage;
+
 	uint32_t		flags;
 
 	struct scan_entry	*next;

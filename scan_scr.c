@@ -69,13 +69,18 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 		len += snprintf(buf + len, buflen - len, ", %g GHz",
 				cur->freq / 1e3);
 
-	/* Access Points are marked by CP_SCAN_CRYPT/CP_SCAN_UNENC already */
-	if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa)) {
-		/* Taken from net/wireless/scan.c:ieee80211_bss() */
-		if (cur->bss_capa & WLAN_CAPABILITY_ESS)
-			len += snprintf(buf + len, buflen - len, " Master");
-		else
-			len += snprintf(buf + len, buflen - len, " Ad-Hoc");
+	if (cur->bss_capa & WLAN_CAPABILITY_ESS) {
+		if (cur->bss_sta_count || cur->bss_chan_usage > 2) {
+			if (cur->bss_sta_count)
+				len += snprintf(buf + len, buflen - len, " %u sta", cur->bss_sta_count);
+			if (cur->bss_chan_usage > 2) /* 1% is 2.55 */
+				len += snprintf(buf + len, buflen - len, "%s %.0f%% chan",
+						cur->bss_sta_count? "," : "", (1e2 * cur->bss_chan_usage)/2.55e2);
+		} else {
+			len += snprintf(buf + len, buflen - len, " ESS");
+		}
+	} else if (cur->bss_capa & WLAN_CAPABILITY_IBSS) {
+		len += snprintf(buf + len, buflen - len, " IBSS");
 	}
 	if (cur->flags)
 		len += snprintf(buf + len, buflen - len, ", %s",

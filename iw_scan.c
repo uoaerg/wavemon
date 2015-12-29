@@ -242,11 +242,17 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 		uint8_t len = ie[1];
 
  		while (ielen >= 2 && ielen >= ie[1]) {
-			// FIXME: check min/max length
 			switch (ie[0]) {
-			case 0:
-				print_ssid_escaped(new->essid, sizeof(new->essid),
-						   ie+2, len);
+			case 0:	/* SSID */
+				if (len > 0 && len <= 32)
+					print_ssid_escaped(new->essid, sizeof(new->essid),
+							   ie+2, len);
+				break;
+			case 11: /* BSS Load */
+				if (len >= 5) {
+					new->bss_sta_count  = ie[3] << 8 | ie[2];
+					new->bss_chan_usage = ie[4];
+				}
 				break;
 			}
 			ielen -= ie[1] + 2;
