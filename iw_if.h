@@ -37,11 +37,21 @@
 #endif
 
 /* Definitions from linux/ieee80211.h (not necessarily part of distro headers) */
-#define WLAN_CAPABILITY_ESS	(1<<0)
-#define WLAN_CAPABILITY_IBSS	(1<<1)
+#define WLAN_CAPABILITY_ESS		(1<<0)
+#define WLAN_CAPABILITY_IBSS		(1<<1)
 #define WLAN_CAPABILITY_IS_STA_BSS(cap) \
 		(!((cap) & (WLAN_CAPABILITY_ESS | WLAN_CAPABILITY_IBSS)))
-#define WLAN_CAPABILITY_PRIVACY	(1<<4)
+#define WLAN_CAPABILITY_PRIVACY		(1<<4)
+
+/* 802.11h */
+#define WLAN_CAPABILITY_SPECTRUM_MGMT   (1<<8)
+#define WLAN_CAPABILITY_QOS             (1<<9)
+#define WLAN_CAPABILITY_SHORT_SLOT_TIME (1<<10)
+#define WLAN_CAPABILITY_APSD            (1<<11)
+#define WLAN_CAPABILITY_RADIO_MEASURE   (1<<12)
+#define WLAN_CAPABILITY_DSSS_OFDM       (1<<13)
+#define WLAN_CAPABILITY_DEL_BACK        (1<<14)
+#define WLAN_CAPABILITY_IMM_BACK        (1<<15)
 
 
 /**

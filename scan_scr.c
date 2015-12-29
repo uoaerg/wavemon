@@ -79,9 +79,14 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 		} else {
 			len += snprintf(buf + len, buflen - len, " ESS");
 		}
+		if (cur->bss_capa & WLAN_CAPABILITY_RADIO_MEASURE)
+			len += snprintf(buf + len, buflen - len, ", Radio Measure");
+		if (cur->bss_capa & WLAN_CAPABILITY_SPECTRUM_MGMT)
+			len += snprintf(buf + len, buflen - len, ", Spectrum Mgmt");
 	} else if (cur->bss_capa & WLAN_CAPABILITY_IBSS) {
 		len += snprintf(buf + len, buflen - len, " IBSS");
 	}
+
 }
 
 static void display_aplist(WINDOW *w_aplst)
