@@ -217,7 +217,6 @@ static inline void sampling_stop(void)	{ alarm(0); }
  * @bss_capa:	     BSS capability flags
  * @bss_sta_count:   BSS station count
  * @bss_chan_usage:  BSS channel utilisation
- * @flags:	     properties gathered from Information Elements
  * @next:	     next entry in list
  */
 struct scan_entry {
@@ -232,8 +231,6 @@ struct scan_entry {
 	uint16_t		bss_capa;
 	uint8_t			bss_sta_count,
 				bss_chan_usage;
-
-	uint32_t		flags;
 
 	struct scan_entry	*next;
 };
