@@ -436,7 +436,7 @@ static void init_conf_items(void)
 	item->type	= t_int;
 	item->v.i	= &conf.noise_min;
 	item->min	= -120;
-	item->max	= -69;
+	item->max	= -70;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
@@ -447,7 +447,7 @@ static void init_conf_items(void)
 	item->cfname	= strdup("max_noise_level");
 	item->type	= t_int;
 	item->v.i	= &conf.noise_max;
-	item->min	= -70;
+	item->min	= -69;
 	item->max	= -40;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");

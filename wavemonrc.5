@@ -1,4 +1,4 @@
-.TH wavemonrc 5 "March 2012" Linux "User Manuals"
+.TH wavemonrc 5 "January 2015" Linux "User Manuals"
 .SH NAME
 $HOME/.wavemonrc \- wavemon configuration file
 .SH DESCRIPTION
@@ -24,14 +24,14 @@ If enabled, display MAC addresses using lower-case hex digits separated by dots
 rather than colons.
 .P
 .RE
-.B sort_order = (channel|essid|signal|open|chan/sig|open/sig)
+.B sort_order = (channel|essid|mac|signal|open|chan/sig|open/sig)
 .RS
 .RE
 (Scan sort type)
 .RS
 Determines the ordering used in the scan window: \fIchannel\fR sorts by channel number, \fIessid\fR by
-access point name, \fIsignal\fR by signal strength, and \fIopen\fR by openness. The combined variants
-\fIchan/sig\fR and \fIopen/sig\fR sort first by channel/openness and then by signal strength.
+access point name, \fImac\fR by MAC address, \fIsignal\fR by signal strength, and \fIopen\fR by openness.
+The combined variants \fIchan/sig\fR and \fIopen/sig\fR sort first by channel/openness and then by signal strength.
 It also affects the status line at the bottom: normally the most crowded channels are listed,
 sorting by \fIchannel\fR in descending order switches to least crowded ones instead.
 .P
@@ -95,7 +95,7 @@ Override the auto-scaling of the bar graphs and histogram, allowing you to set y
 .RE
 (Minimum signal level, Maximum signal level)
 .RS
-Set the left and right boundaries of the signal level scales. Ranges: \-128..\-60dBm (minimum) and \-59..120dBm (maximum).
+Set the left and right boundaries of the signal level scales. Ranges: \-100..\-39 (minimum) and \-40..\-10dBm (maximum).
 .P
 .RE
 .B min_noise_level, max_noise_level = <n>
@@ -103,16 +103,8 @@ Set the left and right boundaries of the signal level scales. Ranges: \-128..\-6
 .RE
 (Minimum noise level, Maximum noise level)
 .RS
-These work similar to the signal boundary settings. Ranges: \-128..\-60dBm
-(minimum) and \-60..120dBm (maximum).
-.P
-.RE
-.B random = (on|off)
-.RS
-.RE
-(Random signals)
-.RS
-Switches on a fancy random generator for testing.
+These work similar to the signal boundary settings. Ranges: \-120..\-70dBm
+(minimum) and \-69..\-40dBm (maximum).
 .P
 .RE
 .B lo_threshold_action = (disabled|beep|flash|beep+flash)

@@ -1,4 +1,4 @@
-.TH wavemon 1 "March 2012" Linux "User Manuals"
+.TH wavemon 1 "January 2015" Linux "User Manuals"
 .SH NAME
 wavemon \- a wireless network monitor
 .SH SYNOPSIS
@@ -8,8 +8,7 @@ wavemon \- a wireless network monitor
 .SH DESCRIPTION
 \fIwavemon\fR is a ncurses-based monitoring application for wireless network
 devices. It plots levels in real-time as well as showing wireless and network
-related device information. Currently, wavemon is still based on the wireless
-extensions by Jean Tourrilhes <jt@hpl.hp.com>.
+related device information.
 
 The \fIwavemon\fR interface splits into different "screens".
 Each screen presents information in a specific manner. For example, the
@@ -79,8 +78,10 @@ address and the signal/channel information. A green/red MAC address indicates
 an (un-)encrypted access point, the colour changes to yellow for non-access
 points (in this case the mode is shown at the end of the line). The
 uncoloured information following the MAC address lists relative and
-absolute signal strengths, channel, frequency, and the mode if the node
-is not an access point.
+absolute signal strengths, channel, frequency, and station-specific information.
+The station-specific information includes the station type (ESS for Access Point,
+IBSS for Ad-Hoc network), station count and channel utilisation.
+
 A status line at the bottom informs about the current sort order and a few
 statistics, such as most (least) crowded channels (least crowded channels
 are listed when sorting by descending channel).
@@ -89,7 +90,6 @@ The \fIsort_order\fR can also directly be changed via these keyboard shortcuts:
 \fIa\fRscending, \fId\fRescending; by \fIe\fRssid, \fIs\fRignal, \fIc\fRhannel (\fIC\fR also with signal),
 \fIm\fRac address, or by \fIo\fRpen access (\fIO\fR also with signal).
 
-Please note that gathering meaningful scan data can take several seconds.
 .TP
 .B Preferences (F7 or 'p')
 This screen allows you to change all program options such as interface and
