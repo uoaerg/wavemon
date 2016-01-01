@@ -378,7 +378,6 @@ void scan_result_init(struct scan_result *sr)
 	if (pthread_mutexattr_setrobust(&ma, PTHREAD_MUTEX_ROBUST) < 0)
 		err_sys("Failed to set the mutex robust attribute");
 	pthread_mutex_init(&sr->mutex, &ma);
-	iw_getinf_range(conf_ifname(), &sr->range);
 }
 
 void scan_result_fini(struct scan_result *sr)

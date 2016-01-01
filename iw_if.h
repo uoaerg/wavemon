@@ -272,7 +272,6 @@ struct cnt {
  * @num.two_gig:   number of 2.4GHz stations among @num.total
  * @num.five_gig:  number of 5 GHz stations among @num.total
  * @num.ch_stats:  length of @channel_stats array
- * @range:         range data associated with scan interface
  * @mutex:         protects against concurrent consumer/producer access
  */
 struct scan_result {
@@ -289,7 +288,6 @@ struct scan_result {
 #define MAX_CH_STATS		3
 		size_t		ch_stats;
 	}		  num;
-	struct iw_range	  range;
 	pthread_mutex_t   mutex;
 };
 
