@@ -136,11 +136,10 @@ static bool wait_for_scan_events(struct scan_result *sr)
 	return wait_ev.cmd == NL80211_CMD_NEW_SCAN_RESULTS;
 }
 
-/*
- * Scan Commands
+/**
+ * Scan result handler. Stolen from iw:scan.c
+ * This also updates the scan-result statistics.
  */
-
-/* Scan result handler. Stolen from iw:scan.c */
 int scan_dump_handler(struct nl_msg *msg, void *arg)
 {
 	struct scan_result *sr = (struct scan_result *)arg;
@@ -231,10 +230,22 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
         	}
 	}
 
-	pthread_mutex_lock(&sr->mutex);
+	/* Update stats */
 	new->next = sr->head;
 	sr->head  = new;
-	pthread_mutex_unlock(&sr->mutex);
+	if (str_is_ascii(new->essid))
+		sr->max_essid_len = clamp(strlen(new->essid),
+					  sr->max_essid_len,
+					  IW_ESSID_MAX_SIZE);
+
+	if (new->freq > 45000)	/* 802.11ad 60GHz spectrum */
+		err_quit("FIXME: can not handle %d MHz spectrum yet", new->freq);
+	else if (new->freq >= 5000)
+		sr->num.five_gig++;
+	else if (new->freq >= 2000)
+		sr->num.two_gig++;
+	sr->num.entries += 1;
+	sr->num.open    += !new->has_key;
 
 	return NL_SKIP;
 }
@@ -382,7 +393,6 @@ void scan_result_fini(struct scan_result *sr)
 void *do_scan(void *sr_ptr)
 {
 	struct scan_result *sr = sr_ptr;
-	struct scan_entry *cur;
 	sigset_t blockmask;
 	int ret = 0;
 
@@ -403,6 +413,7 @@ void *do_scan(void *sr_ptr)
 			if (!wait_for_scan_events(sr)) {
 				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
 			} else {
+				pthread_mutex_lock(&sr->mutex);
 				ret = iw_nl80211_get_scan_data(sr);
 				if (ret < 0) {
 					snprintf(sr->msg, sizeof(sr->msg),
@@ -410,6 +421,8 @@ void *do_scan(void *sr_ptr)
 				} else if (!sr->head) {
 					snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
 				}
+				compute_channel_stats(sr);
+				pthread_mutex_unlock(&sr->mutex);
 			}
 			break;
 		case EPERM:
@@ -436,26 +449,6 @@ void *do_scan(void *sr_ptr)
 			snprintf(sr->msg, sizeof(sr->msg),
 				 "Scan trigger failed on %s: %s", conf_ifname(), strerror(-ret));
 		}
-
-		pthread_mutex_lock(&sr->mutex);
-		for (cur = sr->head; cur; cur = cur->next) {
-			if (str_is_ascii(cur->essid))
-				sr->max_essid_len = clamp(strlen(cur->essid),
-							  sr->max_essid_len,
-							  IW_ESSID_MAX_SIZE);
-
-			if (cur->freq > 45000)	/* 802.11ad 60GHz spectrum */
-				err_quit("FIXME: can not handle %d MHz spectrum yet", cur->freq);
-			else if (cur->freq >= 5000)
-				sr->num.five_gig++;
-			else if (cur->freq >= 2000)
-				sr->num.two_gig++;
-			sr->num.entries += 1;
-			sr->num.open    += !cur->has_key;
-		}
-		compute_channel_stats(sr);
-		pthread_mutex_unlock(&sr->mutex);
-
 	} while (usleep(conf.stat_iv * 1000) == 0);
 
 	return NULL;
