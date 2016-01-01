@@ -92,7 +92,9 @@ const char *pretty_time(const unsigned sec)
 		 h = sec % 86400 / 3600,
 		 m = sec %  3600 /   60;
 
-	if (d) {
+	if (d > 9) {
+		sprintf(buf, "%u days", d);
+	} else if (d) {
 		if (h) {
 			sprintf(buf, "%ud %uh", d, h);
 		} else if (m) {

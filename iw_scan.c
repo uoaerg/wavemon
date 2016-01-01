@@ -182,44 +182,6 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 
 	memcpy(&new->ap_addr, nla_data(bss[NL80211_BSS_BSSID]), sizeof(new->ap_addr));
 
-	/* FIXME:
-	if (bss[NL80211_BSS_STATUS]) {
-		switch (nla_get_u32(bss[NL80211_BSS_STATUS])) {
-		case NL80211_BSS_STATUS_AUTHENTICATED:
-			printf(" -- authenticated");
-			break;
-		case NL80211_BSS_STATUS_ASSOCIATED:
-			printf(" -- associated");
-			break;
-		case NL80211_BSS_STATUS_IBSS_JOINED:
-			printf(" -- joined");
-			break;
-		default:
-			printf(" -- unknown status: %d",
-				nla_get_u32(bss[NL80211_BSS_STATUS]));
-			break;
-		}
-	}
-*/
-#ifdef __LATER
-	if (bss[NL80211_BSS_TSF]) {
-		unsigned long long tsf;
-		tsf = (unsigned long long)nla_get_u64(bss[NL80211_BSS_TSF]);
-		printf("\tTSF: %llu usec (%llud, %.2lld:%.2llu:%.2llu)\n",
-			tsf, tsf/1000/1000/60/60/24, (tsf/1000/1000/60/60) % 24,
-			(tsf/1000/1000/60) % 60, (tsf/1000/1000) % 60);
-	}
-	if (bss[NL80211_BSS_BEACON_INTERVAL])
-		printf("\tbeacon interval: %d TUs\n",
-			nla_get_u16(bss[NL80211_BSS_BEACON_INTERVAL]));
-
-	if (bss[NL80211_BSS_SEEN_MS_AGO]) {
-		int age = nla_get_u32(bss[NL80211_BSS_SEEN_MS_AGO]);
-		printf("\tlast seen: %d ms ago\n", age);
-	}
-
-#endif /* LATER */
-
 	if (bss[NL80211_BSS_FREQUENCY]) {
 		new->freq = nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
 		new->chan = ieee80211_frequency_to_channel(new->freq);
@@ -238,6 +200,12 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 		new->bss_capa = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
 		new->has_key  = (new->bss_capa & WLAN_CAPABILITY_PRIVACY) != 0;
 	}
+
+	if (bss[NL80211_BSS_SEEN_MS_AGO])
+		new->last_seen = nla_get_u32(bss[NL80211_BSS_SEEN_MS_AGO]);
+
+	if (bss[NL80211_BSS_TSF])
+		new->tsf = nla_get_u64(bss[NL80211_BSS_TSF]);
 
 	if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
 		uint8_t *ie = nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]);

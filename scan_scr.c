@@ -87,6 +87,10 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 		len += snprintf(buf + len, buflen - len, " IBSS");
 	}
 
+	if (cur->tsf > 999999)
+		len += snprintf(buf + len, buflen - len, ", TSF %s", pretty_time(cur->tsf/1000000));
+	if (cur->last_seen)
+		len += snprintf(buf + len, buflen - len, ", last seen %.1fs", cur->last_seen/1e3);
 }
 
 static void display_aplist(WINDOW *w_aplst)

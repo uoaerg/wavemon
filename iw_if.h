@@ -222,6 +222,8 @@ static inline void sampling_stop(void)	{ alarm(0); }
  * @freq:	     frequency in MHz
  * @chan:	     channel corresponding to @freq (where applicable)
  * @has_key:	     whether using encryption or not
+ * @last_seen:       time station was last seen in seconds
+ * @tsf:             value of the Timing Synchronisation Function counter
  * @bss_signal:	     signal strength of BSS probe in dBm (or 0)
  * @bss_signal_qual: unitless signal strength of BSS probe, 0..100
  * @bss_capa:	     BSS capability flags
@@ -235,6 +237,9 @@ struct scan_entry {
 	uint32_t		freq;
 	int			chan;
 	uint8_t			has_key:1;
+
+	uint32_t		last_seen;
+	uint64_t		tsf;
 
 	int8_t			bss_signal;
 	uint8_t			bss_signal_qual;
