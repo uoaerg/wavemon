@@ -333,14 +333,3 @@ void iw_getinf_range(const char *ifname, struct iw_range *range)
 		err_sys("can not get range information");
 	close(skfd);
 }
-
-const char *we_version(void)
-{
-	static char buf[BUFSIZ];
-	struct iw_range	range;
-
-	iw_getinf_range(conf_ifname(), &range);
-	sprintf(buf, "wireless extensions v%d (source v%d)",
-		range.we_version_compiled, range.we_version_source);
-	return buf;
-}

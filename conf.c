@@ -558,7 +558,7 @@ void getconf(int argc, char *argv[])
 
 	if (version) {
 		printf("wavemon %s", PACKAGE_VERSION);
-		printf(" with %s and %s.\n", we_version(), curses_version());
+		printf(" with %s.\n", curses_version());
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
