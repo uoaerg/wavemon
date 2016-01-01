@@ -417,7 +417,13 @@ void *do_scan(void *sr_ptr)
 {
 	struct scan_result *sr = sr_ptr;
 	struct scan_entry *cur;
+	sigset_t blockmask;
 	int ret = 0;
+
+	/* SIGWINCH is supposed to be handled in the main thread. */
+	sigemptyset(&blockmask);
+	sigaddset(&blockmask, SIGWINCH);
+	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
 	pthread_detach(pthread_self());
 	do {

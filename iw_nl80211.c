@@ -83,7 +83,6 @@ int handle_cmd(struct cmd *cmd)
 	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &ret);
 	nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &ret);
 	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &ret);
-	/* Set callback for this message */
 	if (cmd->handler)
 		nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
 
