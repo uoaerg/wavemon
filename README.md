@@ -5,8 +5,7 @@
 wavemon is a wireless device monitoring application that allows you to watch
 signal and noise levels, packet statistics, device configuration and network
 parameters of your wireless network hardware. It should work (though with
-varying features) with all devices supported by the Linux wireless kernel
-extensions by Jean Tourrilhes.
+varying features) with all devices supported by the Linux kernel.
 
 See the man page for an in-depth description of operation and configuration.
 
@@ -33,8 +32,7 @@ wavemon uses autoconf, so that in most cases you can simply run
 to build and install the package. Type 'make uninstall' if not happy.
 Refer to the file `INSTALL` for generic installation instructions.
 
-To grant users access to restricted networking operations (e.g. reading WEP
-keys or performing scan operations), use additionally
+To grant users access to restricted networking operations (scan operations), use additionally
 ```
 	sudo make install-suid-root
 ```
