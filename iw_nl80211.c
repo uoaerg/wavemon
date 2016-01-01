@@ -713,10 +713,10 @@ struct nl_sock *alloc_nl_mcast_sk(const char *grp)
 	struct nl_sock *sk = nl_socket_alloc();
 
 	if (!sk)
-		err_sys("failed to allocate netlink socket");
+		err_sys("failed to allocate netlink multicast socket");
 
 	if (genl_connect(sk))
-		err_sys("failed to connect to GeNetlink");
+		err_sys("failed to connect multicast socket to GeNetlink");
 
 	mcid = nl_get_multicast_id(sk, "nl80211", grp);
 	if (mcid < 0)
