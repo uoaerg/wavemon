@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.64)
-AC_INIT([wavemon], [0.7.6], [gerrit@erg.abdn.ac.uk], [wavemon-current],
+AC_INIT([wavemon], [0.8.0], [gerrit@erg.abdn.ac.uk], [wavemon-current],
 	[https://github.com/uoaerg/wavemon])
 
 

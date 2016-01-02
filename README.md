@@ -23,13 +23,20 @@ wavemon is distributed under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.
 
 ## How to build
 
-wavemon uses autoconf, so that in most cases you can simply run
+wavemon uses `autoconf`, so that in most cases you can simply run
 ```
 	./configure
 	make
 	sudo make install
 ```
 to build and install the package. Type 'make uninstall' if not happy.
+
+_Building_ requires at least version 3.2 of `libnl`, including the Generic Netlink support (`libnl-genl`).
+On Debian/Ubuntu, this can be done using
+
+```bash
+$ apt-get -y install libnl-3-dev libnl-genl-3-dev
+```
 Refer to the file `INSTALL` for generic installation instructions.
 
 To grant users access to restricted networking operations (scan operations), use additionally
