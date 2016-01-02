@@ -13,9 +13,8 @@ See the man page for an in-depth description of operation and configuration.
 ### Where to obtain
 
 Apart from debian/ubuntu packages (apt-cache search wavemon) and slackbuild
-scripts for wavemon on slackbuilds.org, up-to-date sources are available on
-
-	[https://github.com/uoaerg/wavemon](https://github.com/uoaerg/wavemon)
+scripts for wavemon on slackbuilds.org, this repository contains the full
+source code.
 
 Please check this page for updates and for further information.
 wavemon is distributed under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), refer to the file `COPYING`.
@@ -30,14 +29,13 @@ wavemon uses `autoconf`, so that in most cases you can simply run
 	sudo make install
 ```
 to build and install the package. Type 'make uninstall' if not happy.
-
-_Building_ requires at least version 3.2 of `libnl`, including the Generic Netlink support (`libnl-genl`).
-On Debian/Ubuntu, this can be done using
-
-```bash
-$ apt-get -y install libnl-3-dev libnl-genl-3-dev
-```
 Refer to the file `INSTALL` for generic installation instructions.
+
+**Dependencies**: at least version 3.2 of `libnl`, including the Generic Netlink support (`libnl-genl`).
+On Debian/Ubuntu, this can be done using
+```bash
+	apt-get -y install libnl-3-dev libnl-genl-3-dev
+```
 
 To grant users access to restricted networking operations (scan operations), use additionally
 ```
