@@ -7,6 +7,10 @@ signal and noise levels, packet statistics, device configuration and network
 parameters of your wireless network hardware. It should work (though with
 varying features) with all devices supported by the Linux kernel.
 
+Note that wavemon requires a Linux Kernel with wireless extensions enabled. If
+your Kernel setup uses `CONFIG_CFG80211` make sure that the config option
+`CONFIG_CFG80211_WEXT` is set.
+
 See the man page for an in-depth description of operation and configuration.
 
 
