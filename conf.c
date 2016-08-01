@@ -20,6 +20,7 @@
 #include "wavemon.h"
 #include <pwd.h>
 #include <sys/types.h>
+#include <netlink/version.h>
 
 /* GLOBALS */
 #define MAX_IFLIST_ENTRIES 64
@@ -558,7 +559,7 @@ void getconf(int argc, char *argv[])
 
 	if (version) {
 		printf("wavemon %s", PACKAGE_VERSION);
-		printf(" with %s.\n", curses_version());
+		printf(" with %s and libnl %s.\n", curses_version(), LIBNL_VERSION);
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
