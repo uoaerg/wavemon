@@ -530,10 +530,7 @@ static void init_conf_items(void)
 void getconf(int argc, char *argv[])
 {
 	int arg, help = 0, version = 0;
-
-	conf_get_interface_list();
-	init_conf_items();
-	read_cf();
+	const char *iface = NULL;
 
 	while ((arg = getopt(argc, argv, "ghi:v")) >= 0) {
 		switch (arg) {
@@ -544,10 +541,7 @@ void getconf(int argc, char *argv[])
 			help++;
 			break;
 		case 'i':
-			conf.if_idx = argv_find(if_list, optarg);
-			if (conf.if_idx < 0)
-				err_quit("no wireless extensions found on '%s'",
-					 optarg);
+			iface = optarg;
 			break;
 		case 'v':
 			version++;
@@ -567,9 +561,21 @@ void getconf(int argc, char *argv[])
 		printf("  -g            Ensure screen is sufficiently dimensioned\n");
 		printf("  -h            This help screen\n");
 		printf("  -i <ifname>   Use specified network interface (default: auto)\n");
-		printf("  -v            Print version number\n");
+		printf("  -v            Print version details\n");
 	}
 
-	if (version || help)
+	if (version || help) {
 		exit(EXIT_SUCCESS);
+	}
+
+	/* Actual initialization. */
+	conf_get_interface_list();
+	init_conf_items();
+	read_cf();
+
+	if (iface) {
+		conf.if_idx = argv_find(if_list, iface);
+		if (conf.if_idx < 0)
+			err_quit("%s is not a usable wireless interface", iface);
+	}
 }
