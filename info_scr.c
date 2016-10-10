@@ -22,23 +22,38 @@
 
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
+static bool run;
+static pthread_t sampling_thread;
 static struct timer dyn_updates;
 struct iw_range	range;
 static struct iw_nl80211_linkstat ls;
 
-void sampling_init(void (*sampling_handler)(int))
+static void *sampling_loop(void *arg)
 {
-	struct itimerval i;
-	div_t d = div(conf.stat_iv, 1000);	/* conf.stat_iv in msec */
+	void (*handler)() = arg;
+	sigset_t blockmask;
 
-	xsignal(SIGALRM, SIG_IGN);
-	iw_getinf_range(conf_ifname(), &range);
-	i.it_interval.tv_sec  = i.it_value.tv_sec  = d.quot;
-	i.it_interval.tv_usec = i.it_value.tv_usec = d.rem * 1000;
-	xsignal(SIGALRM, sampling_handler);
+	/* See comment in scan_scr.c for rationale. */
+	sigemptyset(&blockmask);
+	sigaddset(&blockmask, SIGWINCH);
+	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
-	(*sampling_handler)(0);
-	setitimer(ITIMER_REAL, &i, NULL);
+	do {
+		(*handler)();
+	} while (run && usleep(conf.stat_iv * 1000) == 0);
+	return NULL;
+}
+
+void sampling_init(void (*sampling_handler)())
+{
+	run = true;
+	pthread_create(&sampling_thread, NULL, sampling_loop, sampling_handler);
+}
+
+void sampling_stop(void)
+{
+	run = false;
+	pthread_join(sampling_thread, NULL);
 }
 
 void sampling_do_poll(void)
@@ -657,6 +672,7 @@ static void display_netinfo(WINDOW *w_net)
 			waddstr_b(w_net, inet_ntoa(info.bcast));
 		}
 	}
+	wclrtoborder(w_net);
 
 	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
 	if (info.mtu && info.mtu != ETH_DATA_LEN) {
@@ -668,7 +684,7 @@ static void display_netinfo(WINDOW *w_net)
 	wrefresh(w_net);
 }
 
-static void redraw_stat_levels(int signum)
+static void redraw_stat_levels()
 {
 	sampling_do_poll();
 	display_levels();

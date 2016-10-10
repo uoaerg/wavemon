@@ -210,7 +210,7 @@ extern void iw_getinf_range(const char *ifname, struct iw_range *range);
  */
 extern void sampling_init(void (*sampling_handler)(int));
 extern void sampling_do_poll(void);
-static inline void sampling_stop(void)	{ alarm(0); }
+extern void sampling_stop(void);
 
 /*
  *	Organization of scan results

@@ -317,7 +317,7 @@ static void display_key(WINDOW *w_key)
 	wrefresh(w_key);
 }
 
-static void redraw_lhist(int signum)
+static void redraw_lhist()
 {
 	static int vcount = 1;
 
