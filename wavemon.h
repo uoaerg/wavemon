@@ -285,17 +285,6 @@ extern void conf_get_interface_list(void);
 extern void iw_get_interface_list(char** if_list, size_t max_entries);
 
 /*
- *	Timers
- */
-struct timer {
-	unsigned long long	stime;
-	unsigned long		duration;
-};
-
-extern void start_timer(struct timer *t, unsigned long d);
-extern bool end_timer(struct timer *t);
-
-/*
  *	Error handling
  */
 extern bool has_net_admin_capability(void);
