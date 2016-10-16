@@ -22,9 +22,8 @@
 static unsigned long get_usecs(void)
 {
 	struct timeval tv;
-	struct timezone tz;
 
-	gettimeofday(&tv, &tz);
+	gettimeofday(&tv, NULL);
 
 	return tv.tv_sec * 1000000 + tv.tv_usec;
 }
