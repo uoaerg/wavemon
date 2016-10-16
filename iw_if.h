@@ -181,18 +181,6 @@ extern void dyn_info_get(struct iw_dyn_info *info,
 extern void dyn_info_cleanup(struct iw_dyn_info *info);
 
 
-/**
- * struct if_stat  -  Packet/byte counts for interfaces
- */
-struct if_stat {
-	unsigned long long	rx_packets,
-				tx_packets;
-	unsigned long long	rx_bytes,
-				tx_bytes;
-};
-
-extern void if_getstat(const char *ifname, struct if_stat *stat);
-
 /*
  *	 Structs to communicate WiFi statistics
  */

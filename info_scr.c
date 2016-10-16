@@ -176,10 +176,7 @@ done_levels:
 
 static void display_stats(void)
 {
-	struct if_stat nstat;
 	char tmp[0x100];
-
-	if_getstat(conf_ifname(), &nstat);
 
 	/*
 	 * Interface RX stats

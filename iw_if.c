@@ -148,35 +148,6 @@ void iw_get_interface_list(char** if_list, size_t max_entries)
 	fclose(fp);
 }
 
-void if_getstat(const char *ifname, struct if_stat *stat)
-{
-	char line[0x100];
-	unsigned long long d;
-	char *lp;
-	size_t l = strlen(ifname);
-	const char path[] = "/proc/net/dev";
-	FILE *fp = fopen(path, "r");
-
-	if (fp == NULL)
-		err_sys("can not open %s", path);
-	/*
-	 * Inter-|   Receive                                                | Transmit
-	 *  face |bytes    packets errs drop fifo frame compressed multicast|bytes packets
-	 */
-	while (fgets(line, sizeof(line), fp)) {
-		lp = line + strspn(line, " ");
-		if (!strncmp(lp, ifname, l) && lp[l] == ':') {
-			lp += l + 1;
-			lp += strspn(lp, " ");
-
-			sscanf(lp, "%llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
-				&stat->rx_bytes, &stat->rx_packets, &d, &d, &d, &d, &d, &d,
-				&stat->tx_bytes, &stat->tx_packets);
-		}
-	}
-	fclose(fp);
-}
-
 /**
  * iw_dyn_info_get  -  populate dynamic information
  * @info:   information to populate
