@@ -24,7 +24,7 @@
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static bool run;
 static pthread_t sampling_thread;
-static struct timer dyn_updates;
+static time_t last_update;
 struct iw_range	range;
 static struct iw_nl80211_linkstat ls;
 
@@ -707,16 +707,17 @@ void scr_info_init(void)
 
 	display_info(w_if, w_info);
 	display_netinfo(w_net);
-	start_timer(&dyn_updates, conf.info_iv * 1000000);
 	sampling_init(redraw_stat_levels);
 }
 
 int scr_info_loop(WINDOW *w_menu)
 {
-	if (end_timer(&dyn_updates)) {
+	time_t now = time(NULL);
+
+	if (now - last_update >= conf.info_iv) {
+		last_update = now;
 		display_info(w_if, w_info);
 		display_netinfo(w_net);
-		start_timer(&dyn_updates, conf.info_iv * 1000000);
 	}
 	return wgetch(w_menu);
 }
