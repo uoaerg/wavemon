@@ -684,8 +684,6 @@ static void display_netinfo(WINDOW *w_net)
 static void redraw_stat_levels()
 {
 	sampling_do_poll();
-	display_levels();
-	display_stats();
 }
 
 void scr_info_init(void)
@@ -714,6 +712,8 @@ int scr_info_loop(WINDOW *w_menu)
 {
 	time_t now = time(NULL);
 
+	display_levels();
+	display_stats();
 	if (now - last_update >= conf.info_iv) {
 		last_update = now;
 		display_info(w_if, w_info);
