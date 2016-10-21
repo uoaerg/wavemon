@@ -317,18 +317,6 @@ static void display_key(WINDOW *w_key)
 	wrefresh(w_key);
 }
 
-static void redraw_lhist()
-{
-	static int vcount = 1;
-
-	sampling_do_poll();
-	if (!--vcount) {
-		vcount = conf.slotsize;
-		display_lhist();
-		display_key(w_key);
-	}
-}
-
 void scr_lhist_init(void)
 {
 	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level histogram", true);
@@ -337,13 +325,20 @@ void scr_lhist_init(void)
 	init_extrema(&e_signal);
 	init_extrema(&e_noise);
 	init_extrema(&e_snr);
-	sampling_init(redraw_lhist);
+	sampling_init();
 
 	display_key(w_key);
 }
 
 int scr_lhist_loop(WINDOW *w_menu)
 {
+	static int vcount = 1;
+
+	if (!--vcount) {
+		vcount = conf.slotsize;
+		display_lhist();
+		display_key(w_key);
+	}
 	return wgetch(w_menu);
 }
 

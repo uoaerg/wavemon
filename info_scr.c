@@ -22,15 +22,15 @@
 
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
-static bool run;
 static pthread_t sampling_thread;
+static bool run;
 static time_t last_update;
 struct iw_range	range;
 static struct iw_nl80211_linkstat ls;
 
+/** Sampling pthread shared by info and histogram screen. */
 static void *sampling_loop(void *arg)
 {
-	void (*handler)() = arg;
 	sigset_t blockmask;
 
 	/* See comment in scan_scr.c for rationale. */
@@ -39,27 +39,22 @@ static void *sampling_loop(void *arg)
 	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
 	do {
-		(*handler)();
+		iw_nl80211_get_linkstat(&ls);
+		iw_cache_update(&ls);
 	} while (run && usleep(conf.stat_iv * 1000) == 0);
 	return NULL;
 }
 
-void sampling_init(void (*sampling_handler)())
+void sampling_init(void)
 {
 	run = true;
-	pthread_create(&sampling_thread, NULL, sampling_loop, sampling_handler);
+	pthread_create(&sampling_thread, NULL, sampling_loop, NULL);
 }
 
 void sampling_stop(void)
 {
 	run = false;
 	pthread_join(sampling_thread, NULL);
-}
-
-void sampling_do_poll(void)
-{
-	iw_nl80211_get_linkstat(&ls);
-	iw_cache_update(&ls);
 }
 
 static void display_levels(void)
@@ -681,11 +676,6 @@ static void display_netinfo(WINDOW *w_net)
 	wrefresh(w_net);
 }
 
-static void redraw_stat_levels()
-{
-	sampling_do_poll();
-}
-
 void scr_info_init(void)
 {
 	int line = 0;
@@ -703,9 +693,7 @@ void scr_info_init(void)
 	else
 		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 
-	display_info(w_if, w_info);
-	display_netinfo(w_net);
-	sampling_init(redraw_stat_levels);
+	sampling_init();
 }
 
 int scr_info_loop(WINDOW *w_menu)
