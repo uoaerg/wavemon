@@ -268,10 +268,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	 */
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
-	if (range.enc_capa & IW_WPA_MASK)
-		sprintf(tmp, " (%s, %s)", info.name, format_wpa(&range));
-	else
-		sprintf(tmp, " (%s)", info.name);
+	sprintf(tmp, " (%s)", info.name);
 	waddstr(w_if, tmp);
 
 	/* PHY */

@@ -444,31 +444,6 @@ static inline char *format_key(const struct iw_key *const iwk)
 	return buf;
 }
 
-/* Human-readable representation of IW_ENC_CAPA_ types */
-static inline const char *format_enc_capab(const uint32_t capa, const char *sep)
-{
-	static char buf[32];
-	size_t len = 0, max = sizeof(buf);
-
-	if (capa & IW_ENC_CAPA_WPA)
-		len = snprintf(buf, max, "WPA");
-	if (capa & IW_ENC_CAPA_WPA2)
-		len += snprintf(buf + len, max - len, "%sWPA2", len ? sep : "");
-	if (capa & IW_ENC_CAPA_CIPHER_TKIP)
-		len += snprintf(buf + len, max - len, "%sTKIP", len ? sep : "");
-	if (capa & IW_ENC_CAPA_CIPHER_CCMP)
-		len += snprintf(buf + len, max - len, "%sCCMP", len ? sep : "");
-	buf[len] = '\0';
-	return buf;
-}
-
-/* Display only the supported WPA type */
-#define IW_WPA_MASK	(IW_ENC_CAPA_WPA|IW_ENC_CAPA_WPA2)
-static inline const char *format_wpa(struct iw_range *ir)
-{
-	return format_enc_capab(ir->enc_capa & IW_WPA_MASK, "/");
-}
-
 static inline char *format_retry(const struct iw_param *retry,
 				 const struct iw_range *range)
 {
