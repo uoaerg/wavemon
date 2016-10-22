@@ -25,7 +25,6 @@ static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static pthread_t sampling_thread;
 static bool run;
 static time_t last_update;
-struct iw_range	range;
 static struct iw_nl80211_linkstat ls;
 
 /** Sampling pthread shared by info and histogram screen. */
@@ -245,6 +244,7 @@ static void display_stats(void)
 static void display_info(WINDOW *w_if, WINDOW *w_info)
 {
 	struct iw_dyn_info info;
+	struct iw_range	range;
 	struct iw_nl80211_ifstat ifs;
 	struct iw_nl80211_reg ir;
 	char tmp[0x100];
