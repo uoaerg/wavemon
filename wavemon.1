@@ -121,6 +121,12 @@ properly.
 print help and exit.
 .IP "\fB\-v\fR"
 print version information and exit.
+.SH Troubleshooting
+wavemon will exit with \fB'no supported wireless interfaces found'\fR if no usable wireless interfaces
+were detected. Check if your wireless interfaces is otherwise usable, using e.g. \fIiw\fR, \fIiwconfig\fR,
+or similar tools. The interface should appear in /proc/net/dev and, if wireless extensions are supported,
+also in /proc/net/wireless. If the interface does not appear, causes can be a missing (or not loaded)
+kernel module, or missing firmware, which some cards need to operate.
 
 .SH "ENVIRONMENT VARIABLES"
 .IP "LC_NUMERIC"

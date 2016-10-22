@@ -95,7 +95,7 @@ void conf_get_interface_list(void)
 	}
 	iw_get_interface_list(if_list, MAX_IFLIST_ENTRIES);
 	if (!if_list[0])
-		err_quit("no supported wireless interfaces found!");
+		err_quit("no supported wireless interfaces found!. Check manpage for help.");
 
 	conf.if_idx = 0;
 	if (old_if) {
