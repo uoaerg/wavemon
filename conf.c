@@ -21,6 +21,11 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <netlink/version.h>
+#ifdef NCURSES_VERSION
+#define CURSES_VERSION curses_version()
+#else
+#define CURSES_VERSION "unknown curses version"
+#endif
 
 /* GLOBALS */
 #define MAX_IFLIST_ENTRIES 64
@@ -553,7 +558,7 @@ void getconf(int argc, char *argv[])
 
 	if (version) {
 		printf("wavemon %s", PACKAGE_VERSION);
-		printf(" with %s and libnl %s.\n", curses_version(), LIBNL_VERSION);
+		printf(" with %s and libnl %s.\n", CURSES_VERSION, LIBNL_VERSION);
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
