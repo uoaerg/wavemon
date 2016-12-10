@@ -553,7 +553,7 @@ void getconf(int argc, char *argv[])
 
 	if (version) {
 		printf("wavemon %s", PACKAGE_VERSION);
-		printf(" with %s and libnl %s.\n", curses_version(), LIBNL_VERSION);
+		printf(" with ncurses %s and libnl %s.\n", NCURSES_VERSION, LIBNL_VERSION);
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
