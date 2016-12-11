@@ -259,6 +259,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	char tmp[0x100];
 	int i;
 
+	iw_getinf_range(conf_ifname(), &range);
 	dyn_info_get(&info, conf_ifname(), &range);
 	iw_nl80211_getifstat(&ifs);
 	iw_nl80211_getreg(&ir);
