@@ -164,7 +164,6 @@ void dyn_info_get(struct iw_dyn_info *info,
 		err_sys("%s: can not open socket", __func__);
 
 	memset(info, 0, sizeof(*info));
-	memset(ir, 0, sizeof(*ir));
 	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
 
 	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
