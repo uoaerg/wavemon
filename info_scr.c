@@ -202,9 +202,9 @@ static void display_stats(void)
 
 		if (linkstat.data.expected_thru) {
 			if (linkstat.data.expected_thru >= 1024)
-				sprintf(tmp, " (exp: %.1f MB/s)",  linkstat.data.expected_thru/1024.0);
+				sprintf(tmp, " (expected: %.1f MB/s)",  linkstat.data.expected_thru/1024.0);
 			else
-				sprintf(tmp, " (exp: %u kB/s)",  linkstat.data.expected_thru);
+				sprintf(tmp, " (expected: %u kB/s)",  linkstat.data.expected_thru);
 			waddstr(w_stats, tmp);
 		}
 	}
