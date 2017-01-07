@@ -257,10 +257,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	struct iw_nl80211_ifstat ifs;
 	struct iw_nl80211_reg ir;
 	char tmp[0x100];
-	int i;
 
 	iw_getinf_range(conf_ifname(), &range);
-	dyn_info_get(&info, conf_ifname(), &range);
+	dyn_info_get(&info, conf_ifname());
 	iw_nl80211_getifstat(&ifs);
 	iw_nl80211_getreg(&ir);
 
@@ -530,63 +529,11 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
+	/* FIXME: re-enable encryption information (issue #8)
 	wmove(w_info, 7, 1);
 	waddstr(w_info, "encryption: ");
-	if (info.keys) {
-		int cnt = dyn_info_active_keys(&info);
+	*/
 
-		if (cnt == 0) {
-			waddstr_b(w_info, "off (no key set)");
-		} else if (info.active_key) {
-			i = info.active_key - 1;
-			waddstr_b(w_info, curtail(format_key(info.keys + i),
-					  "..", MAXXLEN/2));
-
-			if (info.keys[i].flags & IW_ENCODE_RESTRICTED)
-				waddstr(w_info, ", restricted");
-			if (info.keys[i].flags & IW_ENCODE_OPEN)
-				waddstr(w_info, ", open");
-
-			/* First key = default */
-			if (cnt > 1 || info.active_key != 1) {
-				sprintf(tmp, " [%d]", info.active_key);
-				waddstr_b(w_info, tmp);
-			}
-			if (cnt > 1) {
-				sprintf(tmp, " (%d other key%s)", cnt - 1,
-					cnt == 2 ? "" : "s");
-				waddstr(w_info, tmp);
-			}
-		} else  if (dyn_info_wep_keys(&info) == cnt) {
-			waddstr_b(w_info, "off ");
-			sprintf(tmp, "(%d disabled WEP key%s)", cnt,
-				cnt == 1 ? "" : "s");
-			waddstr(w_info, tmp);
-		} else {
-			uint8_t j = 0, k = 0;
-
-			do  if (info.keys[j].size &&
-				!(info.keys[j].flags & IW_ENCODE_DISABLED))
-					info.keys[k++].size = info.keys[j].size;
-			while (k < cnt && ++j < info.nkeys);
-
-			if (cnt == 1)
-				j = sprintf(tmp, "1 key (index #%u), ", j + 1);
-			else
-				j = sprintf(tmp, "%d keys with ", k);
-			for (i = 0; i < k; i++)
-				j += sprintf(tmp + j, "%s%d",	i ? "/" : "",
-					     info.keys[i].size * 8);
-			sprintf(tmp + j, " bits");
-			waddstr_b(w_info, tmp);
-		}
-	} else if (has_net_admin_capability()) {
-		waddstr(w_info, "no information available");
-	} else {
-		waddstr(w_info, "n/a (requires CAP_NET_ADMIN permissions)");
-	}
-
-	dyn_info_cleanup(&info);
 	wclrtoborder(w_info);
 	wrefresh(w_info);
 }

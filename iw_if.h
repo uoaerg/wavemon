@@ -148,37 +148,9 @@ struct iw_dyn_info {
 	float		freq;
 	int32_t		sens;
 	unsigned long	bitrate;
-
-	struct iw_key	*keys;
-	uint8_t		nkeys;
-	uint8_t		active_key;
 };
 
-/* Return the number of encryption keys marked 'active' in @info */
-static inline uint8_t dyn_info_active_keys(struct iw_dyn_info *info)
-{
-	int i, num_active = 0;
-
-	for (i = 0; i < info->nkeys; i++)
-		num_active += info->keys[i].size &&
-			      !(info->keys[i].flags & IW_ENCODE_DISABLED);
-	return num_active;
-}
-
-/* Return the number of 40-bit/104-bit keys in @info */
-static inline uint8_t dyn_info_wep_keys(struct iw_dyn_info *info)
-{
-	int i, num_wep = 0;
-
-	for (i = 0; i < info->nkeys; i++)
-		if (!(info->keys[i].flags & IW_ENCODE_DISABLED))
-			num_wep += info->keys[i].size == 5 ||
-				   info->keys[i].size == 13;
-	return num_wep;
-}
-extern void dyn_info_get(struct iw_dyn_info *info,
-			 const char *ifname, struct iw_range *ir);
-extern void dyn_info_cleanup(struct iw_dyn_info *info);
+extern void dyn_info_get(struct iw_dyn_info *info, const char *ifname);
 
 
 /*

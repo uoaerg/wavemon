@@ -154,11 +154,10 @@ void iw_get_interface_list(char** if_list, size_t max_entries)
  * @ifname: interface name
  * @if:	    range information to use (number of encryption keys)
  */
-void dyn_info_get(struct iw_dyn_info *info,
-		  const char *ifname, struct iw_range *ir)
+void dyn_info_get(struct iw_dyn_info *info, const char *ifname)
 {
 	struct iwreq iwr;
-	int i, skfd = socket(AF_INET, SOCK_DGRAM, 0);
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (skfd < 0)
 		err_sys("%s: can not open socket", __func__);
@@ -230,56 +229,12 @@ void dyn_info_get(struct iw_dyn_info *info,
 		info->mode     = iwr.u.mode;
 	}
 
-	info->nkeys = ir->max_encoding_tokens;
-	if (info->nkeys) {
-		info->keys = calloc(info->nkeys, sizeof(*info->keys));
-		if (info->keys == NULL)
-			err_sys("malloc(key array)");
-
-		/* Get index of default key first */
-		iwr.u.data.pointer = info->keys[0].key;
-		iwr.u.data.length  = sizeof(info->keys[0].key);
-		iwr.u.data.flags   = 0;
-		if (ioctl(skfd, SIOCGIWENCODE, &iwr) < 0) {
-			free(info->keys);
-			info->keys  = NULL;
-			info->nkeys = 0;
-		} else {
-			info->active_key = iwr.u.data.flags & IW_ENCODE_INDEX;
-		}
-	}
-	/* If successful, populate the key array */
-	for (i = 0; i < info->nkeys; i++) {
-		iwr.u.data.pointer = info->keys[i].key;
-		iwr.u.data.length  = sizeof(info->keys->key);
-		iwr.u.data.flags   = i + 1;	/* counts 1..n instead of 0..n-1 */
-		if (ioctl(skfd, SIOCGIWENCODE, &iwr) < 0) {
-			free(info->keys);
-			info->nkeys = 0;
-			break;
-		}
-		info->keys[i].size  = iwr.u.data.length;
-		info->keys[i].flags = iwr.u.data.flags;
-
-		/* Validate whether the current key is indeed active */
-		if (i + 1 == info->active_key && (info->keys[i].size == 0 ||
-		    (info->keys[i].flags & IW_ENCODE_DISABLED)))
-			info->active_key = 0;
-	}
-
 	if (ioctl(skfd, SIOCGIWAP, &iwr) >= 0) {
 		info->cap_ap = 1;
 		memcpy(&info->ap_addr, &iwr.u.ap_addr, sizeof(struct sockaddr));
 	}
 	close(skfd);
 }
-
-void dyn_info_cleanup(struct iw_dyn_info *info)
-{
-	if (info)
-		free(info->keys);
-}
-
 
 /*
  * Request range information for a given wireless interface.
