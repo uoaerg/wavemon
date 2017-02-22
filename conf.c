@@ -21,7 +21,9 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <netlink/version.h>
-
+#ifndef NCURSES_VERSION
+#define NCURSES_VERSION "unknown"
+#endif
 /* GLOBALS */
 #define MAX_IFLIST_ENTRIES 64
 static char *if_list[MAX_IFLIST_ENTRIES]; /* array of WiFi interface names */
