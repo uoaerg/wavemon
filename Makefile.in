@@ -20,7 +20,7 @@ RM	= rm -vf
 
 MAIN	= @PACKAGE_NAME@.c
 HEADERS	= $(wildcard *.h)
-PURESRC	= $(filter-out $(MAIN),$(wildcard *.c))
+PURESRC	= $(filter-out $(MAIN),$(sort $(wildcard *.c)))
 OBJS	= $(PURESRC:.c=.o)
 DOCS	= README.md NEWS THANKS AUTHORS COPYING ChangeLog
 
