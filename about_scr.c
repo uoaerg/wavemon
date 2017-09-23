@@ -29,9 +29,6 @@ static char *about_lines[] = {
 	"original by jan morgenstern <jan@jm-music.de>",
 	"distributed under the GNU general public license v3",
 	"",
-	"please send suggestions and bug reports to ",
-	PACKAGE_BUGREPORT,
-	"",
 	PACKAGE_URL
 };
 
