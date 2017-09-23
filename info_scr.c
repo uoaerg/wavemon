@@ -211,7 +211,8 @@ static void display_stats(void)
 
 	if (linkstat.data.rx_drop_misc) {
 		waddstr(w_stats, ", drop: ");
-		sprintf(tmp, "%'llu", (unsigned long long)linkstat.data.rx_drop_misc);
+		sprintf(tmp, "%'llu (%.1f%%)", (unsigned long long)linkstat.data.rx_drop_misc,
+				(1e2 * linkstat.data.rx_drop_misc)/linkstat.data.rx_packets);
 		waddstr_b(w_stats, tmp);
 	}
 
@@ -237,7 +238,8 @@ static void display_stats(void)
 
 	if (linkstat.data.tx_retries) {
 		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%'u", linkstat.data.tx_retries);
+		sprintf(tmp, "%'u (%.1f%%)", linkstat.data.tx_retries,
+			(1e2 * linkstat.data.tx_retries)/linkstat.data.tx_packets);
 		waddstr_b(w_stats, tmp);
 	}
 
