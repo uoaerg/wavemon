@@ -371,20 +371,16 @@ static void compute_channel_stats(struct scan_result *sr)
  */
 void scan_result_init(struct scan_result *sr)
 {
-	pthread_mutexattr_t ma;
-
-	memset(sr, 0, sizeof(*sr));
-	pthread_mutexattr_init(&ma);
-	if (pthread_mutexattr_setrobust(&ma, PTHREAD_MUTEX_ROBUST) < 0)
-		err_sys("Failed to set the mutex robust attribute");
-	pthread_mutex_init(&sr->mutex, &ma);
+	pthread_mutex_init(&sr->mutex, NULL);
+	clear_scan_list(sr);
 }
 
 void scan_result_fini(struct scan_result *sr)
 {
-	/* FIXME: this may have a bug on resource de-allocation, if the main thread still holds the lock */
+	pthread_mutex_lock(&sr->mutex);
 	free_scan_list(sr->head);
 	free(sr->channel_stats);
+	pthread_mutex_unlock(&sr->mutex);
 	pthread_mutex_destroy(&sr->mutex);
 }
 

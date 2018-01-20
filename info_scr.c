@@ -53,6 +53,7 @@ static void *sampling_loop(void *arg)
 
 void sampling_init(void)
 {
+	pthread_mutex_init(&linkstat.mutex, NULL);
 	linkstat.run = true;
 	pthread_create(&sampling_thread, NULL, sampling_loop, NULL);
 }
@@ -61,6 +62,7 @@ void sampling_stop(void)
 {
 	linkstat.run = false;
 	pthread_join(sampling_thread, NULL);
+	pthread_mutex_destroy(&linkstat.mutex);
 }
 
 static void display_levels(void)
