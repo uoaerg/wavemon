@@ -105,7 +105,7 @@ static int wait_event(struct nl_msg *msg, void *arg)
  * Returns true if scan results are available, false if scan was aborted.
  * Taken from iw:event.c:__do_listen_events
  */
-static bool wait_for_scan_events(struct scan_result *sr)
+static bool wait_for_scan_events(void)
 {
 	static const uint32_t cmds[] = {
 		NL80211_CMD_NEW_SCAN_RESULTS,
@@ -405,7 +405,7 @@ void *do_scan(void *sr_ptr)
 		case 0:
 		case EBUSY:
 			/* Trigger returns -EBUSY if a scan request is pending or ready. */
-			if (!wait_for_scan_events(sr)) {
+			if (!wait_for_scan_events()) {
 				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
 			} else {
 				pthread_mutex_lock(&sr->mutex);
