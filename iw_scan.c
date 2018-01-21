@@ -293,6 +293,7 @@ void sort_scan_list(struct scan_entry **headp)
 	*headp = head;
 }
 
+/** De-allocate list. Use after all threads are terminated. */
 static void free_scan_list(struct scan_entry *head)
 {
 	if (head) {
@@ -301,9 +302,9 @@ static void free_scan_list(struct scan_entry *head)
 	}
 }
 
-static void clear_scan_list(struct scan_result *sr)
+/** Initialize scan results. Requires lock to be taken. */
+static void init_scan_list(struct scan_result *sr)
 {
-	pthread_mutex_lock(&sr->mutex);
 	free_scan_list(sr->head);
 	free(sr->channel_stats);
 	sr->head          = NULL;
@@ -311,7 +312,6 @@ static void clear_scan_list(struct scan_result *sr)
 	sr->msg[0]        = '\0';
 	sr->max_essid_len = MAX_ESSID_LEN;
 	memset(&(sr->num), 0, sizeof(sr->num));
-	pthread_mutex_unlock(&sr->mutex);
 }
 
 /*
@@ -371,8 +371,8 @@ static void compute_channel_stats(struct scan_result *sr)
  */
 void scan_result_init(struct scan_result *sr)
 {
+	init_scan_list(sr);
 	pthread_mutex_init(&sr->mutex, NULL);
-	clear_scan_list(sr);
 }
 
 void scan_result_fini(struct scan_result *sr)
@@ -398,16 +398,19 @@ void *do_scan(void *sr_ptr)
 
 	pthread_detach(pthread_self());
 	do {
-		clear_scan_list(sr);
-
 		ret = iw_nl80211_scan_trigger();
+
+		pthread_mutex_lock(&sr->mutex);
+		init_scan_list(sr);
 		switch(-ret) {
 		case 0:
 		case EBUSY:
 			/* Trigger returns -EBUSY if a scan request is pending or ready. */
-			if (!wait_for_scan_events()) {
-				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
-			} else {
+			snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
+			pthread_mutex_unlock(&sr->mutex);
+
+			/* Do not hold the lock while awaiting results. */
+			if (wait_for_scan_events()) {
 				pthread_mutex_lock(&sr->mutex);
 				ret = iw_nl80211_get_scan_data(sr);
 				if (ret < 0) {
@@ -422,8 +425,8 @@ void *do_scan(void *sr_ptr)
 			break;
 		case EPERM:
 			if (!has_net_admin_capability())
-				snprintf(sr->msg, sizeof(sr->msg),
-					 "This screen requires CAP_NET_ADMIN permissions");
+				snprintf(sr->msg, sizeof(sr->msg), "This screen requires CAP_NET_ADMIN permissions");
+			pthread_mutex_unlock(&sr->mutex);
 			return NULL;
 		case EFAULT:
 			/* EFAULT can occur after a window resizing event: temporary, fall through. */
@@ -431,18 +434,21 @@ void *do_scan(void *sr_ptr)
 		case EAGAIN:
 			/* Temporary errors. */
 			snprintf(sr->msg, sizeof(sr->msg), "Waiting for device to become ready ...");
+			pthread_mutex_unlock(&sr->mutex);
 			break;
 		case ENETDOWN:
 			if (!if_is_up(conf_ifname())) {
 				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
+				pthread_mutex_unlock(&sr->mutex);
+
 				if (if_set_up(conf_ifname()) < 0)
 					err_sys("Can not bring up interface '%s'", conf_ifname());
 				break;
 			}
 			/* fall through */
 		default:
-			snprintf(sr->msg, sizeof(sr->msg),
-				 "Scan trigger failed on %s: %s", conf_ifname(), strerror(-ret));
+			snprintf(sr->msg, sizeof(sr->msg), "Scan trigger failed on %s: %s", conf_ifname(), strerror(-ret));
+			pthread_mutex_unlock(&sr->mutex);
 		}
 	} while (usleep(conf.stat_iv * 1000) == 0);
 
