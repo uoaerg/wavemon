@@ -406,11 +406,14 @@ void *do_scan(void *sr_ptr)
 		case 0:
 		case EBUSY:
 			/* Trigger returns -EBUSY if a scan request is pending or ready. */
-			snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
 			pthread_mutex_unlock(&sr->mutex);
 
 			/* Do not hold the lock while awaiting results. */
-			if (wait_for_scan_events()) {
+			if (!wait_for_scan_events()) {
+				pthread_mutex_lock(&sr->mutex);
+				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
+				pthread_mutex_unlock(&sr->mutex);
+			} else {
 				pthread_mutex_lock(&sr->mutex);
 				ret = iw_nl80211_get_scan_data(sr);
 				if (ret < 0) {
