@@ -80,7 +80,6 @@ static void display_levels(void)
 	bool noise_data_valid;
 	int sig_qual = -1, sig_qual_max, sig_level;
 
-
 	noise_data_valid = iw_nl80211_have_survey_data(&linkstat.data);
 	sig_level = linkstat.data.signal_avg ?: linkstat.data.signal;
 
@@ -103,12 +102,6 @@ static void display_levels(void)
 		else
 			sig_qual = sig_level + 110;
 		sig_qual_max = 70;
-	}
-
-	if (sig_qual == -1 && !sig_level && !noise_data_valid) {
-		wattron(w_levels, A_BOLD);
-		waddstr_center(w_levels, (WH_LEVEL + 1)/2, "NO INTERFACE DATA");
-		goto done_levels;
 	}
 
 	line = 1;
@@ -175,7 +168,6 @@ static void display_levels(void)
 		waddstr_b(w_levels, tmp);
 	}
 
-done_levels:
 	wrefresh(w_levels);
 }
 
