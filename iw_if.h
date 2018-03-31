@@ -76,6 +76,7 @@ struct if_info {
 };
 extern bool if_is_up(const char *ifname);
 extern int  if_set_up(const char *ifname);
+extern void if_set_down_on_exit(int rc, void *arg);
 extern void if_getinf(const char *ifname, struct if_info *info);
 
 /**

@@ -51,8 +51,9 @@ bool if_is_up(const char *ifname)
 	return ret;
 }
 
-/** Bring @ifname up if not already up. Return 0 if ok, < 0 on error. */
-int if_set_up(const char *ifname)
+
+/** Change the up/down state of @ifname according to @up. */
+static int if_set_up_or_down(const char *ifname, bool up)
 {
 	struct ifreq ifr;
 	int ret, skfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -64,13 +65,34 @@ int if_set_up(const char *ifname)
 	strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
 
 	ifr.ifr_flags = if_get_flags(skfd, ifname);
-	if (ifr.ifr_flags & IFF_UP)
-		return 0;
-
-	ifr.ifr_flags |= IFF_UP;
+	if (up) {
+		ifr.ifr_flags |= IFF_UP;
+	} else {
+		ifr.ifr_flags &= ~IFF_UP;
+	}
 	ret = ioctl(skfd, SIOCSIFFLAGS, &ifr);
 	close(skfd);
 	return ret;
+}
+
+/** Bring @ifname up. */
+int if_set_up(const char *ifname)
+{
+	return if_set_up_or_down(ifname, true);
+}
+
+/** Set @ifname down. */
+int if_set_down(const char *ifname)
+{
+	return if_set_up_or_down(ifname, false);
+}
+
+/** Exit handler to restore interface 'down' state on exit via on_exit(3). */
+void if_set_down_on_exit(int rc, void *arg)
+{
+	if (if_set_down(arg) < 0) {
+		err_msg("unable to restore %s interface state - set down manually", arg);
+	}
 }
 
 /* Interface information */

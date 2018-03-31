@@ -429,6 +429,8 @@ void *do_scan(void *sr_ptr)
 
 				if (if_set_up(conf_ifname()) < 0)
 					err_sys("Can not bring up interface '%s'", conf_ifname());
+				if (on_exit(if_set_down_on_exit, (void *)conf_ifname()) < 0)
+					snprintf(sr->msg, sizeof(sr->msg), "Warning: unable to restore %s down state on exit", conf_ifname());
 				break;
 			}
 			/* fall through */
