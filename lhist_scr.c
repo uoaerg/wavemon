@@ -122,7 +122,16 @@ void iw_cache_update(struct iw_nl80211_linkstat *ls)
 {
 	static struct iw_levelstat prev, avg = IW_LSTAT_INIT;
 	static int slot;
-	int sig_level = ls->signal_avg ?: ls->signal;
+	int sig_level = ls->signal;
+
+	/*
+	 * Prefer signal level over average signal level.
+	 * One card in particular (Intel 9260NGW) reported inconsistent
+	 * station and beacon average signals.
+	 * See https://github.com/uoaerg/wavemon/issues/47
+	 */
+	if (sig_level == 0)
+		sig_level = ls->signal_avg;
 
 	/*
 	 * If hardware does not support dBm signal level, it will not

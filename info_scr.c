@@ -81,9 +81,11 @@ static void display_levels(void)
 	int sig_qual = -1, sig_qual_max, sig_level;
 
 	noise_data_valid = iw_nl80211_have_survey_data(&linkstat.data);
-	sig_level = linkstat.data.signal_avg ?: linkstat.data.signal;
+	sig_level = linkstat.data.signal;
 
 	/* See comments in iw_cache_update */
+	if (sig_level == 0)
+		sig_level = linkstat.data.signal_avg;
 	if (sig_level == 0)
 		sig_level = linkstat.data.bss_signal;
 
