@@ -24,7 +24,7 @@ static WINDOW *w_about;
 
 static char *about_lines[] = {
 	"wavemon - status monitor for wireless network devices",
-	"version " PACKAGE_VERSION " (built " BUILD_DATE ")",
+	"version " PACKAGE_VERSION " (built " __DATE__ " " __TIME__ " UTC)",
 	"",
 	"original by jan morgenstern <jan@jm-music.de>",
 	"distributed under the GNU general public license v3",
