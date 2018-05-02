@@ -7,13 +7,6 @@ AC_INIT([wavemon], [0.8.2], [https://github.com/uoaerg/wavemon], [wavemon-curren
 # Variables
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_FILES([Makefile])
-# allow BUILD_DATE to be externally set for build reproducibility
-if test "$BUILD_DATE"; then
-  AC_DEFINE_UNQUOTED(BUILD_DATE, ["$BUILD_DATE"])
-else
-  AC_DEFINE_UNQUOTED([BUILD_DATE], ["`/bin/date`"],
-		   [date wavemon was last configured and built])
-fi
 
 CFLAGS="-O2 -Wall"
 
