@@ -55,7 +55,16 @@ AC_CHECK_LIB([m], [pow], [],              [AC_MSG_ERROR(math library not found)]
 AC_CHECK_LIB([ncurses], [waddstr], [],    [AC_MSG_ERROR(ncurses library not found)])
 AC_CHECK_LIB([pthread], [pthread_create], [CFLAGS="$CFLAGS -pthread"],
 					  [AC_MSG_ERROR(pthread library not found)])
-AC_CHECK_LIB([cap], [cap_get_flag])
+
+# libcap - allow to disable, since e.g. OpenWrt does not use it.
+# https://github.com/uoaerg/wavemon/issues/54
+AC_ARG_WITH([libcap],
+	    [AS_HELP_STRING([--without-libcap],
+	    [disable support for libcap])],
+	    [],
+	    [with_libcap=yes])
+
+AS_IF([test "x$with_libcap" != xno], AC_CHECK_LIB([cap], [cap_get_flag]))
 
 # Testing library functions
 AC_CHECK_FUNCS([gettimeofday ether_ntohost], [],
