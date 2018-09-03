@@ -382,6 +382,21 @@ static inline char *byte_units(const double bytes)
 	return result;
 }
 
+/* Integer units - similar to %g for float. */
+static inline char *int_counts(uint32_t count)
+{
+	static char result[0x100];
+
+	if (count < 1000)
+		sprintf(result, "%u", count);
+	else if (count < 1000000)
+		sprintf(result, "%uk", count/1000);
+	else
+		sprintf(result, "%.lg", (double)count);
+
+	return result;
+}
+
 /**
  * Compute exponentially weighted moving average
  * @mavg:	old value of the moving average

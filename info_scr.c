@@ -183,7 +183,7 @@ static void display_stats(void)
 	mvwaddstr(w_stats, 1, 1, "RX: ");
 
 	if (linkstat.data.rx_packets) {
-		sprintf(tmp, "%'u (%s)",  linkstat.data.rx_packets,
+		sprintf(tmp, "%s (%s)", int_counts(linkstat.data.rx_packets),
 			byte_units(linkstat.data.rx_bytes));
 		waddstr_b(w_stats, tmp);
 	} else {
@@ -220,7 +220,7 @@ static void display_stats(void)
 	mvwaddstr(w_stats, 2, 1, "TX: ");
 
 	if (linkstat.data.tx_packets) {
-		sprintf(tmp, "%'u (%s)",  linkstat.data.tx_packets,
+		sprintf(tmp, "%s (%s)", int_counts(linkstat.data.tx_packets),
 			byte_units(linkstat.data.tx_bytes));
 		waddstr_b(w_stats, tmp);
 	} else {
@@ -234,15 +234,14 @@ static void display_stats(void)
 
 	if (linkstat.data.tx_retries) {
 		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%'u (%.1f%%)", linkstat.data.tx_retries,
+		sprintf(tmp, "%s (%.1f%%)", int_counts(linkstat.data.tx_retries),
 			(1e2 * linkstat.data.tx_retries)/linkstat.data.tx_packets);
 		waddstr_b(w_stats, tmp);
 	}
 
 	if (linkstat.data.tx_failed) {
 		waddstr(w_stats, ", failed: ");
-		sprintf(tmp, "%'u", linkstat.data.tx_failed);
-		waddstr_b(w_stats, tmp);
+		waddstr_b(w_stats, int_counts(linkstat.data.tx_failed));
 	}
 	wclrtoborder(w_stats);
 	wrefresh(w_stats);
@@ -423,8 +422,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 		if (linkstat.data.beacon_loss) {
 			waddstr(w_info, ", lost: ");
-			sprintf(tmp, "%'u", linkstat.data.beacon_loss);
-			waddstr_b(w_info, tmp);
+			waddstr_b(w_info, int_counts(linkstat.data.beacon_loss));
 		}
 		waddstr(w_info, ", avg sig: ");
 		sprintf(tmp, "%d dBm", (int8_t)linkstat.data.beacon_avg_sig);
