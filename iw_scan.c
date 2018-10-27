@@ -225,7 +225,13 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 					new->bss_chan_usage = ie[4];
 				}
 				break;
+			case 127: /* Ext Capa */
+				if (len >= sizeof(new->ext_capa)) {
+					memcpy(new->ext_capa, &ie[2], sizeof(new->ext_capa));
+				}
+				break;
 			}
+			// Point to next ie
 			ielen -= ie[1] + 2;
 			ie    += ie[1] + 2;
 		}

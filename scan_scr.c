@@ -116,6 +116,7 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 				CU_LEN_MAX-2, UNSUPPORTED_STR, CHANNEL_LEN_MAX-2, UNSUPPORTED_STR);
 	}
 
+	// Capabilities
 	if (cur->bss_capa & WLAN_CAPABILITY_ESS) {
 		len += snprintf(buf + len, buflen - len, "ESS ");
 		if (cur->bss_capa & WLAN_CAPABILITY_RADIO_MEASURE)
@@ -123,8 +124,11 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 		if (cur->bss_capa & WLAN_CAPABILITY_SPECTRUM_MGMT)
 			len += snprintf(buf + len, buflen - len, "+Spectrum Mgmt ");
 	} else if (cur->bss_capa & WLAN_CAPABILITY_IBSS) {
-		len += snprintf(buf + len, buflen - len, "IBSS");
+		len += snprintf(buf + len, buflen - len, "IBSS ");
 	}
+
+	if (cur->ext_capa[2] & 0x08) // bss transtion
+		len += snprintf(buf + len, buflen - len, "+BSS Trans ");
 }
 
 static void display_aplist(WINDOW *w_aplst)

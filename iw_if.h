@@ -204,8 +204,9 @@ struct scan_entry {
 	int8_t			bss_signal;
 	uint8_t			bss_signal_qual;
 	uint16_t		bss_capa;
-	uint8_t			bss_sta_count,
-				bss_chan_usage;
+	uint8_t			bss_sta_count;
+	uint8_t			bss_chan_usage;
+	uint8_t			ext_capa[3];	// Just enough to parse the bss transition
 
 	struct scan_entry	*next;
 };
