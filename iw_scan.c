@@ -209,9 +209,9 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
 		uint8_t *ie = nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
 		int ielen   = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
-		uint8_t len = ie[1];
 
  		while (ielen >= 2 && ielen >= ie[1]) {
+			uint8_t len = ie[1];
 			switch (ie[0]) {
 			case 0:	/* SSID */
 				if (len > 0 && len <= 32)
@@ -227,7 +227,7 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 			}
 			ielen -= ie[1] + 2;
 			ie    += ie[1] + 2;
-        	}
+		}
 	}
 
 	/* Update stats */
