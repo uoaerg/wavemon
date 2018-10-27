@@ -11,9 +11,6 @@
 #include <sys/socket.h>
 #include <linux/if.h>
 
-/* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
-#define MAC_ADDR_MAX	18
-
 /* Return true if all ethernet octets are zero. */
 bool ether_addr_is_zero(const struct ether_addr *ea)
 {

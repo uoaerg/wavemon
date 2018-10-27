@@ -84,6 +84,8 @@ enum info_screen_geometry {
 /* Minimum SSID length */
 #define MAX_ESSID_LEN		16
 
+/* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
+#define MAC_ADDR_MAX	18
 /*
  * Symbolic names of actions to take when crossing thresholds.
  * These actions invoke the corresponding ncurses functions.

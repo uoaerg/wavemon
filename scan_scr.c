@@ -26,6 +26,13 @@ static struct scan_result sr;
 static pthread_t scan_thread;
 static WINDOW *w_aplst;
 
+#define SIGNAL_LEN_MAX 11
+#define CHANNEL_LEN_MAX 8
+#define CU_LEN_MAX 10
+#define DASH_STR "-"
+#define PLACE_HOLDER_STR " "
+#define UNSUPPORTED_STR "?"
+
 /**
  * Sanitize and format single scan entry as a string.
  * @cur: entry to format
@@ -35,6 +42,7 @@ static WINDOW *w_aplst;
 static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 {
 	size_t len = 0;
+	size_t pr_len = 0;
 
 	if (cur->bss_signal) {
 		float sig_qual, sig_qual_max;
@@ -52,39 +60,70 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 				sig_qual = cur->bss_signal + 110;
 			sig_qual_max = 70;
 		}
-		len += snprintf(buf + len, buflen - len, "%3.0f%%, %d dBm",
-				(1E2 * sig_qual)/ sig_qual_max, cur->bss_signal);
+		pr_len = snprintf(buf + len, buflen - len, "%3.0f",
+				(1E2 * sig_qual)/sig_qual_max);
+		len += pr_len;
+		len += snprintf(buf + len, buflen - len, "%-*s",
+				(int)(SIGNAL_LEN_MAX+1-pr_len), PLACE_HOLDER_STR);
+
+		len += snprintf(buf + len, buflen - len, "%3d%-*s ",
+				cur->bss_signal, SIGNAL_LEN_MAX-3, PLACE_HOLDER_STR); // Expect 3 chars for signal
 	} else if (cur->bss_signal_qual) {
-		len += snprintf(buf + len, buflen - len, "%2d/%d",
-				cur->bss_signal_qual, 100);
+		len += snprintf(buf + len, buflen - len, "%2d/%d%-*s ",
+				cur->bss_signal_qual, 100, SIGNAL_LEN_MAX*2, PLACE_HOLDER_STR);
 	} else {
-		len += snprintf(buf + len, buflen - len, "? dBm");
+		len += snprintf(buf + len, buflen - len, "%-*s %-*s ",
+				SIGNAL_LEN_MAX, "?", SIGNAL_LEN_MAX, "?");
 	}
 
-	if (cur->chan >= 0)
-		len += snprintf(buf + len, buflen - len, ", %s %3d, %d MHz",
-				cur->freq < 5e6 ? "ch" : "CH",
-				cur->chan, cur->freq);
-	else
-		len += snprintf(buf + len, buflen - len, ", %g GHz",
-				cur->freq / 1e3);
+	if (cur->chan >= 0) {
+		len += snprintf(buf + len, buflen - len, "%3d%-*s ",
+				cur->chan, CHANNEL_LEN_MAX-3, PLACE_HOLDER_STR);
+		len += snprintf(buf + len, buflen - len, "%d %-*s ",
+				cur->freq, CHANNEL_LEN_MAX-5, "Mhz");
+	} else {
+		len += snprintf(buf + len, buflen - len, "%-*s ",
+				CHANNEL_LEN_MAX, PLACE_HOLDER_STR);
+		len += snprintf(buf + len, buflen - len, "%g %-*s ",
+				cur->freq / 1e3, CHANNEL_LEN_MAX-4, "GHz");
+	}
+
+	// Have bss load stats
+	if (cur->bss_capa & WLAN_CAPABILITY_ESS) {
+		if (cur->bss_chan_usage > 2) {/* 1% is 2.55 */
+			pr_len = snprintf(buf + len, buflen - len, "%3.0f",
+					(1e2 * cur->bss_chan_usage)/2.55e2);
+			len += pr_len;
+			len += snprintf(buf + len, buflen - len, "%-*s",
+					(int)(CU_LEN_MAX+1-pr_len), PLACE_HOLDER_STR);
+		} else {
+			len += snprintf(buf + len, buflen - len, "  %-*s ",
+					CU_LEN_MAX-2, DASH_STR);
+		}
+
+		if (cur->bss_sta_count > 0) {
+			pr_len = snprintf(buf + len, buflen - len, "%u",
+					cur->bss_sta_count);
+			len += pr_len;
+			len += snprintf(buf + len, buflen - len, "%-*s",
+					(int)(CHANNEL_LEN_MAX+1-pr_len), PLACE_HOLDER_STR);
+		} else {
+			len += snprintf(buf + len, buflen - len, "%-*s",
+					CHANNEL_LEN_MAX+1, DASH_STR);
+		}
+	} else {
+		len += snprintf(buf + len, buflen - len, "  %-*s   %-*s ",
+				CU_LEN_MAX-2, UNSUPPORTED_STR, CHANNEL_LEN_MAX-2, UNSUPPORTED_STR);
+	}
 
 	if (cur->bss_capa & WLAN_CAPABILITY_ESS) {
-		if (cur->bss_sta_count || cur->bss_chan_usage > 2) {
-			if (cur->bss_sta_count)
-				len += snprintf(buf + len, buflen - len, " %u sta", cur->bss_sta_count);
-			if (cur->bss_chan_usage > 2) /* 1% is 2.55 */
-				len += snprintf(buf + len, buflen - len, "%s %.0f%% chan",
-						cur->bss_sta_count? "," : "", (1e2 * cur->bss_chan_usage)/2.55e2);
-		} else {
-			len += snprintf(buf + len, buflen - len, " ESS");
-		}
+		len += snprintf(buf + len, buflen - len, "ESS ");
 		if (cur->bss_capa & WLAN_CAPABILITY_RADIO_MEASURE)
-			len += snprintf(buf + len, buflen - len, ", Radio Measure");
+			len += snprintf(buf + len, buflen - len, "+Radio Meas ");
 		if (cur->bss_capa & WLAN_CAPABILITY_SPECTRUM_MGMT)
-			len += snprintf(buf + len, buflen - len, ", Spectrum Mgmt");
+			len += snprintf(buf + len, buflen - len, "+Spectrum Mgmt ");
 	} else if (cur->bss_capa & WLAN_CAPABILITY_IBSS) {
-		len += snprintf(buf + len, buflen - len, " IBSS");
+		len += snprintf(buf + len, buflen - len, "IBSS");
 	}
 }
 
@@ -94,7 +133,7 @@ static void display_aplist(WINDOW *w_aplst)
 	const char *sort_type[] = {
 		[SO_CHAN]	= "Chan",
 		[SO_SIGNAL]	= "Sig",
-		[SO_MAC]        = "Mac",
+		[SO_MAC]	= "Mac",
 		[SO_ESSID]	= "Essid",
 		[SO_OPEN]	= "Open",
 		[SO_CHAN_SIG]	= "Ch/Sg",
@@ -116,6 +155,26 @@ static void display_aplist(WINDOW *w_aplst)
 
 	sort_scan_list(&sr.head);
 
+	/* Print header (when scan result ready) */
+	if (sr.num.entries != 0) {
+		wmove(w_aplst, line, 1); // move cursor to start line
+		int len = 0;
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", sr.max_essid_len+1, "SSID");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", MAC_ADDR_MAX+1, "BSSID");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", SIGNAL_LEN_MAX+1, "Signal(%)");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", SIGNAL_LEN_MAX+1, "Signal(dBm)");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", CHANNEL_LEN_MAX+1, "Channel");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", CHANNEL_LEN_MAX+1, "Freq");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", CU_LEN_MAX+1, "ChUtil(%)");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", CHANNEL_LEN_MAX+1, "Station");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", MAC_ADDR_MAX+1, "Capability?");
+
+		wattron(w_aplst, COLOR_PAIR(CP_SCAN_NON_AP));
+		wadd_attr_str(w_aplst, A_BOLD, s);
+		wattroff(w_aplst, COLOR_PAIR(CP_SCAN_NON_AP));
+		line++;
+	}
+
 	/* Truncate overly long access point lists to match screen height. */
 	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
 		col = CP_SCAN_NON_AP;
@@ -126,7 +185,7 @@ static void display_aplist(WINDOW *w_aplst)
 
 		wmove(w_aplst, line, 1);
 		if (!*cur->essid) {
-			sprintf(s, "%-*s ", sr.max_essid_len, "<hidden ESSID>");
+			sprintf(s, "%-*s ", sr.max_essid_len, "<hidden>");
 			wattron(w_aplst, COLOR_PAIR(col));
 			waddstr(w_aplst, s);
 		} else if (str_is_ascii(cur->essid)) {
@@ -134,11 +193,12 @@ static void display_aplist(WINDOW *w_aplst)
 			waddstr_b(w_aplst, s);
 			wattron(w_aplst, COLOR_PAIR(col));
 		} else {
-			sprintf(s, "%-*s ", sr.max_essid_len, "<cryptic ESSID>");
+			sprintf(s, "%-*s ", sr.max_essid_len, "<cryptic>");
 			wattron(w_aplst, COLOR_PAIR(col));
 			waddstr(w_aplst, s);
 		}
 		waddstr(w_aplst, ether_addr(&cur->ap_addr));
+		waddstr(w_aplst, " ");
 
 		wattroff(w_aplst, COLOR_PAIR(col));
 
@@ -150,6 +210,7 @@ static void display_aplist(WINDOW *w_aplst)
 	if (sr.num.entries < MAX_CH_STATS)
 		goto done;
 
+	// Show summary at bottom
 	wmove(w_aplst, MAXYLEN, 1);
 	wadd_attr_str(w_aplst, A_REVERSE, "total:");
 	sprintf(s, " %d ", sr.num.entries);
