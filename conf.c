@@ -74,6 +74,7 @@ struct wavemon_conf conf = {
 
 	.scan_sort_order	= SO_CHAN_SIG,
 	.scan_sort_asc		= false,
+	.scan_show_hidden	= true,
 	.lthreshold_action	= TA_DISABLED,
 	.lthreshold		= -80,
 	.hthreshold_action	= TA_DISABLED,
@@ -344,6 +345,14 @@ static void init_conf_items(void)
 	item->cfname	= strdup("sort_ascending");
 	item->type	= t_list;
 	item->v.i	= &conf.scan_sort_asc;
+	item->list	= on_off_names;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Scan show hidden essid");
+	item->cfname	= strdup("scan_show_hidden");
+	item->type	= t_list;
+	item->v.i	= &conf.scan_show_hidden;
 	item->list	= on_off_names;
 	ll_push(conf_items, "*", item);
 

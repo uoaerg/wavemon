@@ -141,7 +141,8 @@ extern struct wavemon_conf {
 		cisco_mac,		/* Cisco-style MAC addresses */
 		transparent_bg,		/* Use terminal background instead of black */
 		override_bounds,	/* override autodetection */
-		scan_sort_asc;		/* direction of @scan_sort_order */
+		scan_sort_asc,		/* direction of @scan_sort_order */
+		scan_show_hidden;	/* Toggle to show hidden essid */
 
 	/* Enumerated values */
 	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */

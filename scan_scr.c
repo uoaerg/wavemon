@@ -180,11 +180,15 @@ static void display_aplist(WINDOW *w_aplst)
 	}
 
 	/* Truncate overly long access point lists to match screen height. */
-	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
+	for (cur = sr.head; cur && line < MAXYLEN; cur = cur->next) {
 		col = CP_SCAN_NON_AP;
 
 		if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa) && (cur->bss_capa & WLAN_CAPABILITY_ESS)) {
 			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
+		}
+
+		if (conf.scan_show_hidden == false && !*cur->essid) {
+			continue;
 		}
 
 		wmove(w_aplst, line, 1);
@@ -209,6 +213,7 @@ static void display_aplist(WINDOW *w_aplst)
 		fmt_scan_entry(cur, s, sizeof(s));
 		waddstr(w_aplst, " ");
 		waddstr(w_aplst, s);
+		line++;
 	}
 
 	if (sr.num.entries < MAX_CH_STATS)
@@ -294,6 +299,9 @@ int scr_aplst_loop(WINDOW *w_menu)
 		return -1;
 	case 'e':	/* ESSID */
 		conf.scan_sort_order = SO_ESSID;
+		return -1;
+	case 'h':	/* toggle hidden ssid */
+		conf.scan_show_hidden = !conf.scan_show_hidden;
 		return -1;
 	case 'm':	/* MAC address */
 		conf.scan_sort_order = SO_MAC;
