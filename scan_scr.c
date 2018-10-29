@@ -34,6 +34,26 @@ static WINDOW *w_aplst;
 #define UNSUPPORTED_STR "?"
 
 /**
+ * Check entry against current active filter.
+ * @cur: entry to filter
+ * @ret: return true if filter hit
+ */
+static int check_filter_hit(struct scan_entry *cur)
+{
+	// Hide entry with hidden essid
+	if (conf.scan_show_hidden == false && !*cur->essid)
+		return true;
+
+	// Hide unwanted band
+	if (conf.scan_filter_band == SCAN_FILTER_BAND_2G && cur->freq > 2500)
+		return true;
+	else if (conf.scan_filter_band == SCAN_FILTER_BAND_5G && cur->freq < 2500)
+		return true;
+
+	return false;
+}
+
+/**
  * Sanitize and format single scan entry as a string.
  * @cur: entry to format
  * @buf: buffer to put results into
@@ -171,7 +191,7 @@ static void display_aplist(WINDOW *w_aplst)
 		len += snprintf(s + len, sizeof(s) - len, "%-*s", CHANNEL_LEN_MAX+1, "Freq");
 		len += snprintf(s + len, sizeof(s) - len, "%-*s", CU_LEN_MAX+1, "ChUtil(%)");
 		len += snprintf(s + len, sizeof(s) - len, "%-*s", CHANNEL_LEN_MAX+1, "Station");
-		len += snprintf(s + len, sizeof(s) - len, "%-*s", MAC_ADDR_MAX+1, "Capability?");
+		len += snprintf(s + len, sizeof(s) - len, "%-*s", MAC_ADDR_MAX+1, "Capability");
 
 		wattron(w_aplst, COLOR_PAIR(CP_SCAN_NON_AP));
 		wadd_attr_str(w_aplst, A_BOLD, s);
@@ -187,9 +207,7 @@ static void display_aplist(WINDOW *w_aplst)
 			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
 		}
 
-		if (conf.scan_show_hidden == false && !*cur->essid) {
-			continue;
-		}
+		if (check_filter_hit(cur)) continue;
 
 		wmove(w_aplst, line, 1);
 		if (!*cur->essid) {
@@ -285,6 +303,15 @@ int scr_aplst_loop(WINDOW *w_menu)
 
 	key = wgetch(w_menu);
 	switch (key) {
+	case '0':	/* All band */
+		conf.scan_filter_band = SCAN_FILTER_BAND_BOTH;
+		return -1;
+	case '2':	/* 2.4G band */
+		conf.scan_filter_band = SCAN_FILTER_BAND_2G;
+		return -1;
+	case '5':	/* 5G band */
+		conf.scan_filter_band = SCAN_FILTER_BAND_5G;
+		return -1;
 	case 'a':	/* ascending */
 		conf.scan_sort_asc = true;
 		return -1;

@@ -118,6 +118,12 @@ enum scan_sort_order {
 	SO_OPEN_SIG
 };
 
+enum scan_filter_band {
+	SCAN_FILTER_BAND_BOTH,
+	SCAN_FILTER_BAND_2G,
+	SCAN_FILTER_BAND_5G
+};
+
 /*
  * Global in-memory representation of current wavemon configuration state
  */
@@ -146,6 +152,7 @@ extern struct wavemon_conf {
 
 	/* Enumerated values */
 	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */
+		scan_filter_band,	/* Scan list filter - 2.4G/5G/Both - a bit counter intuitive - but this select band to show */
 		lthreshold_action,	/* disabled|beep|flash|beep+flash */
 		hthreshold_action,	/* disabled|beep|flash|beep+flash */
 		startup_scr;		/* info|histogram|aplist */
