@@ -137,6 +137,7 @@ extern struct wavemon_conf {
 	/* Boolean values */
 	int	check_geometry,		/* ensure window is large enough */
 		cisco_mac,		/* Cisco-style MAC addresses */
+		transparent_bg,		/* Use terminal background instead of black */
 		override_bounds,	/* override autodetection */
 		scan_sort_asc;		/* direction of @scan_sort_order */
 
@@ -171,6 +172,7 @@ struct conf_item {
 
 	char	**list;		/* t_list: NULL-terminated array of strings */
 	int	*dep;		/* dependency */
+	bool	hidden;		/* only allow to set via wavemonrc */
 
 	double	min,		/* value boundaries */
 		max,

@@ -139,7 +139,7 @@ static int m_pref(WINDOW *w_conf, int list_offset, int active_item, int num_item
 	for (active_line = i = j = 0; i < num_items; i++) {
 		struct conf_item *item = ll_get(conf_items, i);
 
-		if (!item->dep || *item->dep) {
+		if (!item->hidden && (!item->dep || *item->dep)) {
 			if (i != active_item)
 				waddstr_item(w_conf, j++, item, 0);
 			else {

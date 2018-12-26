@@ -64,6 +64,7 @@ struct wavemon_conf conf = {
 
 	.check_geometry		= false,
 	.cisco_mac		= false,
+	.transparent_bg		= true,
 	.override_bounds	= false,
 
 	.sig_min		= -100,
@@ -507,6 +508,15 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Use transparent background");
+	item->cfname	= strdup("transparent_bg");
+	item->type	= t_list;
+	item->v.i	= &conf.transparent_bg;
+	item->list	= on_off_names;
+	item->hidden    = true;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Startup screen");
 	item->cfname	= strdup("startup_screen");
 	item->type	= t_list;
@@ -527,6 +537,7 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 }
 
+/** getconf handles the initialization from commandline and rc file defaults. */
 void getconf(int argc, char *argv[])
 {
 	int arg, help = 0, version = 0;
@@ -577,4 +588,6 @@ void getconf(int argc, char *argv[])
 		if (conf.if_idx < 0)
 			err_quit("%s is not a usable wireless interface", iface);
 	}
+
+	atexit(write_cf);
 }

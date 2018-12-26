@@ -139,6 +139,7 @@ static void check_geometry(void)
 
 int main(int argc, char *argv[])
 {
+	int bg_color = COLOR_BLACK;
 	enum wavemon_screen cur, next;
 	sigset_t blockmask, oldmask;
 
@@ -157,29 +158,32 @@ int main(int argc, char *argv[])
 	check_geometry();
 
 	start_color();
-	use_default_colors();
-	init_pair(CP_STANDARD,	COLOR_WHITE,	-1);
-	init_pair(CP_SCALEHI,	COLOR_RED,	-1);
-	init_pair(CP_SCALEMID,	COLOR_YELLOW,	-1);
-	init_pair(CP_SCALELOW,	COLOR_GREEN,	-1);
-	init_pair(CP_WTITLE,	COLOR_CYAN,	-1);
-	init_pair(CP_INACTIVE,	COLOR_CYAN,	-1);
+	if (conf.transparent_bg) {
+		bg_color = -1;
+		use_default_colors();
+	}
+	init_pair(CP_STANDARD,	COLOR_WHITE,	bg_color);
+	init_pair(CP_SCALEHI,	COLOR_RED,	bg_color);
+	init_pair(CP_SCALEMID,	COLOR_YELLOW,	bg_color);
+	init_pair(CP_SCALELOW,	COLOR_GREEN,	bg_color);
+	init_pair(CP_WTITLE,	COLOR_CYAN,	bg_color);
+	init_pair(CP_INACTIVE,	COLOR_CYAN,	bg_color);
 	init_pair(CP_ACTIVE,	COLOR_CYAN,	COLOR_BLUE);
 
-	init_pair(CP_STATSIG,	  COLOR_GREEN,	-1);
-	init_pair(CP_STATNOISE,	  COLOR_RED,	-1);
+	init_pair(CP_STATSIG,	  COLOR_GREEN,	bg_color);
+	init_pair(CP_STATNOISE,	  COLOR_RED,	bg_color);
 	init_pair(CP_STATSNR,	  COLOR_BLUE,	COLOR_BLUE);
-	init_pair(CP_STATBKG,	  COLOR_BLUE,	-1);
+	init_pair(CP_STATBKG,	  COLOR_BLUE,	bg_color);
 	init_pair(CP_STATSIG_S,	  COLOR_GREEN,	COLOR_BLUE);
 	init_pair(CP_STATNOISE_S, COLOR_RED,	COLOR_BLUE);
 
-	init_pair(CP_PREF_NORMAL, COLOR_WHITE,	-1);
+	init_pair(CP_PREF_NORMAL, COLOR_WHITE,	bg_color);
 	init_pair(CP_PREF_SELECT, COLOR_WHITE,	COLOR_BLUE);
-	init_pair(CP_PREF_ARROW,  COLOR_RED,	-1);
+	init_pair(CP_PREF_ARROW,  COLOR_RED,	bg_color);
 
-	init_pair(CP_SCAN_CRYPT,  COLOR_RED,	-1);
-	init_pair(CP_SCAN_UNENC,  COLOR_GREEN,	-1);
-	init_pair(CP_SCAN_NON_AP, COLOR_YELLOW, -1);
+	init_pair(CP_SCAN_CRYPT,  COLOR_RED,	bg_color);
+	init_pair(CP_SCAN_UNENC,  COLOR_GREEN,	bg_color);
+	init_pair(CP_SCAN_NON_AP, COLOR_YELLOW, bg_color);
 
 	/* Override signal handlers installed during ncurses initialisation. */
 	xsignal(SIGCHLD, SIG_IGN);
