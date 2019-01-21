@@ -87,11 +87,13 @@ int if_set_down(const char *ifname)
 	return if_set_up_or_down(ifname, false);
 }
 
-/** Exit handler to restore interface 'down' state on exit via on_exit(3). */
-void if_set_down_on_exit(int rc, void *arg)
+/** Exit handler to restore interface 'down' state on exit via atexit(3). */
+void if_set_down_on_exit(void)
 {
-	if (if_set_down(arg) < 0) {
-		err_msg("unable to restore %s interface state - set down manually", arg);
+	const char *ifname = conf_ifname();
+
+	if (ifname && if_set_down(ifname) < 0) {
+		err_msg("unable to restore %s interface state - set down manually", ifname);
 	}
 }
 
