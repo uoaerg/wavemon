@@ -78,7 +78,7 @@ static void display_levels(void)
 	char tmp[0x100];
 	int line;
 	bool noise_data_valid;
-	int sig_qual = -1, sig_qual_max, sig_level;
+	int sig_qual = -1, sig_qual_max = 0, sig_level = 0;
 
 	noise_data_valid = iw_nl80211_have_survey_data(&linkstat.data);
 	sig_level = linkstat.data.signal;
