@@ -143,7 +143,7 @@ static bool wait_for_scan_events(void)
 int scan_dump_handler(struct nl_msg *msg, void *arg)
 {
 	struct scan_result *sr = (struct scan_result *)arg;
-	struct scan_entry *new = calloc(1, sizeof(*new));
+	struct scan_entry *new;
 	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
 	struct nlattr *tb[NL80211_ATTR_MAX + 1];
 	struct nlattr *bss[NL80211_BSS_MAX + 1];
