@@ -175,7 +175,7 @@ static void display_levels(void)
 
 static void display_stats(void)
 {
-	char tmp[0x100];
+	char tmp[0x120];
 
 	/*
 	 * Interface RX stats

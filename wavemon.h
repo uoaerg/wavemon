@@ -387,7 +387,7 @@ static inline char *byte_units(const double bytes)
 /* Integer units - similar to %g for float. */
 static inline char *int_counts(uint32_t count)
 {
-	static char result[0x100];
+	static char result[0x10];
 
 	if (count < 1000)
 		sprintf(result, "%u", count);

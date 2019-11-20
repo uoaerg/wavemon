@@ -51,7 +51,7 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 			break;
 		case t_list:
 			assert(item->list && item->list[*item->v.i]);
-			strncpy(s, item->list[*item->v.i], sizeof(s));
+			strncpy(s, item->list[*item->v.i], sizeof(s)-1);
 			/* Fall through, dummy statements to pacify gcc -Wall */
 		case t_sep:
 		case t_func:

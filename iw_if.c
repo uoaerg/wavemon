@@ -111,7 +111,7 @@ void if_getinf(const char *ifname, struct if_info *info)
 
 	info->flags = if_get_flags(skfd, ifname);
 
-	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+	strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
 	if (ioctl(skfd, SIOCGIFMTU, &ifr) == 0)
 		info->mtu = ifr.ifr_mtu;
 
@@ -187,7 +187,7 @@ void dyn_info_get(struct iw_dyn_info *info, const char *ifname)
 		err_sys("%s: can not open socket", __func__);
 
 	memset(info, 0, sizeof(*info));
-	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
+	strncpy(iwr.ifr_name, ifname, IFNAMSIZ-1);
 
 	if (ioctl(skfd, SIOCGIWNAME, &iwr) < 0)
 		err_sys("can not open device '%s'", ifname);
@@ -274,7 +274,7 @@ void iw_getinf_range(const char *ifname, struct iw_range *range)
 		err_sys("%s: can not open socket", __func__);
 
 	memset(range, 0, sizeof(struct iw_range));
-	strncpy(iwr.ifr_name, ifname, IFNAMSIZ);
+	strncpy(iwr.ifr_name, ifname, IFNAMSIZ-1);
 
 	iwr.u.data.pointer = (caddr_t) range;
 	iwr.u.data.length  = sizeof(struct iw_range);
