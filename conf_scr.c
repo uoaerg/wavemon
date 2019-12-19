@@ -90,7 +90,7 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 	}
 }
 
-static void change_item(int inum, char sign)
+static void change_item(int inum, int sign)
 {
 	struct conf_item *item = ll_get(conf_items, inum);
 	int tmp;

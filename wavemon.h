@@ -174,7 +174,7 @@ struct conf_item {
 	int	*dep;		/* dependency */
 	bool	hidden;		/* only allow to set via wavemonrc */
 
-	double	min,		/* value boundaries */
+	int	min,		/* value boundaries */
 		max,
 		inc;		/* increment for value changes */
 
