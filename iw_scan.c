@@ -414,7 +414,7 @@ void *do_scan(void *sr_ptr)
 			if (!has_net_admin_capability())
 				snprintf(sr->msg, sizeof(sr->msg), "This screen requires CAP_NET_ADMIN permissions");
 			pthread_mutex_unlock(&sr->mutex);
-			return NULL;
+      break;
 		case EFAULT:
 			/* EFAULT can occur after a window resizing event: temporary, fall through. */
 		case EINTR:
