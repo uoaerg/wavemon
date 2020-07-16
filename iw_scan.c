@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "ie_id.h"
 #include "iw_nl80211.h"
 
 /* GLOBAL VARIABLES */
@@ -214,18 +215,18 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 			uint8_t len = ie[1];
 
 			switch (ie[0]) {
-			case 0:	/* SSID */
+			case IE_SSID:
 				if (len > 0 && len <= 32)
 					print_ssid_escaped(new->essid, sizeof(new->essid),
 							   ie+2, len);
 				break;
-			case 11: /* BSS Load */
+			case IE_BSS_LOAD:
 				if (len >= 5) {
 					new->bss_sta_count  = ie[3] << 8 | ie[2];
 					new->bss_chan_usage = ie[4];
 				}
 				break;
-			case 127: /* Ext Capa */
+			case IE_EXT_CAPABILITIES:
 				if (len >= sizeof(new->ext_capa)) {
 					memcpy(new->ext_capa, &ie[2], sizeof(new->ext_capa));
 				}
