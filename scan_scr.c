@@ -26,6 +26,17 @@ static struct scan_result sr;
 static pthread_t scan_thread;
 static WINDOW *w_aplst;
 
+static int band_filter_hit(struct scan_entry *cur)
+{
+	// Hide unwanted band
+	if (conf.scan_filter_band == SCAN_FILTER_BAND_2G && cur->freq > 2500)
+		return true;
+	else if (conf.scan_filter_band == SCAN_FILTER_BAND_5G && cur->freq < 2500)
+		return true;
+
+	return false;
+}
+
 /**
  * Sanitize and format single scan entry as a string.
  * @cur: entry to format
@@ -117,12 +128,14 @@ static void display_aplist(WINDOW *w_aplst)
 	sort_scan_list(&sr.head);
 
 	/* Truncate overly long access point lists to match screen height. */
-	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
+	for (cur = sr.head; cur && line < MAXYLEN; cur = cur->next) {
 		col = CP_SCAN_NON_AP;
 
 		if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa) && (cur->bss_capa & WLAN_CAPABILITY_ESS)) {
 			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
 		}
+
+ 		if (band_filter_hit(cur)) continue;
 
 		wmove(w_aplst, line, 1);
 		if (!*cur->essid) {
@@ -145,6 +158,7 @@ static void display_aplist(WINDOW *w_aplst)
 		fmt_scan_entry(cur, s, sizeof(s));
 		waddstr(w_aplst, " ");
 		waddstr(w_aplst, s);
+		line++;
 	}
 
 	if (sr.num.entries < MAX_CH_STATS)
@@ -215,6 +229,15 @@ int scr_aplst_loop(WINDOW *w_menu)
 
 	key = wgetch(w_menu);
 	switch (key) {
+	case '0':	/* All bands */
+		conf.scan_filter_band = SCAN_FILTER_BAND_BOTH;
+		return -1;
+	case '2':	/* 2.4 GHz band */
+		conf.scan_filter_band = SCAN_FILTER_BAND_2G;
+		return -1;
+	case '5':	/* 5 GHz band */
+		conf.scan_filter_band = SCAN_FILTER_BAND_5G;
+		return -1;
 	case 'a':	/* ascending */
 		conf.scan_sort_asc = true;
 		return -1;
