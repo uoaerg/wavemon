@@ -311,11 +311,6 @@ static void init_conf_items(void)
 	conf_items = ll_create();
 
 	item = calloc(1, sizeof(*item));
-	item->name = strdup("Interface");
-	item->type = t_sep;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
 	item->name	= strdup("Interface");
 	item->cfname	= strdup("interface");
 	item->type	= t_list;
