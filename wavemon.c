@@ -18,6 +18,7 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 #include "wavemon.h"
+#include <locale.h>
 #include <setjmp.h>
 
 /* GLOBALS */
@@ -147,6 +148,8 @@ int main(int argc, char *argv[])
 
 	if (!isatty(STDIN_FILENO))
 		errx(1, "input is not from a terminal");
+
+	setlocale(LC_ALL, "");
 
 	/* initialize the ncurses interface */
 	initscr();

@@ -13,7 +13,7 @@
 /**
  * handle_cmd: process @cmd
  * Returns 0 if ok, -errno < 0 on failure
- * stolen/modified from iw:iw.c 
+ * stolen/modified from iw:iw.c
  */
 int handle_cmd(struct cmd *cmd)
 {
