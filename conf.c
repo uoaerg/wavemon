@@ -47,6 +47,13 @@ static char *sort_order[] = {
 	NULL
 };
 
+static char *scan_filter_bands[] = {
+	[SCAN_FILTER_BAND_BOTH]	= "Both",
+	[SCAN_FILTER_BAND_2G]	= "2.4G",
+	[SCAN_FILTER_BAND_5G]	= "5G",
+	NULL
+};
+
 static char *screen_names[] = {
 	[SCR_INFO]	= "Info screen",
 	[SCR_LHIST]	= "Histogram",
@@ -74,6 +81,7 @@ struct wavemon_conf conf = {
 
 	.scan_sort_order	= SO_CHAN_SIG,
 	.scan_sort_asc		= false,
+	.scan_filter_band	= SCAN_FILTER_BAND_BOTH,
 	.lthreshold_action	= TA_DISABLED,
 	.lthreshold		= -80,
 	.hthreshold_action	= TA_DISABLED,
@@ -345,6 +353,14 @@ static void init_conf_items(void)
 	item->type	= t_list;
 	item->v.i	= &conf.scan_sort_asc;
 	item->list	= on_off_names;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->name	= strdup("Scan filter: show band");
+	item->cfname	= strdup("scan_filter_band");
+	item->type	= t_list;
+	item->v.i	= &conf.scan_filter_band;
+	item->list	= scan_filter_bands;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
