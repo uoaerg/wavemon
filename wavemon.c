@@ -284,6 +284,7 @@ int main(int argc, char *argv[])
 		clear();
 		refresh();
 	}
+	curs_set(1);
 	endwin();
 
 	return EXIT_SUCCESS;
