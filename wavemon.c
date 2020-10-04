@@ -237,32 +237,39 @@ int main(int argc, char *argv[])
 
 				/* Main menu */
 				switch (key) {
-				case 'i':
 				case KEY_F(1):
+				case '1':
+				case 'i':
 					next = SCR_INFO;
 					break;
-				case 'l':
 				case KEY_F(2):
+				case '2':
+				case 'l':
 					next = SCR_LHIST;
 					break;
-				case 's':
 				case KEY_F(3):
+				case 's':
+				case '3':
 					next = SCR_SCAN;
 					break;
-				case 'p':
 				case KEY_F(7):
+				case 'p':
+				case '7':
 					next = SCR_PREFS;
 					break;
-				case 'h':
 				case KEY_F(8):
+				case 'h':
+				case '8':
 					next = SCR_HELP;
 					break;
-				case 'a':
 				case KEY_F(9):
+				case 'a':
+				case '9':
 					next = SCR_ABOUT;
 					break;
-				case 'q':
 				case KEY_F(10):
+				case 'q':
+				case '0':
 					next = SCR_QUIT;
 				}
 			} while (next == cur);
