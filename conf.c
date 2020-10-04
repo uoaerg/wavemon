@@ -319,7 +319,7 @@ static void init_conf_items(void)
 	conf_items = ll_create();
 
 	item = calloc(1, sizeof(*item));
-	item->name = strdup("Interface");
+	item->name = strdup("Input");
 	item->type = t_sep;
 	ll_push(conf_items, "*", item);
 
@@ -337,6 +337,16 @@ static void init_conf_items(void)
 	item->type	= t_list;
 	item->v.i	= &conf.cisco_mac;
 	item->list	= on_off_names;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	/* Scan */
+	item = calloc(1, sizeof(*item));
+	item->name = strdup("Scan");
+	item->type = t_sep;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
@@ -361,6 +371,16 @@ static void init_conf_items(void)
 	item->type	= t_list;
 	item->v.i	= &conf.scan_filter_band;
 	item->list	= scan_filter_bands;
+	ll_push(conf_items, "*", item);
+
+	item = calloc(1, sizeof(*item));
+	item->type = t_sep;
+	ll_push(conf_items, "*", item);
+
+	/* Plot */
+	item = calloc(1, sizeof(*item));
+	item->name = strdup("Plot");
+	item->type = t_sep;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
