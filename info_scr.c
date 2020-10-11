@@ -398,6 +398,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.scan));
 		}
 	} else if (linkstat.data.tx_bitrate[0] && linkstat.data.rx_bitrate[0]) {
+		wclrtoborder(w_info);
 		waddstr(w_info, "rx rate: ");
 		waddstr_b(w_info, linkstat.data.rx_bitrate);
 
