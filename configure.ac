@@ -52,7 +52,9 @@ AC_HEADER_STDBOOL
 
 # Tests involving libraries
 AC_CHECK_LIB([m], [pow], [],              [AC_MSG_ERROR(math library not found)])
-AC_CHECK_LIB([ncurses], [waddstr], [],    [AC_MSG_ERROR(ncurses library not found)])
+AC_CHECK_LIB([ncursesw], [waddstr],
+	     [],
+	     [AC_CHECK_LIB([ncurses], [waddstr], [], [AC_MSG_ERROR(ncurses library not found)])])
 AC_CHECK_LIB([pthread], [pthread_create], [CFLAGS="$CFLAGS -pthread"],
 					  [AC_MSG_ERROR(pthread library not found)])
 

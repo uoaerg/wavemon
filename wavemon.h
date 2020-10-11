@@ -34,7 +34,11 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
+#ifdef HAVE_LIBNCURSESW
+#include <ncursesw/curses.h>
+#else
 #include <ncurses.h>
+#endif
 
 #include "llist.h"
 
