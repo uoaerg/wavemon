@@ -117,6 +117,7 @@ static void display_levels(void)
 	} else {
 		qual = ewma(qual, sig_qual, conf.meter_decay / 100.0);
 
+		mvwclrtoborder(w_levels, line, 1);
 		mvwaddstr(w_levels, line++, 1, "link quality: ");
 		sprintf(tmp, "%0.f%%  ", (1e2 * qual)/sig_qual_max);
 		waddstr_b(w_levels, tmp);
@@ -134,6 +135,7 @@ static void display_levels(void)
 	if (sig_level != 0) {
 		signal = ewma(signal, sig_level, conf.meter_decay / 100.0);
 
+		mvwclrtoborder(w_levels, line, 1);
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
 		sprintf(tmp, "%.0f dBm (%s)", signal, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
@@ -159,17 +161,19 @@ static void display_levels(void)
 
 		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
 			nscale, false);
+
+		if (sig_level) {
+			ssnr = ewma(ssnr, sig_level - linkstat.data.survey.noise,
+					  conf.meter_decay / 100.0);
+
+			mvwaddstr(w_levels, line++, 1, "SNR:           ");
+			sprintf(tmp, "%.0f dB", ssnr);
+			waddstr_b(w_levels, tmp);
+		}
+	} else {
+		// Force redraw on next line (needed on some terminals).
+		mvwaddstr(w_levels, line++, 1, "");
 	}
-
-	if (noise_data_valid && sig_level) {
-		ssnr = ewma(ssnr, sig_level - linkstat.data.survey.noise,
-				  conf.meter_decay / 100.0);
-
-		mvwaddstr(w_levels, line++, 1, "SNR:           ");
-		sprintf(tmp, "%.0f dB", ssnr);
-		waddstr_b(w_levels, tmp);
-	}
-
 	wrefresh(w_levels);
 }
 
