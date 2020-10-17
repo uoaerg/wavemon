@@ -295,7 +295,7 @@ void sort_scan_list(struct scan_entry **headp)
 }
 
 /** De-allocate list. Use after all threads are terminated. */
-void free_scan_list(struct scan_entry *head)
+static void free_scan_list(struct scan_entry *head)
 {
 	if (head) {
 		free_scan_list(head->next);
@@ -304,7 +304,7 @@ void free_scan_list(struct scan_entry *head)
 }
 
 /** Initialize scan results. Requires lock to be taken. */
-void init_scan_list(struct scan_result *sr)
+static void init_scan_list(struct scan_result *sr)
 {
 	free_scan_list(sr->head);
 	free(sr->channel_stats);
@@ -313,7 +313,6 @@ void init_scan_list(struct scan_result *sr)
 	sr->msg[0]        = '\0';
 	sr->max_essid_len = MAX_ESSID_LEN;
 	memset(&(sr->num), 0, sizeof(sr->num));
-	sr->mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 }
 
 /*
@@ -366,6 +365,24 @@ static void compute_channel_stats(struct scan_result *sr)
 		sr->channel_stats = NULL;
 	}
 	sr->num.ch_stats = n < MAX_CH_STATS ? n : MAX_CH_STATS;
+}
+
+/*
+ *	Scan results.
+ */
+void scan_result_init(struct scan_result *sr)
+{
+	init_scan_list(sr);
+	pthread_mutex_init(&sr->mutex, NULL);
+}
+
+void scan_result_fini(struct scan_result *sr)
+{
+	pthread_mutex_lock(&sr->mutex);
+	free_scan_list(sr->head);
+	free(sr->channel_stats);
+	pthread_mutex_unlock(&sr->mutex);
+	pthread_mutex_destroy(&sr->mutex);
 }
 
 /** The actual scan thread. */

@@ -203,7 +203,7 @@ void scr_aplst_init(void)
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
 
-	init_scan_list(&sr);
+	scan_result_init(&sr);
 	pthread_create(&scan_thread, NULL, do_scan, &sr);
 }
 
@@ -251,8 +251,6 @@ int scr_aplst_loop(WINDOW *w_menu)
 void scr_aplst_fini(void)
 {
 	pthread_cancel(scan_thread);
-	free_scan_list(sr.head);
-	free(sr.channel_stats);
-
+	scan_result_fini(&sr);
 	delwin(w_aplst);
 }
