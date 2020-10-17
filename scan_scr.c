@@ -19,8 +19,6 @@
  */
 #include "iw_if.h"
 
-#define START_LINE	2	/* where to begin the screen */
-
 /* GLOBALS */
 static struct scan_result sr = {
 	.head          = NULL,
@@ -105,7 +103,7 @@ static void display_aplist(WINDOW *w_aplst)
 		[SO_CHAN_SIG]	= "Ch/Sg",
 		[SO_OPEN_SIG]	= "Op/Sg"
 	};
-	int i, col, line = START_LINE;
+	int i, col, line = 1;
 	struct scan_entry *cur;
 
 	/* Scanning can take several seconds - do not refresh while locked. */
@@ -161,8 +159,9 @@ static void display_aplist(WINDOW *w_aplst)
 	sprintf(s, "%s %ssc", sort_type[conf.scan_sort_order], conf.scan_sort_asc ? "a" : "de");
 	wadd_attr_str(w_aplst, A_REVERSE, s);
 
-	if (sr.num.entries + START_LINE > line) {
-		sprintf(s, ", %d not shown", sr.num.entries + START_LINE - line);
+	/* At this time line == MAXYLEN. Need to subtract 1 for the status line at the bottom. */
+	if (sr.num.entries > line - 1) {
+		sprintf(s, ", %d not shown", sr.num.entries - (line - 1));
 		waddstr(w_aplst, s);
 	}
 	if (sr.num.open) {
@@ -203,7 +202,7 @@ void scr_aplst_init(void)
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 
 	/* Gathering scan data can take seconds. Inform user. */
-	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
+	mvwaddstr(w_aplst, 2, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
 
 	pthread_create(&scan_thread, NULL, do_scan, &sr);
