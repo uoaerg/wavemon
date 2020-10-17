@@ -251,8 +251,6 @@ struct scan_result {
 	pthread_mutex_t   mutex;
 };
 
-extern void scan_result_init(struct scan_result *sr);
-extern void scan_result_fini(struct scan_result *sr);
 extern void *do_scan(void *sr_ptr);
 
 /*

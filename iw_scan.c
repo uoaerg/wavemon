@@ -268,7 +268,7 @@ static int iw_nl80211_get_scan_data(struct scan_result *sr)
 		.handler = scan_dump_handler
 	};
 
-	memset(sr, 0, sizeof(*sr));
+	sr->max_essid_len = MAX_ESSID_LEN;
 	cmd_scan_dump.handler_arg = sr;
 
 	return handle_cmd(&cmd_scan_dump);
@@ -294,25 +294,12 @@ void sort_scan_list(struct scan_entry **headp)
 	*headp = head;
 }
 
-/** De-allocate list. Use after all threads are terminated. */
 static void free_scan_list(struct scan_entry *head)
 {
 	if (head) {
 		free_scan_list(head->next);
 		free(head);
 	}
-}
-
-/** Initialize scan results. Requires lock to be taken. */
-static void init_scan_list(struct scan_result *sr)
-{
-	free_scan_list(sr->head);
-	free(sr->channel_stats);
-	sr->head          = NULL;
-	sr->channel_stats = NULL;
-	sr->msg[0]        = '\0';
-	sr->max_essid_len = MAX_ESSID_LEN;
-	memset(&(sr->num), 0, sizeof(sr->num));
 }
 
 /*
@@ -370,19 +357,31 @@ static void compute_channel_stats(struct scan_result *sr)
 /*
  *	Scan results.
  */
-void scan_result_init(struct scan_result *sr)
+static void _clear_scan_result(struct scan_result *sr)
 {
-	init_scan_list(sr);
-	pthread_mutex_init(&sr->mutex, NULL);
-}
-
-void scan_result_fini(struct scan_result *sr)
-{
-	pthread_mutex_lock(&sr->mutex);
 	free_scan_list(sr->head);
 	free(sr->channel_stats);
+
+	sr->head          = NULL;
+	sr->channel_stats = NULL;
+	sr->msg[0]        = '\0';
+	memset(&(sr->num), 0, sizeof(sr->num));
+}
+
+static void _write_warning_msg(struct scan_result *sr, const char *format, ...)
+{
+	va_list argp;
+
+	va_start(argp, format);
+
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+	pthread_mutex_lock(&sr->mutex);
+
+	_clear_scan_result(sr);
+	vsnprintf(sr->msg, sizeof(sr->msg), format, argp);
+
 	pthread_mutex_unlock(&sr->mutex);
-	pthread_mutex_destroy(&sr->mutex);
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 }
 
 /** The actual scan thread. */
@@ -397,64 +396,68 @@ void *do_scan(void *sr_ptr)
 	sigaddset(&blockmask, SIGWINCH);
 	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
-	pthread_detach(pthread_self());
 	do {
 		ret = iw_nl80211_scan_trigger();
 
-		pthread_mutex_lock(&sr->mutex);
-		init_scan_list(sr);
+		if (-ret == EPERM && !has_net_admin_capability()) {
+			_write_warning_msg(sr, "This screen requires CAP_NET_ADMIN permissions");
+			pthread_exit(0);
+		} else if (-ret == ENETDOWN && !if_is_up(conf_ifname())) {
+			_write_warning_msg(sr, "Interface %s is down - setting it up ...", conf_ifname());
+
+			if (if_set_up(conf_ifname()) < 0)
+				err_sys("Can not bring up interface '%s'", conf_ifname());
+			if (atexit(if_set_down_on_exit) < 0)
+				_write_warning_msg(sr, "Warning: unable to restore %s down state on exit", conf_ifname());
+			continue;
+		}
+
 		switch(-ret) {
-		case 0:
 		case EBUSY:
 			/* Trigger returns -EBUSY if a scan request is pending or ready. */
-			pthread_mutex_unlock(&sr->mutex);
-
-			/* Do not hold the lock while awaiting results. */
+		case 0:
 			if (!wait_for_scan_events()) {
-				pthread_mutex_lock(&sr->mutex);
-				snprintf(sr->msg, sizeof(sr->msg), "Waiting for scan data...");
-				pthread_mutex_unlock(&sr->mutex);
+				_write_warning_msg(sr, "Waiting for scan data...");
 			} else {
-				pthread_mutex_lock(&sr->mutex);
-				ret = iw_nl80211_get_scan_data(sr);
+				struct scan_result *tmp = calloc(1, sizeof(*tmp));
+
+				if (!tmp)
+					err_sys("Out of memory");
+
+				ret = iw_nl80211_get_scan_data(tmp);
 				if (ret < 0) {
-					snprintf(sr->msg, sizeof(sr->msg),
-						 "Scan failed on %s: %s", conf_ifname(), strerror(-ret));
-				} else if (!sr->head) {
-					snprintf(sr->msg, sizeof(sr->msg), "Empty scan results on %s", conf_ifname());
+					_write_warning_msg(sr, "Scan failed on %s: %s", conf_ifname(), strerror(-ret));
+				} else if (!tmp->head) {
+					_write_warning_msg(sr, "Empty scan results on %s", conf_ifname());
+				} else {
+					// Sort only when new data arrives.
+					compute_channel_stats(tmp);
+					sort_scan_list(&tmp->head);
+
+					pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+					pthread_mutex_lock(&sr->mutex);
+
+					_clear_scan_result(sr);
+					sr->head          = tmp->head;
+					sr->channel_stats = tmp->channel_stats;
+					sr->max_essid_len = tmp->max_essid_len;
+					memcpy(&(sr->num), &(tmp->num), sizeof(tmp->num));
+
+					pthread_mutex_unlock(&sr->mutex);
+					pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 				}
-				compute_channel_stats(sr);
-				pthread_mutex_unlock(&sr->mutex);
+				free(tmp);
 			}
-			break;
-		case EPERM:
-			if (!has_net_admin_capability())
-				snprintf(sr->msg, sizeof(sr->msg), "This screen requires CAP_NET_ADMIN permissions");
-			pthread_mutex_unlock(&sr->mutex);
 			break;
 		case EFAULT:
-			/* EFAULT can occur after a window resizing event: temporary, fall through. */
+			/* EFAULT can occur after a window resizing event - treat as temporary error. */
 		case EINTR:
 		case EAGAIN:
-			/* Temporary errors. */
-			snprintf(sr->msg, sizeof(sr->msg), "Waiting for device to become ready ...");
-			pthread_mutex_unlock(&sr->mutex);
+			_write_warning_msg(sr, "Waiting for device to become ready ...");
 			break;
-		case ENETDOWN:
-			if (!if_is_up(conf_ifname())) {
-				snprintf(sr->msg, sizeof(sr->msg), "Interface %s is down - setting it up ...", conf_ifname());
-				pthread_mutex_unlock(&sr->mutex);
-
-				if (if_set_up(conf_ifname()) < 0)
-					err_sys("Can not bring up interface '%s'", conf_ifname());
-				if (atexit(if_set_down_on_exit) < 0)
-					snprintf(sr->msg, sizeof(sr->msg), "Warning: unable to restore %s down state on exit", conf_ifname());
-				break;
-			}
-			/* fall through */
 		default:
-			snprintf(sr->msg, sizeof(sr->msg), "Scan trigger failed on %s: %s", conf_ifname(), strerror(-ret));
-			pthread_mutex_unlock(&sr->mutex);
+			_write_warning_msg(sr, "Scan trigger failed on %s: %s", conf_ifname(), strerror(-ret));
+			break;
 		}
 	} while (usleep(conf.stat_iv * 1000) == 0);
 

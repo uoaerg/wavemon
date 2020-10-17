@@ -22,7 +22,12 @@
 #define START_LINE	2	/* where to begin the screen */
 
 /* GLOBALS */
-static struct scan_result sr;
+static struct scan_result sr = {
+	.head          = NULL,
+	.channel_stats = NULL,
+	.msg[0]        = '\0',
+	.mutex         = PTHREAD_MUTEX_INITIALIZER,
+};
 static pthread_t scan_thread;
 static WINDOW *w_aplst;
 
@@ -103,7 +108,7 @@ static void display_aplist(WINDOW *w_aplst)
 	int i, col, line = START_LINE;
 	struct scan_entry *cur;
 
-	/* Scanning can take several seconds - do not refresh if locked. */
+	/* Scanning can take several seconds - do not refresh while locked. */
 	if (pthread_mutex_trylock(&sr.mutex))
 		return;
 
@@ -113,8 +118,6 @@ static void display_aplist(WINDOW *w_aplst)
 
 	if (!sr.head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, sr.msg);
-
-	sort_scan_list(&sr.head);
 
 	/* Truncate overly long access point lists to match screen height. */
 	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
@@ -203,7 +206,6 @@ void scr_aplst_init(void)
 	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
 
-	scan_result_init(&sr);
 	pthread_create(&scan_thread, NULL, do_scan, &sr);
 }
 
@@ -251,6 +253,6 @@ int scr_aplst_loop(WINDOW *w_menu)
 void scr_aplst_fini(void)
 {
 	pthread_cancel(scan_thread);
-	scan_result_fini(&sr);
+	pthread_join(scan_thread, NULL);
 	delwin(w_aplst);
 }
