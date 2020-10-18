@@ -35,6 +35,7 @@
 #include <math.h>
 #include <stdbool.h>
 #ifdef HAVE_LIBNCURSESW
+#define _XOPEN_SOURCE_EXTENDED
 #include <ncursesw/curses.h>
 #else
 #include <ncurses.h>
