@@ -36,20 +36,19 @@ On Debian/Ubuntu, this can be done using
 ## How to build
 
 wavemon uses `autoconf`, so that in most cases you can simply run
-```
+```bash
 	./configure
 	make
 	sudo make install
 ```
 to build and install the package. Type 'make uninstall' if not happy.
-Refer to the file `INSTALL` for generic installation instructions.
 
-To grant users access to restricted networking operations (scan operations), use additionally
-```
+To grant users access to restricted networking operations (scan operations), use instead
+```bash
 	sudo make install-suid-root
 ```
 If you have changed some of the autoconf files or use a git version, run
-```
+```bash
 	./config/bootstrap
 ```
 (This requires a recent installation of `autotools`.)
