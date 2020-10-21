@@ -401,10 +401,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, ", scan: ");
 			waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.scan));
 		}
-	} else if (linkstat.data.tx_bitrate[0] && linkstat.data.rx_bitrate[0]) {
+	} else {
 		wclrtoborder(w_info);
 		waddstr(w_info, "rx rate: ");
-		waddstr_b(w_info, linkstat.data.rx_bitrate);
+		waddstr_b(w_info, linkstat.data.rx_bitrate[0] ? linkstat.data.rx_bitrate : "n/a");
 
 		if (linkstat.data.expected_thru) {
 			if (linkstat.data.expected_thru >= 1024)
@@ -414,7 +414,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, tmp);
 		}
 		waddstr(w_info, ", tx rate: ");
-		waddstr_b(w_info, linkstat.data.tx_bitrate);
+		waddstr_b(w_info, linkstat.data.tx_bitrate[0] ? linkstat.data.tx_bitrate : "n/a");
 	}
 
 	/* Beacons */
