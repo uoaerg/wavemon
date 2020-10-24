@@ -37,4 +37,6 @@ uncover a bug in the scan window which led to a complete overhaul of based on th
 he also provided useful suggestions to improve sorting of scan results (0.7.6).
 
 Since then there have been countless others, for whose help I am very grateful,
-please see the github issue and commit history for details.
+please see the github issue and commit history for details:
+
+  https://github.com/uoaerg/wavemon
