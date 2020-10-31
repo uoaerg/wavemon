@@ -4,8 +4,8 @@
  * from wireless tools 30. It remains here until the wext code will be
  * replaced by corresponding netlink calls.
  */
-#include "iw_if.h"
-#include <search.h>		/* lsearch(3) */
+#include "iw_scan.h"
+#include <search.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,7 +75,7 @@ static bool cmp_open_sig(const struct scan_entry *a, const struct scan_entry *b)
 static bool (*scan_cmp[])(const struct scan_entry *, const struct scan_entry *) = {
 	[SO_CHAN]	= cmp_chan,
 	[SO_SIGNAL]	= cmp_sig,
-	[SO_MAC]        = cmp_mac,
+	[SO_MAC]	= cmp_mac,
 	[SO_ESSID]	= cmp_essid,
 	[SO_OPEN]	= cmp_open,
 	[SO_CHAN_SIG]	= cmp_chan_sig,
@@ -211,19 +211,29 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 		int ielen   = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
 
 		while (ielen >= 2 && ielen >= ie[1]) {
-			uint8_t len = ie[1];
+			const ie_id_t id  = (ie_id_t)ie[0];
+			const uint8_t len = (uint8_t)ie[1];
 
-			switch (ie[0]) {
-			case 0:	/* SSID */
+			switch (id) {
+			case IE_SSID:
 				if (len > 0 && len <= 32)
 					print_ssid_escaped(new->essid, sizeof(new->essid),
 							   ie+2, len);
 				break;
-			case 11: /* BSS Load */
+			case IE_BSS_LOAD:
 				if (len >= 5) {
 					new->bss_sta_count  = ie[3] << 8 | ie[2];
 					new->bss_chan_usage = ie[4];
 				}
+			case IE_HT_CAPABILITIES:
+				new->ht_capable = true;
+				break;
+			case IE_RM_CAPABILITIES:
+				new->rm_enabled = true;
+			case IE_MESH_CONFIG:
+				new->mesh_enabled = true;
+				break;
+			default: /* ignored */
 				break;
 			}
 			ielen -= ie[1] + 2;
