@@ -17,7 +17,7 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#include "iw_if.h"
+#include "iw_scan.h"
 
 /* GLOBALS */
 static struct scan_result sr = {
