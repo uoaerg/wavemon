@@ -100,6 +100,9 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 	} else if (cur->bss_capa & WLAN_CAPABILITY_IBSS) {
 		len += snprintf(buf + len, buflen - len, " IBSS");
 	}
+	if (cur->mesh_enabled) {
+		len += snprintf(buf + len, buflen - len, ", Mesh");
+	}
 }
 
 static void display_aplist(WINDOW *w_aplst)
