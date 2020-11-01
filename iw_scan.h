@@ -65,6 +65,7 @@ struct cnt {
  * @channel_stats: array of channel statistics entries
  * @num.total:     number of entries in list starting at @head
  * @num.open:      number of open entries among @num.total
+ * @num.hidden:    number of entries with hidden ESSIDs among @num.total
  * @num.two_gig:   number of 2.4GHz stations among @num.total
  * @num.five_gig:  number of 5 GHz stations among @num.total
  * @num.ch_stats:  length of @channel_stats array
@@ -78,6 +79,7 @@ struct scan_result {
 	struct assorted_numbers {
 		uint16_t	entries,
 				open,
+				hidden,
 				two_gig,
 				five_gig;
 /* Maximum number of 'top' statistics entries. */

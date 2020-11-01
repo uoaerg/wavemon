@@ -122,11 +122,14 @@ static void display_aplist(WINDOW *w_aplst)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, sr.msg);
 
 	/* Truncate overly long access point lists to match screen height. */
-	for (cur = sr.head; cur && line < MAXYLEN; line++, cur = cur->next) {
-		col = CP_SCAN_NON_AP;
+	for (cur = sr.head; cur && line < MAXYLEN; cur = cur->next) {
+		if (!conf.scan_hidden_essids && !*cur->essid)
+			continue;
 
 		if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa) && (cur->bss_capa & WLAN_CAPABILITY_ESS)) {
 			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
+		} else {
+			col = CP_SCAN_NON_AP;
 		}
 
 		wmove(w_aplst, line, 1);
@@ -150,6 +153,7 @@ static void display_aplist(WINDOW *w_aplst)
 		fmt_scan_entry(cur, s, sizeof(s));
 		waddstr(w_aplst, " ");
 		waddstr(w_aplst, s);
+		line++;
 	}
 
 	if (sr.num.entries < MAX_CH_STATS)
@@ -169,8 +173,8 @@ static void display_aplist(WINDOW *w_aplst)
 	sprintf(s, "%s %ssc", sort_type[conf.scan_sort_order], conf.scan_sort_asc ? "a" : "de");
 	wadd_attr_str(w_aplst, A_REVERSE, s);
 
-	/* At this time line == MAXYLEN. Need to subtract 1 for the status line at the bottom. */
-	if (sr.num.entries > line - 1) {
+	if (line == MAXYLEN && sr.num.entries > line - 1) {
+		/* Truncated display truncated. Need to subtract 1 for the status line at the bottom. */
 		sprintf(s, ", %d not shown", sr.num.entries - (line - 1));
 		waddstr(w_aplst, s);
 	}
@@ -178,6 +182,11 @@ static void display_aplist(WINDOW *w_aplst)
 		sprintf(s, ", %d open", sr.num.open);
 		waddstr(w_aplst, s);
 	}
+	if (sr.num.hidden) {
+		sprintf(s, ", %d hidden", sr.num.hidden);
+		waddstr(w_aplst, s);
+	}
+
 
 	if (sr.num.two_gig && sr.num.five_gig) {
 		waddch(w_aplst, ' ');
@@ -237,6 +246,9 @@ int scr_aplst_loop(WINDOW *w_menu)
 		return -1;
 	case '5':	/* 5 GHz band only */
 		conf.scan_filter_band = SCAN_FILTER_BAND_5G;
+		return -1;
+	case 'h':	/* Toggle inclusion of hidden ESSIDs */
+		conf.scan_hidden_essids = !conf.scan_hidden_essids;
 		return -1;
 	/*
 	 * Sort Order

@@ -149,11 +149,12 @@ extern struct wavemon_conf {
 		meter_decay;
 
 	/* Boolean values */
-	int	check_geometry,		/* ensure window is large enough */
+	int	check_geometry,		/* Ensure window is large enough */
 		cisco_mac,		/* Cisco-style MAC addresses */
 		transparent_bg,		/* Use terminal background instead of black */
-		override_bounds,	/* override autodetection */
-		scan_sort_asc;		/* direction of @scan_sort_order */
+		override_bounds,	/* Override autodetection */
+		scan_sort_asc,		/* Direction of @scan_sort_order */
+		scan_hidden_essids;	/* Whether to include hidden SSIDs */
 
 	/* Enumerated values */
 	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */

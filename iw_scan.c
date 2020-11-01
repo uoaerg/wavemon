@@ -175,9 +175,7 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	if (!bss[NL80211_BSS_BSSID])
 		return NL_SKIP;
 
-	/*
-	 * Apply filters
-	 */
+	/* Band filtering */
 	if (bss[NL80211_BSS_FREQUENCY] && conf.scan_filter_band != SCAN_FILTER_BAND_BOTH) {
 		uint32_t freq = nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
 
@@ -256,10 +254,14 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	/* Update stats */
 	new->next = sr->head;
 	sr->head  = new;
-	if (str_is_ascii(new->essid))
+
+	if (!*new->essid) {
+		sr->num.hidden++;
+	} else if (str_is_ascii(new->essid)) {
 		sr->max_essid_len = clamp(strlen(new->essid),
 					  sr->max_essid_len,
 					  IW_ESSID_MAX_SIZE);
+	}
 
 	if (new->freq > 45000)	/* 802.11ad 60GHz spectrum */
 		err_quit("FIXME: can not handle %d MHz spectrum yet", new->freq);

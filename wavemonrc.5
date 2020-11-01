@@ -24,6 +24,22 @@ If enabled, display MAC addresses using lower-case hex digits separated by dots
 rather than colons.
 .P
 .RE
+.B scan_filter_band = (2.4ghz|5ghz|both)
+.RS
+.RE
+(Scan band selection)
+.RS
+Filter bands in the scan window: \fI2.4ghz\fR (2.4GHz only), \fI5ghz\fR (5GHz only), or \fIboth\fR (show both bands).
+.P
+.RE
+.B scan_hidden_essids = (on|off)
+.RS
+.RE
+(Scan hidden ESSIDs)
+.RS
+Whether the scan window should include hidden ESSIDs.
+.P
+.RE
 .B sort_order = (channel|essid|mac|signal|open|chan/sig|open/sig)
 .RS
 .RE
@@ -43,13 +59,6 @@ sorting by \fIchannel\fR in descending order switches to least crowded ones inst
 .RS
 Sets the direction of the \fIsort_order\fR: ascending (on) or descending (off).
 .P
-.RE
-.B scan_filter_band = (both|2.4ghz|5ghz)
-.RS
-.RE
-(Scan band selection)
-.RS
-Filter bands in the scan window: \fI2.4ghz\fR (2.4GHz only), \fI5ghz\fR (5GHz only), or \fIboth\fR (show both bands).
 .P
 .RE
 .B stat_updates = <n>
@@ -171,6 +180,6 @@ Which of the screens appears at program startup.
 .SH "AUTHOR"
 Written by Jan Morgenstern <jan@jm-music.de>.
 .SH "REPORTING BUGS"
-Send bug reports and/or suggestions to Gerrit Renker <gerrit@erg.abdn.ac.uk>.
+Open an issue on \fIhttps://github.com/uoaerg/wavemon/issues\fR.
 .SH "COPYRIGHT"
 This is free software with ABSOLUTELY NO WARRANTY. See file COPYING for details.
