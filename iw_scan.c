@@ -175,6 +175,18 @@ int scan_dump_handler(struct nl_msg *msg, void *arg)
 	if (!bss[NL80211_BSS_BSSID])
 		return NL_SKIP;
 
+	/*
+	 * Apply filters
+	 */
+	if (bss[NL80211_BSS_FREQUENCY] && conf.scan_filter_band != SCAN_FILTER_BAND_BOTH) {
+		uint32_t freq = nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
+
+		if (conf.scan_filter_band == SCAN_FILTER_BAND_2G && freq > 2500)
+			return NL_SKIP;
+		if (conf.scan_filter_band == SCAN_FILTER_BAND_5G && freq < 2500)
+			return NL_SKIP;
+	}
+
 	new = calloc(1, sizeof(*new));
 	if (!new)
 		err_sys("failed to allocate scan entry");

@@ -123,6 +123,7 @@ enum scan_sort_order {
 	SO_OPEN_SIG
 };
 
+/** Band filtering (2.4 GHz / 5 GHz / Both) */
 enum scan_filter_band {
 	SCAN_FILTER_BAND_BOTH,
 	SCAN_FILTER_BAND_2G,
@@ -156,7 +157,7 @@ extern struct wavemon_conf {
 
 	/* Enumerated values */
 	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */
- 		scan_filter_band,	/* both|2.4G|5G */
+		scan_filter_band,	/* 2.4ghz|5ghz|both */
 		lthreshold_action,	/* disabled|beep|flash|beep+flash */
 		hthreshold_action,	/* disabled|beep|flash|beep+flash */
 		startup_scr;		/* info|histogram|aplist */

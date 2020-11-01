@@ -1,4 +1,4 @@
-.TH wavemonrc 5 "December 2018" Linux "User Manuals"
+.TH wavemonrc 5 "November 2020" Linux "User Manuals"
 .SH NAME
 $HOME/.wavemonrc \- wavemon configuration file
 .SH DESCRIPTION
@@ -44,12 +44,12 @@ sorting by \fIchannel\fR in descending order switches to least crowded ones inst
 Sets the direction of the \fIsort_order\fR: ascending (on) or descending (off).
 .P
 .RE
-.B scan_filter_band = (both|2.4G|5G)
+.B scan_filter_band = (both|2.4ghz|5ghz)
 .RS
 .RE
-(Scan filter by band)
+(Scan band selection)
 .RS
-Determines display of selected band in the scan window: \fIboth\fR (show both bands), \fI2.4G\fR (show 2.4GHz only), \fI5G\fR (show 5GHz only).
+Filter bands in the scan window: \fI2.4ghz\fR (2.4GHz only), \fI5ghz\fR (5GHz only), or \fIboth\fR (show both bands).
 .P
 .RE
 .B stat_updates = <n>

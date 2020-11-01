@@ -49,8 +49,8 @@ static char *sort_order[] = {
 
 static char *scan_filter_bands[] = {
 	[SCAN_FILTER_BAND_BOTH]	= "Both",
-	[SCAN_FILTER_BAND_2G]	= "2.4G",
-	[SCAN_FILTER_BAND_5G]	= "5G",
+	[SCAN_FILTER_BAND_2G]	= "2.4GHz",
+	[SCAN_FILTER_BAND_5G]	= "5GHz",
 	NULL
 };
 
@@ -366,7 +366,7 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Scan band filter");
+	item->name	= strdup("Scan band selection");
 	item->cfname	= strdup("scan_filter_band");
 	item->type	= t_list;
 	item->v.i	= &conf.scan_filter_band;
