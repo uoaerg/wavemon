@@ -22,7 +22,7 @@ MAIN	= @PACKAGE_NAME@.c
 HEADERS	= $(wildcard *.h)
 PURESRC	= $(filter-out $(MAIN),$(sort $(wildcard *.c)))
 OBJS	= $(PURESRC:.c=.o)
-DOCS	= README.md THANKS AUTHORS COPYING ChangeLog
+DOCS	= README.md THANKS COPYING
 
 %.o: %.c $(HEADERS)
 	@echo ' CC  ' $<

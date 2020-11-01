@@ -17,12 +17,15 @@
  * with wavemon; see the file COPYING.  If not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#include "iw_if.h"
-
-#define START_LINE	2	/* where to begin the screen */
+#include "iw_scan.h"
 
 /* GLOBALS */
-static struct scan_result sr;
+static struct scan_result sr = {
+	.head          = NULL,
+	.channel_stats = NULL,
+	.msg[0]        = '\0',
+	.mutex         = PTHREAD_MUTEX_INITIALIZER,
+};
 static pthread_t scan_thread;
 static WINDOW *w_aplst;
 
@@ -97,6 +100,9 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 	} else if (cur->bss_capa & WLAN_CAPABILITY_IBSS) {
 		len += snprintf(buf + len, buflen - len, " IBSS");
 	}
+	if (cur->mesh_enabled) {
+		len += snprintf(buf + len, buflen - len, ", Mesh");
+	}
 }
 
 static void display_aplist(WINDOW *w_aplst)
@@ -111,10 +117,10 @@ static void display_aplist(WINDOW *w_aplst)
 		[SO_CHAN_SIG]	= "Ch/Sg",
 		[SO_OPEN_SIG]	= "Op/Sg"
 	};
-	int i, col, line = START_LINE;
+	int i, col, line = 1;
 	struct scan_entry *cur;
 
-	/* Scanning can take several seconds - do not refresh if locked. */
+	/* Scanning can take several seconds - do not refresh while locked. */
 	if (pthread_mutex_trylock(&sr.mutex))
 		return;
 
@@ -124,8 +130,6 @@ static void display_aplist(WINDOW *w_aplst)
 
 	if (!sr.head)
 		waddstr_center(w_aplst, WAV_HEIGHT/2 - 1, sr.msg);
-
-	sort_scan_list(&sr.head);
 
 	/* Truncate overly long access point lists to match screen height. */
 	for (cur = sr.head; cur && line < MAXYLEN; cur = cur->next) {
@@ -172,8 +176,9 @@ static void display_aplist(WINDOW *w_aplst)
 	sprintf(s, "%s %ssc", sort_type[conf.scan_sort_order], conf.scan_sort_asc ? "a" : "de");
 	wadd_attr_str(w_aplst, A_REVERSE, s);
 
-	if (sr.num.entries + START_LINE > line) {
-		sprintf(s, ", %d not shown", sr.num.entries + START_LINE - line);
+	/* At this time line == MAXYLEN. Need to subtract 1 for the status line at the bottom. */
+	if (sr.num.entries > line - 1) {
+		sprintf(s, ", %d not shown", sr.num.entries - (line - 1));
 		waddstr(w_aplst, s);
 	}
 	if (sr.num.open) {
@@ -214,10 +219,9 @@ void scr_aplst_init(void)
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 
 	/* Gathering scan data can take seconds. Inform user. */
-	mvwaddstr(w_aplst, START_LINE, 1, "Waiting for scan data ...");
+	mvwaddstr(w_aplst, 2, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
 
-	init_scan_list(&sr);
 	pthread_create(&scan_thread, NULL, do_scan, &sr);
 }
 
@@ -274,8 +278,6 @@ int scr_aplst_loop(WINDOW *w_menu)
 void scr_aplst_fini(void)
 {
 	pthread_cancel(scan_thread);
-	free_scan_list(sr.head);
-	free(sr.channel_stats);
-
+	pthread_join(scan_thread, NULL);
 	delwin(w_aplst);
 }

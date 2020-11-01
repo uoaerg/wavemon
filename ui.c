@@ -30,6 +30,21 @@ WINDOW *newwin_title(int y, int h, const char *title, bool nobottom)
 {
 	WINDOW *win = newwin(h, WAV_WIDTH, y, 0);
 
+#ifdef HAVE_LIBNCURSESW
+	const cchar_t * top_left  = y > 0 ? WACS_LTEE : WACS_ULCORNER;
+	const cchar_t * top_right = y > 0 ? WACS_RTEE : WACS_URCORNER;
+
+	if (nobottom) {
+		mvwadd_wch(win, 0, 0, top_left);
+		mvwhline_set(win, 0, 1, WACS_HLINE, MAXXLEN);
+		mvwvline_set(win, 1, 0, WACS_VLINE, h);
+		mvwadd_wch(win, 0, WAV_WIDTH - 1, top_right);
+		mvwvline_set(win, 1, WAV_WIDTH - 1, WACS_VLINE, h);
+	} else {
+		wborder_set(win, WACS_VLINE, WACS_VLINE, WACS_HLINE, WACS_HLINE,
+			    top_left, top_right, WACS_LLCORNER, WACS_LRCORNER);
+	}
+#else
 	chtype top_left  = y > 0 ? ACS_LTEE : ACS_ULCORNER;
 	chtype top_right = y > 0 ? ACS_RTEE : ACS_URCORNER;
 
@@ -43,6 +58,7 @@ WINDOW *newwin_title(int y, int h, const char *title, bool nobottom)
 		wborder(win, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
 			top_left, top_right, ACS_LLCORNER, ACS_LRCORNER);
 	}
+#endif
 	wattrset(win, COLOR_PAIR(CP_WTITLE));
 	mvwaddstr(win, 0, 2, title);
 	wattroff(win, COLOR_PAIR(CP_WTITLE));

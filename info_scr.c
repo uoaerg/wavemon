@@ -117,6 +117,7 @@ static void display_levels(void)
 	} else {
 		qual = ewma(qual, sig_qual, conf.meter_decay / 100.0);
 
+		mvwclrtoborder(w_levels, line, 1);
 		mvwaddstr(w_levels, line++, 1, "link quality: ");
 		sprintf(tmp, "%0.f%%  ", (1e2 * qual)/sig_qual_max);
 		waddstr_b(w_levels, tmp);
@@ -134,6 +135,7 @@ static void display_levels(void)
 	if (sig_level != 0) {
 		signal = ewma(signal, sig_level, conf.meter_decay / 100.0);
 
+		mvwclrtoborder(w_levels, line, 1);
 		mvwaddstr(w_levels, line++, 1, "signal level: ");
 		sprintf(tmp, "%.0f dBm (%s)", signal, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
@@ -159,17 +161,19 @@ static void display_levels(void)
 
 		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
 			nscale, false);
+
+		if (sig_level) {
+			ssnr = ewma(ssnr, sig_level - linkstat.data.survey.noise,
+					  conf.meter_decay / 100.0);
+
+			mvwaddstr(w_levels, line++, 1, "SNR:           ");
+			sprintf(tmp, "%.0f dB", ssnr);
+			waddstr_b(w_levels, tmp);
+		}
+	} else {
+		// Force redraw on next line (needed on some terminals).
+		mvwaddstr(w_levels, line++, 1, "");
 	}
-
-	if (noise_data_valid && sig_level) {
-		ssnr = ewma(ssnr, sig_level - linkstat.data.survey.noise,
-				  conf.meter_decay / 100.0);
-
-		mvwaddstr(w_levels, line++, 1, "SNR:           ");
-		sprintf(tmp, "%.0f dB", ssnr);
-		waddstr_b(w_levels, tmp);
-	}
-
 	wrefresh(w_levels);
 }
 
@@ -397,9 +401,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, ", scan: ");
 			waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.scan));
 		}
-	} else if (linkstat.data.tx_bitrate[0] && linkstat.data.rx_bitrate[0]) {
+	} else {
+		wclrtoborder(w_info);
 		waddstr(w_info, "rx rate: ");
-		waddstr_b(w_info, linkstat.data.rx_bitrate);
+		waddstr_b(w_info, linkstat.data.rx_bitrate[0] ? linkstat.data.rx_bitrate : "n/a");
 
 		if (linkstat.data.expected_thru) {
 			if (linkstat.data.expected_thru >= 1024)
@@ -409,7 +414,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, tmp);
 		}
 		waddstr(w_info, ", tx rate: ");
-		waddstr_b(w_info, linkstat.data.tx_bitrate);
+		waddstr_b(w_info, linkstat.data.tx_bitrate[0] ? linkstat.data.tx_bitrate : "n/a");
 	}
 
 	/* Beacons */

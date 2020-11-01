@@ -366,7 +366,7 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Scan filter: show band");
+	item->name	= strdup("Scan bands (2/5 GHz)");
 	item->cfname	= strdup("scan_filter_band");
 	item->type	= t_list;
 	item->v.i	= &conf.scan_filter_band;

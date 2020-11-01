@@ -62,10 +62,10 @@ void err_msg(const char *format, ...)
 /**
  * terminate_all_processes  -  terminate wavemon and reset screen
  * @fmt:     printf-like format string
- * @strerr:  set to non-0 if termination is due to failed system call
+ * @strerr:  set to true if termination is due to failed system call
  * @ap:	     argument list for @fmt
  */
-static void terminate_all_processes(const char *fmt, int strerr, va_list ap)
+static void terminate_all_processes(const char *fmt, bool strerr, va_list ap)
 {
 	int saved_errno = strerr ? errno : 0;
 	/*

@@ -309,19 +309,23 @@ static void display_key(WINDOW *w_key)
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
-	wprintw(w_key, "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
+	if (e_noise.initialised && e_snr.initialised) {
+		wprintw(w_key, "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
 
-	wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
-	waddch(w_key, ACS_HLINE);
-	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
+		wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
+		waddch(w_key, ACS_HLINE);
+		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
-	wprintw(w_key, "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
+		wprintw(w_key, "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
 
-	wattrset(w_key, COLOR_PAIR(CP_STATSNR));
-	waddch(w_key, ' ');
+		wattrset(w_key, COLOR_PAIR(CP_STATSNR));
+		waddch(w_key, ' ');
 
-	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-	wprintw(w_key, "] S-N ratio (%s)", fmt_extrema(&e_snr, "dB"));
+		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
+		wprintw(w_key, "] S-N ratio (%s)", fmt_extrema(&e_snr, "dB"));
+	} else {
+		wprintw(w_key, "] signal level (%s)", fmt_extrema(&e_signal, "dBm"));
+	}
 
 	wrefresh(w_key);
 }

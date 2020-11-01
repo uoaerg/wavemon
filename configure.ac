@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.64)
-AC_INIT([wavemon], [0.9.1], [https://github.com/uoaerg/wavemon], [wavemon-current],
+AC_INIT([wavemon], [0.9.2], [https://github.com/uoaerg/wavemon], [wavemon-current],
 	[https://github.com/uoaerg/wavemon])
 
 
@@ -28,6 +28,7 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS([ncurses.h fcntl.h netdb.h sys/ioctl.h sys/time.h unistd.h\
 		  net/if_arp.h netinet/ether.h net/ethernet.h pthread.h],
 		 [], [AC_MSG_ERROR($ac_header not found)])
+AC_CHECK_HEADERS([ncursesw/curses.h])
 
 # linux/if.h needs 'struct sockaddr'
 # linux/wireless.h in turn depends on linux/if.h
@@ -52,7 +53,9 @@ AC_HEADER_STDBOOL
 
 # Tests involving libraries
 AC_CHECK_LIB([m], [pow], [],              [AC_MSG_ERROR(math library not found)])
-AC_CHECK_LIB([ncurses], [waddstr], [],    [AC_MSG_ERROR(ncurses library not found)])
+AC_CHECK_LIB([ncursesw], [waddstr],
+	     [],
+	     [AC_CHECK_LIB([ncurses], [waddstr], [], [AC_MSG_ERROR(ncurses library not found)])])
 AC_CHECK_LIB([pthread], [pthread_create], [CFLAGS="$CFLAGS -pthread"],
 					  [AC_MSG_ERROR(pthread library not found)])
 
