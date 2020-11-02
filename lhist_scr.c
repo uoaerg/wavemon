@@ -74,8 +74,8 @@ static char *fmt_extrema(const struct iw_extrema *ie, const char *unit)
 	else if (ie->min == ie->max)
 		snprintf(range, sizeof(range), "%+.0f %s", ie->min, unit);
 	else
-		snprintf(range, sizeof(range), "%+.0f..%+.0f %s", ie->min,
-								ie->max, unit);
+		snprintf(range, sizeof(range), "%+.0f %s ... %+.0f %s",
+				ie->min, unit, ie->max, unit);
 	return range;
 }
 
