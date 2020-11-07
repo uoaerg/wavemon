@@ -109,20 +109,18 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 	keypad(menu, TRUE);
 	wmove(menu, 0, 0);
 	for (cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
-		wattrset(menu, A_REVERSE | A_BOLD);
-		wprintw(menu, "F%d", cur + 1);
-
-		wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
-					     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);
 		if (*screens[cur].key_name) {
+			wattrset(menu, A_REVERSE | A_BOLD);
+			wprintw(menu, "F%d", cur + 1);
+
+			wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
+						     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);
 
 			wattron(menu, A_UNDERLINE);
 			waddch(menu, screens[cur].key_name[0]);
 			wattroff(menu, A_UNDERLINE);
 
-			wprintw(menu, "%-5s", screens[cur].key_name + 1);
-		} else  {
-			wprintw(menu, "%-6s", "");
+			wprintw(menu, "%-6s", screens[cur].key_name + 1);
 		}
 	}
 	wrefresh(menu);
