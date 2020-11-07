@@ -278,6 +278,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	iw_getinf_range(conf_ifname(), &range);
 	dyn_info_get(&info, conf_ifname());
 	iw_nl80211_getifstat(&ifs);
+	iw_nl80211_get_phy(&ifs);
 	iw_nl80211_getreg(&ir);
 
 	/*
@@ -290,7 +291,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	/* PHY */
 	waddstr(w_if, ", phy ");
-	sprintf(tmp, "%d", ifs.phy);
+	sprintf(tmp, "%d", ifs.phy_id);
 	waddstr_b(w_if, tmp);
 
 	/* Regulatory domain */
@@ -390,6 +391,11 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	} else {
 		waddstr(w_info, "frequency/channel: n/a");
 	}
+
+	waddstr(w_info, ", bands: ");
+	sprintf(tmp, "%u", ifs.phy.bands);
+	waddstr_b(w_info, tmp);
+
 	wclrtoborder(w_info);
 
 	/* Beacons */
@@ -518,11 +524,20 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	/* Retry handling */
 	wmove(w_info, 7, 1);
-	waddstr(w_info, "retry: ");
-	if (info.cap_retry)
-		waddstr_b(w_info, format_retry(&info.retry, &range));
-	else
-		waddstr(w_info, "n/a");
+	if (ifs.phy.retry_short || ifs.phy.retry_long) {
+		waddstr(w_info, "retry short/long: ");
+		sprintf(tmp, "%u", ifs.phy.retry_short);
+		waddstr_b(w_info, tmp);
+		waddstr(w_info, "/");
+		sprintf(tmp, "%u", ifs.phy.retry_long);
+		waddstr_b(w_info, tmp);
+	} else {	/* wext-based information */
+		waddstr(w_info, "retry: ");
+		if (info.cap_retry)
+			waddstr_b(w_info, format_retry(&info.retry, &range));
+		else
+			waddstr(w_info, "n/a");
+	}
 
 	waddstr(w_info, ",  ");
 	if (info.cap_rts) {

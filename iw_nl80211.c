@@ -1,6 +1,5 @@
 /*
- * FIXME:
- * PROTOTYPE: add nl80211 calls to iw_if. Mostly copied/stolen from iw
+ * nl80211 calls and utilies. These were mostly taken from the iw code.
  */
 #include "wavemon.h"
 #include <net/if.h>
@@ -191,7 +190,7 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 		  genlmsg_attrlen(gnlh, 0), NULL);
 
 	if (tb_msg[NL80211_ATTR_WIPHY])
-		ifs->phy = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]);
+		ifs->phy_id = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]);
 
 	if (tb_msg[NL80211_ATTR_IFINDEX])
 		ifs->ifindex = nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]);
@@ -224,6 +223,37 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 			ifs->chan_type = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE]);
 	}
 
+	return NL_SKIP;
+}
+
+/* Query PHY information. */
+static int phy_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_ifstat *ifs = (struct iw_nl80211_ifstat *)arg;
+	struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+
+	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (tb_msg[NL80211_ATTR_WIPHY] &&
+	    nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]) != ifs->phy_id)
+		return NL_SKIP;
+
+	if (tb_msg[NL80211_ATTR_WIPHY_RETRY_SHORT])
+		ifs->phy.retry_short = nla_get_u8(tb_msg[NL80211_ATTR_WIPHY_RETRY_SHORT]);
+
+	if (tb_msg[NL80211_ATTR_WIPHY_RETRY_LONG])
+		ifs->phy.retry_long = nla_get_u8(tb_msg[NL80211_ATTR_WIPHY_RETRY_LONG]);
+
+	if (tb_msg[NL80211_ATTR_WIPHY_BANDS]) {
+		struct nlattr *nl_band;
+		int rem_band;
+
+		nla_for_each_nested(nl_band, tb_msg[NL80211_ATTR_WIPHY_BANDS], rem_band) {
+			ifs->phy.bands++;
+		}
+	}
 	return NL_SKIP;
 }
 
@@ -323,6 +353,26 @@ static int reg_handler(struct nl_msg *msg, void *arg)
 	ir->country[0] = alpha2[0];
 	ir->country[1] = alpha2[1];
 
+	return NL_SKIP;
+}
+
+/* Check if nl80211 allows splitting of wiphy information. Adapted from iw:info.c.*/
+static int have_split_wiphy_handler(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	bool *has_split_wiphy = (bool *)arg;
+
+	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (tb_msg[NL80211_ATTR_PROTOCOL_FEATURES]) {
+		uint32_t feat = nla_get_u32(tb_msg[NL80211_ATTR_PROTOCOL_FEATURES]);
+
+		if (feat & NL80211_PROTOCOL_FEATURE_SPLIT_WIPHY_DUMP) {
+			*has_split_wiphy = true;
+		}
+	}
 	return NL_SKIP;
 }
 
@@ -578,6 +628,23 @@ void iw_nl80211_getreg(struct iw_nl80211_reg *ir)
 	handle_cmd(&cmd_reg);
 }
 
+/** Check kernel for split-wiphy support. Single-thread use only. */
+static bool iw_nl80211_have_split_wiphy_dump()
+{
+	static bool nl80211_has_split_wiphy, checked;
+	static struct cmd cmd_features = {
+		.cmd	     = NL80211_CMD_GET_PROTOCOL_FEATURES,
+		.flags	     = 0,
+		.handler     = have_split_wiphy_handler,
+		.handler_arg = &nl80211_has_split_wiphy,
+	};
+
+	if (!checked)
+		handle_cmd(&cmd_features);
+	checked = true;
+	return nl80211_has_split_wiphy;
+}
+
 void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 {
 	static struct cmd cmd_ifstat = {
@@ -589,6 +656,24 @@ void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 	cmd_ifstat.handler_arg = ifs;
 	memset(ifs, 0, sizeof(*ifs));
 	handle_cmd(&cmd_ifstat);
+}
+
+void iw_nl80211_get_phy(struct iw_nl80211_ifstat *ifs)
+{
+	static struct cmd cmd_phy_info = {
+		.cmd	   = NL80211_CMD_GET_WIPHY,
+		.flags	   = 0,
+		.hdr_flags = 0,
+		.handler   = phy_handler,
+	};
+
+	if (iw_nl80211_have_split_wiphy_dump()) {
+		cmd_phy_info.hdr_flags |= NL80211_ATTR_SPLIT_WIPHY_DUMP;
+		cmd_phy_info.flags |= NLM_F_DUMP;
+	}
+	cmd_phy_info.handler_arg = ifs;
+	memset(&ifs->phy, 0, sizeof(ifs->phy));
+	handle_cmd(&cmd_phy_info);
 }
 
 void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)

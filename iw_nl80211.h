@@ -37,6 +37,7 @@ struct msg_attribute {
  * @cmd:	  nl80211 command to send via GeNetlink
  * @sk:		  netlink socket to be used for this command
  * @flags:	  flags to set in the GeNetlink message
+ * @hdr_flags:	  flags to set in the header of the message
  * @handler:	  netlink callback handler
  * @handler_arg:  argument for @handler
  * @msg_args:	  additional attributes to pass into message
@@ -45,18 +46,32 @@ struct msg_attribute {
 struct cmd {
 	enum nl80211_commands	cmd;
 	struct nl_sock		*sk;
-	int			flags;
+	int			flags,
+				hdr_flags;
 	int (*handler)(struct nl_msg *msg, void *arg);
-	void 			*handler_arg;
+	void			*handler_arg;
 
 	struct msg_attribute	*msg_args;
 	uint8_t			msg_args_len;
 };
 extern int handle_cmd(struct cmd *cmd);
 
+
+/**
+ * iw_nl80211_phy - PHY information
+ * @retry_short: short retry limit
+ * @retry_long:  long retry limit
+ * @bands:       number of bands
+ */
+struct iw_nl80211_phy {
+	uint8_t		retry_short,
+			retry_long,
+			bands;
+};
+
 /**
  * iw_nl80211_ifstat - interface statistics
- * @phy:	PHY index
+ * @phy_id:	PHY index
  * @ifindex:	ifindex of receiving interface
  * @wdev:	wireless device index
  * @iftype:	interface mode (access point ...)
@@ -66,9 +81,10 @@ extern int handle_cmd(struct cmd *cmd);
  * @chan_type:	channel type
  * @freq_ctr1:	center frequency #1
  * @freq_ctr2:	center frequency #2
+ * @phy:        PHY information
  */
 struct iw_nl80211_ifstat {
-	uint32_t	phy,
+	uint32_t	phy_id,
 			ifindex,
 			wdev,
 			iftype;
@@ -80,8 +96,11 @@ struct iw_nl80211_ifstat {
 			chan_type,
 			freq_ctr1,
 			freq_ctr2;
+
+	struct iw_nl80211_phy phy;
 };
 extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
+extern void iw_nl80211_get_phy(struct iw_nl80211_ifstat *ifs);
 
 /**
  * struct iw_nl80211_survey_data - channel survey data
@@ -196,8 +215,8 @@ static inline bool iw_nl80211_have_survey_data(struct iw_nl80211_linkstat *ls)
 
 /**
  * struct iw_nl80211_reg - regulatory domain information
- * @region: 	regulatory DFS region (%nl80211_dfs_regions or -1)
- * @country:	two-character country code
+ * @region:  regulatory DFS region (%nl80211_dfs_regions or -1)
+ * @country: two-character country code
  */
 struct iw_nl80211_reg {
 	int	region;
