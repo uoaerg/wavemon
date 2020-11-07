@@ -24,45 +24,48 @@
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static pthread_t sampling_thread;
 static time_t last_update;
-// Global linkstat data, populated by sampling thread.
+
+/* Global linkstat data, populated by sampling thread. */
 static struct {
-	bool              run;	 // enable/disable sampling
 	pthread_mutex_t   mutex; // producer/consumer lock for @data
 	struct iw_nl80211_linkstat data;
-} linkstat;
+} linkstat = {
+	.mutex = PTHREAD_MUTEX_INITIALIZER,
+	.data  = {0},
+};
 
 /** Sampling pthread shared by info and histogram screen. */
 static void *sampling_loop(void *arg)
 {
 	sigset_t blockmask;
 
-	/* See comment in scan_scr.c for rationale. */
+	/* See comment in iw_scan.c for rationale. */
 	sigemptyset(&blockmask);
 	sigaddset(&blockmask, SIGWINCH);
 	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
 	do {
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		pthread_mutex_lock(&linkstat.mutex);
-		iw_nl80211_get_linkstat(&linkstat.data);
-		pthread_mutex_unlock(&linkstat.mutex);
 
+		iw_nl80211_get_linkstat(&linkstat.data);
 		iw_cache_update(&linkstat.data);
-	} while (linkstat.run && usleep(conf.stat_iv * 1000) == 0);
+
+		pthread_mutex_unlock(&linkstat.mutex);
+		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	} while (usleep(conf.stat_iv * 1000) == 0);
 	return NULL;
 }
 
 void sampling_init(void)
 {
-	pthread_mutex_init(&linkstat.mutex, NULL);
-	linkstat.run = true;
 	pthread_create(&sampling_thread, NULL, sampling_loop, NULL);
 }
 
 void sampling_stop(void)
 {
-	linkstat.run = false;
+	pthread_cancel(sampling_thread);
 	pthread_join(sampling_thread, NULL);
-	pthread_mutex_destroy(&linkstat.mutex);
 }
 
 static void display_levels(void)

@@ -140,7 +140,7 @@ static bool wait_for_scan_events(void)
  * Scan result handler. Stolen from iw:scan.c
  * This also updates the scan-result statistics.
  */
-int scan_dump_handler(struct nl_msg *msg, void *arg)
+static int scan_dump_handler(struct nl_msg *msg, void *arg)
 {
 	struct scan_result *sr = (struct scan_result *)arg;
 	struct scan_entry *new;

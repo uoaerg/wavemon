@@ -19,11 +19,6 @@
  */
 #include "iw_if.h"
 
-/* Determine the artificial spreading of random samples (best: 1..10) */
-#define WAVE_RAND_SPREAD	1
-/* Fallback maximum quality level when using random samples. */
-#define WAVE_RAND_QUAL_MAX	100
-
 /*
  * Obtain network device information
  */
