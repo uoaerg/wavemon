@@ -77,6 +77,10 @@ enum info_screen_geometry {
 #define WAV_WIDTH	(COLS)
 #define WAV_HEIGHT	(LINES-1)
 /*
+ * Maximum length of a menubar key entry
+ */
+#define MAX_MENU_KEY	(MIN_SCREEN_COLS/10)
+/*
  * Maximum lengths/coordinates inside the bordered screen.
  *
  * The printable window area is constrained by the frame lines connecting

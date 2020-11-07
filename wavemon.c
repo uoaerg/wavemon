@@ -26,30 +26,35 @@
 /**
  * screen switching table
  * @key_name:	name under which the screen appears in the menu bar
+ * @shortcut:   1-character shortcut key for @key_name
  * @init:	screen initialisation function pointer
  * @loop:	screen update function pointer (connected to menu)
  * @fini:	screen cleanup function pointer
  */
 static const struct {
 	const char *const	key_name;
+	const char              shortcut;
 	void		 	(*init)(void);
 	int			(*loop)(WINDOW *);
 	void			(*fini)(void);
 } screens[] = {
 	[SCR_INFO]	= {
 		.key_name = "info",
+		.shortcut = 'i',
 		.init	  = scr_info_init,
 		.loop	  = scr_info_loop,
 		.fini	  = scr_info_fini
 	},
 	[SCR_LHIST]	= {
 		.key_name = "lhist",
+		.shortcut = 'l',
 		.init	  = scr_lhist_init,
 		.loop	  = scr_lhist_loop,
 		.fini	  = scr_lhist_fini
 	},
 	[SCR_SCAN]	= {
 		.key_name = "scan",
+		.shortcut = 's',
 		.init	  = scr_aplst_init,
 		.loop	  = scr_aplst_loop,
 		.fini	  = scr_aplst_fini
@@ -65,24 +70,28 @@ static const struct {
 	},
 	[SCR_PREFS]	= {
 		.key_name = "prefs",
+		.shortcut = 'p',
 		.init	  = scr_conf_init,
 		.loop	  = scr_conf_loop,
 		.fini	  = scr_conf_fini
 	},
 	[SCR_HELP]	= {
 		.key_name = "help",
+		.shortcut = 'h',
 		.init	  = scr_help_init,
 		.loop	  = scr_help_loop,
 		.fini	  = scr_help_fini
 	},
 	[SCR_ABOUT]	= {
 		.key_name = "about",
+		.shortcut = 'a',
 		.init	  = scr_about_init,
 		.loop	  = scr_about_loop,
 		.fini	  = scr_about_fini
 	},
 	[SCR_QUIT]	= {
 		.key_name = "quit",
+		.shortcut = 'q',
 	}
 };
 
@@ -103,24 +112,31 @@ static void sig_winch(int signo)
 static WINDOW *init_menubar(const enum wavemon_screen active)
 {
 	WINDOW *menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
-	enum wavemon_screen cur;
 
 	nodelay(menu, TRUE);
 	keypad(menu, TRUE);
 	wmove(menu, 0, 0);
-	for (cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
-		if (*screens[cur].key_name) {
+	for (enum wavemon_screen cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
+		const char *p = screens[cur].key_name;
+
+		if (*p) {
 			wattrset(menu, A_REVERSE | A_BOLD);
 			wprintw(menu, "F%d", cur + 1);
 
 			wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
 						     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);
 
-			wattron(menu, A_UNDERLINE);
-			waddch(menu, screens[cur].key_name[0]);
-			wattroff(menu, A_UNDERLINE);
-
-			wprintw(menu, "%-6s", screens[cur].key_name + 1);
+			for (int i = 0; i < MAX_MENU_KEY; i++) {
+				if (*p == screens[cur].shortcut)	{
+					wattron(menu, A_UNDERLINE);
+					waddch(menu, *p++);
+					wattroff(menu, A_UNDERLINE);
+				} else if (*p) {
+					waddch(menu, *p++);
+				} else {
+					waddch(menu, ' ');
+				}
+			}
 		}
 	}
 	wrefresh(menu);
@@ -234,41 +250,14 @@ int main(int argc, char *argv[])
 				}
 
 				/* Main menu */
-				switch (key) {
-				case KEY_F(1):
-				case '1':
-				case 'i':
-					next = SCR_INFO;
-					break;
-				case KEY_F(2):
-				case '2':
-				case 'l':
-					next = SCR_LHIST;
-					break;
-				case KEY_F(3):
-				case 's':
-				case '3':
-					next = SCR_SCAN;
-					break;
-				case KEY_F(7):
-				case 'p':
-				case '7':
-					next = SCR_PREFS;
-					break;
-				case KEY_F(8):
-				case 'h':
-				case '8':
-					next = SCR_HELP;
-					break;
-				case KEY_F(9):
-				case 'a':
-				case '9':
-					next = SCR_ABOUT;
-					break;
-				case KEY_F(10):
-				case 'q':
-				case '0':
-					next = SCR_QUIT;
+				for (enum wavemon_screen s = SCR_INFO; s <= SCR_QUIT; s++) {
+					if (*screens[s].key_name && (
+					    key == (s == SCR_QUIT ? '0' : '1' + s) ||
+					    key == KEY_F(s + 1) ||
+					    key == screens[s].shortcut)) {
+						next = s;
+						break;
+					}
 				}
 			} while (next == cur);
 		}

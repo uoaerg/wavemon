@@ -176,7 +176,6 @@ void iw_get_interface_list(char** if_list, size_t max_entries)
  * iw_dyn_info_get  -  populate dynamic information
  * @info:   information to populate
  * @ifname: interface name
- * @if:	    range information to use (number of encryption keys)
  */
 void dyn_info_get(struct iw_dyn_info *info, const char *ifname)
 {
