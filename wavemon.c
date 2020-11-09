@@ -112,6 +112,7 @@ static void sig_winch(int signo)
 static WINDOW *init_menubar(const enum wavemon_screen active)
 {
 	WINDOW *menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
+	char fkey[8];
 
 	nodelay(menu, TRUE);
 	keypad(menu, TRUE);
@@ -120,8 +121,9 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 		const char *p = screens[cur].key_name;
 
 		if (*p) {
+			snprintf(fkey, sizeof(fkey), "F%d", cur + 1);
 			wattrset(menu, A_REVERSE | A_BOLD);
-			wprintw(menu, "F%d", cur + 1);
+			waddstr(menu, fkey);
 
 			wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
 						     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);

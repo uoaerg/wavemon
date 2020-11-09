@@ -299,6 +299,7 @@ static void display_lhist(void)
 
 static void display_key(WINDOW *w_key)
 {
+	char buf[128];
 	/* Clear the (one-line) screen) */
 	wmove(w_key, 1, 1);
 	wclrtoborder(w_key);
@@ -310,21 +311,25 @@ static void display_key(WINDOW *w_key)
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
 	if (e_noise.initialised && e_snr.initialised) {
-		wprintw(w_key, "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
+		snprintf(buf, sizeof(buf), "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
+		waddstr(w_key, buf);
 
 		wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
 		waddch(w_key, ACS_HLINE);
 		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
-		wprintw(w_key, "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
+		snprintf(buf, sizeof(buf), "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
+		waddstr(w_key, buf);
 
 		wattrset(w_key, COLOR_PAIR(CP_STATSNR));
 		waddch(w_key, ' ');
 
 		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-		wprintw(w_key, "] S-N ratio (%s)", fmt_extrema(&e_snr, "dB"));
+		snprintf(buf, sizeof(buf), "] S-N ratio (%s)", fmt_extrema(&e_snr, "dB"));
+		waddstr(w_key, buf);
 	} else {
-		wprintw(w_key, "] signal level (%s)", fmt_extrema(&e_signal, "dBm"));
+		snprintf(buf, sizeof(buf), "] signal level (%s)", fmt_extrema(&e_signal, "dBm"));
+		waddstr(w_key, buf);
 	}
 
 	wrefresh(w_key);
