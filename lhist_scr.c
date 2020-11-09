@@ -48,14 +48,9 @@ static struct iw_extrema {
 	float	max;
 } e_signal, e_noise, e_snr;
 
-static void init_extrema(struct iw_extrema *ie)
-{
-	memset(ie, 0, sizeof(*ie));
-}
-
 static void track_extrema(const float new_sample, struct iw_extrema *ie)
 {
-	if (! ie->initialised) {
+	if (!ie->initialised) {
 		ie->initialised = true;
 		ie->min = ie->max = new_sample;
 	} else if (new_sample < ie->min) {
@@ -69,7 +64,7 @@ static char *fmt_extrema(const struct iw_extrema *ie, const char *unit)
 {
 	static char range[256];
 
-	if (! ie->initialised)
+	if (!ie->initialised)
 		snprintf(range, sizeof(range), "unknown");
 	else if (ie->min == ie->max)
 		snprintf(range, sizeof(range), "%+.0f %s", ie->min, unit);
@@ -340,9 +335,6 @@ void scr_lhist_init(void)
 	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level histogram", true);
 	w_key   = newwin_title(HIST_MAXYLEN + 1, KEY_WIN_HEIGHT, "Key", false);
 
-	init_extrema(&e_signal);
-	init_extrema(&e_noise);
-	init_extrema(&e_snr);
 	sampling_init(true);
 
 	display_key(w_key);
