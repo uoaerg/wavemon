@@ -169,7 +169,7 @@ extern void iw_getinf_range(const char *ifname, struct iw_range *range);
 /*
  * 	Periodic sampling of wireless statistics
  */
-extern void sampling_init(void);
+extern void sampling_init(bool do_not_swap_pointers);
 extern void sampling_stop(void);
 
 /*

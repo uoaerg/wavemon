@@ -338,7 +338,7 @@ void scr_lhist_init(void)
 	init_extrema(&e_signal);
 	init_extrema(&e_noise);
 	init_extrema(&e_snr);
-	sampling_init();
+	sampling_init(true);
 
 	display_key(w_key);
 }

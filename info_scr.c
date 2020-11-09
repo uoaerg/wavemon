@@ -25,41 +25,54 @@ static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static pthread_t sampling_thread;
 static time_t last_update;
 
-/* Global linkstat data, populated by sampling thread. */
-static struct {
-	pthread_mutex_t   mutex; // producer/consumer lock for @data
-	struct iw_nl80211_linkstat data;
-} linkstat = {
-	.mutex = PTHREAD_MUTEX_INITIALIZER,
-	.data  = {0},
-};
+/* Linkstat pointers, shared between sampling thread and UI main thread. */
+static struct iw_nl80211_linkstat *ls_tmp = NULL,
+				  *ls_cur = NULL,
+				  *ls_new = NULL;
+static pthread_mutex_t linkstat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/** Sampling pthread shared by info and histogram screen. */
+/** Sampling pthread - shared by info and histogram screen. */
 static void *sampling_loop(void *arg)
 {
+	const bool do_not_swap_pointers = (bool)arg;
 	sigset_t blockmask;
 
-	/* See comment in iw_scan.c for rationale. */
+	/* See comment in iw_scan.c for rationale of blocking SIGWINCH. */
 	sigemptyset(&blockmask);
 	sigaddset(&blockmask, SIGWINCH);
 	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
 	do {
-		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-		pthread_mutex_lock(&linkstat.mutex);
+		if (!ls_new && ls_tmp) {
+			iw_nl80211_get_linkstat(ls_tmp);
+			iw_cache_update(ls_tmp);
 
-		iw_nl80211_get_linkstat(&linkstat.data);
-		iw_cache_update(&linkstat.data);
-
-		pthread_mutex_unlock(&linkstat.mutex);
-		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+			if (do_not_swap_pointers)
+				continue;
+			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+			pthread_mutex_lock(&linkstat_mutex);
+			ls_new = ls_tmp;
+			ls_tmp = NULL;
+			pthread_mutex_unlock(&linkstat_mutex);
+			pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+		}
 	} while (usleep(conf.stat_iv * 1000) == 0);
 	return NULL;
 }
 
-void sampling_init(void)
+void sampling_init(bool do_not_swap_pointers)
 {
-	pthread_create(&sampling_thread, NULL, sampling_loop, NULL);
+	if (!ls_tmp && !ls_cur) {
+		ls_tmp = calloc(1, sizeof(*ls_tmp));
+		ls_cur = calloc(1, sizeof(*ls_cur));
+		if (!ls_tmp || !ls_cur)
+			err_sys("Out of memory");
+	} else if (ls_new && !ls_tmp) { /* Old state from previous run. */
+		ls_tmp = ls_cur;
+		ls_cur = ls_new;
+		ls_new = NULL;
+	}
+	pthread_create(&sampling_thread, NULL, sampling_loop, (void*)do_not_swap_pointers);
 }
 
 void sampling_stop(void)
@@ -83,21 +96,21 @@ static void display_levels(void)
 	bool noise_data_valid;
 	int sig_qual = -1, sig_qual_max = 0, sig_level = 0;
 
-	noise_data_valid = iw_nl80211_have_survey_data(&linkstat.data);
-	sig_level = linkstat.data.signal;
+	noise_data_valid = iw_nl80211_have_survey_data(ls_cur);
+	sig_level = ls_cur->signal;
 
 	/* See comments in iw_cache_update */
 	if (sig_level == 0)
-		sig_level = linkstat.data.signal_avg;
+		sig_level = ls_cur->signal_avg;
 	if (sig_level == 0)
-		sig_level = linkstat.data.bss_signal;
+		sig_level = ls_cur->bss_signal;
 
 	for (line = 1; line <= WH_LEVEL; line++)
 		mvwclrtoborder(w_levels, line, 1);
 
-	if (linkstat.data.bss_signal_qual) {
+	if (ls_cur->bss_signal_qual) {
 		/* BSS_SIGNAL_UNSPEC is scaled 0..100 */
-		sig_qual     = linkstat.data.bss_signal_qual;
+		sig_qual     = ls_cur->bss_signal_qual;
 		sig_qual_max = 100;
 	} else if (sig_level) {
 		if (sig_level < -110)
@@ -156,7 +169,7 @@ static void display_levels(void)
 	line++;
 
 	if (noise_data_valid) {
-		noise = ewma(noise, linkstat.data.survey.noise, conf.meter_decay / 100.0);
+		noise = ewma(noise, ls_cur->survey.noise, conf.meter_decay / 100.0);
 
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");
 		sprintf(tmp, "%.0f dBm (%s)", noise, dbm2units(noise));
@@ -166,7 +179,7 @@ static void display_levels(void)
 			nscale, false);
 
 		if (sig_level) {
-			ssnr = ewma(ssnr, sig_level - linkstat.data.survey.noise,
+			ssnr = ewma(ssnr, sig_level - ls_cur->survey.noise,
 					  conf.meter_decay / 100.0);
 
 			mvwaddstr(w_levels, line++, 1, "SNR:           ");
@@ -189,33 +202,33 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 1, 1, "RX: ");
 
-	if (linkstat.data.rx_packets) {
-		sprintf(tmp, "%s (%s)", int_counts(linkstat.data.rx_packets),
-			byte_units(linkstat.data.rx_bytes));
+	if (ls_cur->rx_packets) {
+		sprintf(tmp, "%s (%s)", int_counts(ls_cur->rx_packets),
+			byte_units(ls_cur->rx_bytes));
 		waddstr_b(w_stats, tmp);
 	} else {
 		waddstr(w_stats, "n/a");
 	}
 
-	if (iw_nl80211_have_survey_data(&linkstat.data)) {
-		if (linkstat.data.rx_bitrate[0]) {
+	if (iw_nl80211_have_survey_data(ls_cur)) {
+		if (ls_cur->rx_bitrate[0]) {
 			waddstr(w_stats, ", rate: ");
-			waddstr_b(w_stats, linkstat.data.rx_bitrate);
+			waddstr_b(w_stats, ls_cur->rx_bitrate);
 		}
 
-		if (linkstat.data.expected_thru) {
-			if (linkstat.data.expected_thru >= 1024)
-				sprintf(tmp, " (expected: %.1f MB/s)",  linkstat.data.expected_thru/1024.0);
+		if (ls_cur->expected_thru) {
+			if (ls_cur->expected_thru >= 1024)
+				sprintf(tmp, " (expected: %.1f MB/s)",  ls_cur->expected_thru/1024.0);
 			else
-				sprintf(tmp, " (expected: %u kB/s)",  linkstat.data.expected_thru);
+				sprintf(tmp, " (expected: %u kB/s)",  ls_cur->expected_thru);
 			waddstr(w_stats, tmp);
 		}
 	}
 
-	if (linkstat.data.rx_drop_misc) {
+	if (ls_cur->rx_drop_misc) {
 		waddstr(w_stats, ", drop: ");
-		sprintf(tmp, "%'llu (%.1f%%)", (unsigned long long)linkstat.data.rx_drop_misc,
-				(1e2 * linkstat.data.rx_drop_misc)/linkstat.data.rx_packets);
+		sprintf(tmp, "%'llu (%.1f%%)", (unsigned long long)ls_cur->rx_drop_misc,
+				(1e2 * ls_cur->rx_drop_misc)/ls_cur->rx_packets);
 		waddstr_b(w_stats, tmp);
 	}
 
@@ -226,29 +239,29 @@ static void display_stats(void)
 	 */
 	mvwaddstr(w_stats, 2, 1, "TX: ");
 
-	if (linkstat.data.tx_packets) {
-		sprintf(tmp, "%s (%s)", int_counts(linkstat.data.tx_packets),
-			byte_units(linkstat.data.tx_bytes));
+	if (ls_cur->tx_packets) {
+		sprintf(tmp, "%s (%s)", int_counts(ls_cur->tx_packets),
+			byte_units(ls_cur->tx_bytes));
 		waddstr_b(w_stats, tmp);
 	} else {
 		waddstr(w_stats, "n/a");
 	}
 
-	if (iw_nl80211_have_survey_data(&linkstat.data) && linkstat.data.tx_bitrate[0]) {
+	if (iw_nl80211_have_survey_data(ls_cur) && ls_cur->tx_bitrate[0]) {
 		waddstr(w_stats, ", rate: ");
-		waddstr_b(w_stats, linkstat.data.tx_bitrate);
+		waddstr_b(w_stats, ls_cur->tx_bitrate);
 	}
 
-	if (linkstat.data.tx_retries) {
+	if (ls_cur->tx_retries) {
 		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%s (%.1f%%)", int_counts(linkstat.data.tx_retries),
-			(1e2 * linkstat.data.tx_retries)/linkstat.data.tx_packets);
+		sprintf(tmp, "%s (%.1f%%)", int_counts(ls_cur->tx_retries),
+			(1e2 * ls_cur->tx_retries)/ls_cur->tx_packets);
 		waddstr_b(w_stats, tmp);
 	}
 
-	if (linkstat.data.tx_failed) {
+	if (ls_cur->tx_failed) {
 		waddstr(w_stats, ", failed: ");
-		waddstr_b(w_stats, int_counts(linkstat.data.tx_failed));
+		waddstr_b(w_stats, int_counts(ls_cur->tx_failed));
 	}
 	wclrtoborder(w_stats);
 	wrefresh(w_stats);
@@ -305,10 +318,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	waddstr(w_info, "mode: ");
 	waddstr_b(w_info, iftype_name(ifs.iftype));
 
-	if (!ether_addr_is_zero(&linkstat.data.bssid)) {
+	if (!ether_addr_is_zero(&ls_cur->bssid)) {
 		waddstr_b(w_info, ", ");
 
-		switch (linkstat.data.status) {
+		switch (ls_cur->status) {
 		case NL80211_BSS_STATUS_ASSOCIATED:
 			waddstr(w_info, "connected to: ");
 			break;
@@ -321,30 +334,30 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		default:
 			waddstr(w_info, "station: ");
 		}
-		waddstr_b(w_info, ether_lookup(&linkstat.data.bssid));
+		waddstr_b(w_info, ether_lookup(&ls_cur->bssid));
 
-		if (linkstat.data.status == NL80211_BSS_STATUS_ASSOCIATED) {
+		if (ls_cur->status == NL80211_BSS_STATUS_ASSOCIATED) {
 			waddstr_b(w_info, ",");
 			waddstr(w_info, " time: ");
-			waddstr_b(w_info, pretty_time(linkstat.data.connected_time));
+			waddstr_b(w_info, pretty_time(ls_cur->connected_time));
 
 			waddstr(w_info, ", inactive: ");
-			sprintf(tmp, "%.1fs", (float)linkstat.data.inactive_time/1e3);
+			sprintf(tmp, "%.1fs", (float)ls_cur->inactive_time/1e3);
 			waddstr_b(w_info, tmp);
 		}
 	}
 	wclrtoborder(w_info);
 
-	wmove(w_info, 2, 1);
 	/* Frequency / channel */
+	wmove(w_info, 2, 1);
 	if (ifs.freq) {
 		waddstr(w_info, "freq: ");
 		sprintf(tmp, "%d MHz", ifs.freq);
 		waddstr_b(w_info, tmp);
 
-		/* The following condition should in theory never happen */
-		if (linkstat.data.survey.freq && linkstat.data.survey.freq != ifs.freq) {
-			sprintf(tmp, " [survey freq: %d MHz]", linkstat.data.survey.freq);
+		/* The following condition should in theory never happen: */
+		if (ls_cur->survey.freq && ls_cur->survey.freq != ifs.freq) {
+			sprintf(tmp, " [survey freq: %d MHz]", ls_cur->survey.freq);
 			waddstr(w_info, tmp);
 		}
 
@@ -370,9 +383,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			sprintf(tmp, " (%s)", channel_type_name(ifs.chan_type));
 			waddstr(w_info, tmp);
 		}
-	} else if (iw_nl80211_have_survey_data(&linkstat.data)) {
+	} else if (iw_nl80211_have_survey_data(ls_cur)) {
 		waddstr(w_info, "freq: ");
-		sprintf(tmp, "%d MHz", linkstat.data.survey.freq);
+		sprintf(tmp, "%d MHz", ls_cur->survey.freq);
 		waddstr_b(w_info, tmp);
 	} else {
 		waddstr(w_info, "frequency/channel: n/a");
@@ -381,87 +394,86 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	/* Channel data */
 	wmove(w_info, 3, 1);
-	if (iw_nl80211_have_survey_data(&linkstat.data)) {
+	if (iw_nl80211_have_survey_data(ls_cur)) {
 		waddstr(w_info, "channel ");
 		waddstr(w_info, "active: ");
-		waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.active));
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.active));
 
 		waddstr(w_info, ", busy: ");
-		waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.busy));
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.busy));
 
-		if (linkstat.data.survey.time.ext_busy) {
+		if (ls_cur->survey.time.ext_busy) {
 			waddstr(w_info, ", ext-busy: ");
-			waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.ext_busy));
+			waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.ext_busy));
 		}
 
 		waddstr(w_info, ", rx: ");
-		waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.rx));
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.rx));
 
 		waddstr(w_info, ", tx: ");
-		waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.tx));
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.tx));
 
-		if (linkstat.data.survey.time.scan) {
+		if (ls_cur->survey.time.scan) {
 			waddstr(w_info, ", scan: ");
-			waddstr_b(w_info, pretty_time_ms(linkstat.data.survey.time.scan));
+			waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.scan));
 		}
 	} else {
 		wclrtoborder(w_info);
 		waddstr(w_info, "rx rate: ");
-		waddstr_b(w_info, linkstat.data.rx_bitrate[0] ? linkstat.data.rx_bitrate : "n/a");
+		waddstr_b(w_info, ls_cur->rx_bitrate[0] ? ls_cur->rx_bitrate : "n/a");
 
-		if (linkstat.data.expected_thru) {
-			if (linkstat.data.expected_thru >= 1024)
-				sprintf(tmp, " (exp: %.1f MB/s)",  linkstat.data.expected_thru/1024.0);
+		if (ls_cur->expected_thru) {
+			if (ls_cur->expected_thru >= 1024)
+				sprintf(tmp, " (exp: %.1f MB/s)",  ls_cur->expected_thru/1024.0);
 			else
-				sprintf(tmp, " (exp: %u kB/s)",  linkstat.data.expected_thru);
+				sprintf(tmp, " (exp: %u kB/s)",  ls_cur->expected_thru);
 			waddstr(w_info, tmp);
 		}
 		waddstr(w_info, ", tx rate: ");
-		waddstr_b(w_info, linkstat.data.tx_bitrate[0] ? linkstat.data.tx_bitrate : "n/a");
+		waddstr_b(w_info, ls_cur->tx_bitrate[0] ? ls_cur->tx_bitrate : "n/a");
 	}
 
 	/* Beacons */
 	wmove(w_info, 4, 1);
-
-	if (linkstat.data.beacons) {
+	if (ls_cur->beacons) {
 		waddstr(w_info, "beacons: ");
-		sprintf(tmp, "%'llu", (unsigned long long)linkstat.data.beacons);
+		sprintf(tmp, "%'llu", (unsigned long long)ls_cur->beacons);
 		waddstr_b(w_info, tmp);
 
-		if (linkstat.data.beacon_loss) {
+		if (ls_cur->beacon_loss) {
 			waddstr(w_info, ", lost: ");
-			waddstr_b(w_info, int_counts(linkstat.data.beacon_loss));
+			waddstr_b(w_info, int_counts(ls_cur->beacon_loss));
 		}
 		waddstr(w_info, ", avg sig: ");
-		sprintf(tmp, "%d dBm", (int8_t)linkstat.data.beacon_avg_sig);
+		sprintf(tmp, "%d dBm", (int8_t)ls_cur->beacon_avg_sig);
 		waddstr_b(w_info, tmp);
 
 		waddstr(w_info, ", interval: ");
-		sprintf(tmp, "%.1fs", (linkstat.data.beacon_int * 1024.0)/1e6);
+		sprintf(tmp, "%.1fs", (ls_cur->beacon_int * 1024.0)/1e6);
 		waddstr_b(w_info, tmp);
 
 		waddstr(w_info, ", DTIM: ");
-		sprintf(tmp, "%u", linkstat.data.dtim_period);
+		sprintf(tmp, "%u", ls_cur->dtim_period);
 		waddstr_b(w_info, tmp);
 	} else {
 		waddstr(w_info, "station flags:");
-		if (linkstat.data.cts_protection)
+		if (ls_cur->cts_protection)
 			waddstr_b(w_info, " CTS");
-		if (linkstat.data.wme)
+		if (ls_cur->wme)
 			waddstr_b(w_info, " WME");
-		if (linkstat.data.tdls)
+		if (ls_cur->tdls)
 			waddstr_b(w_info, " TDLS");
-		if (linkstat.data.mfp)
+		if (ls_cur->mfp)
 			waddstr_b(w_info, " MFP");
-		if (!(linkstat.data.cts_protection | linkstat.data.wme | linkstat.data.tdls | linkstat.data.mfp))
+		if (!(ls_cur->cts_protection | ls_cur->wme | ls_cur->tdls | ls_cur->mfp))
 			waddstr_b(w_info, " (none)");
 		waddstr(w_info, ", preamble:");
-		if (linkstat.data.long_preamble)
+		if (ls_cur->long_preamble)
 			waddstr_b(w_info, " long");
 		else
 			waddstr_b(w_info, " short");
 		waddstr(w_info, ", slot:");
-		if (linkstat.data.short_slot_time)
+		if (ls_cur->short_slot_time)
 			waddstr_b(w_info, " short");
 		else
 			waddstr_b(w_info, " long");
@@ -651,18 +663,23 @@ void scr_info_init(void)
 	else
 		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 
-	sampling_init();
+	sampling_init(false);
 }
 
 int scr_info_loop(WINDOW *w_menu)
 {
 	time_t now = time(NULL);
 
-	if (!pthread_mutex_trylock(&linkstat.mutex)) {
-		display_levels();
-		display_stats();
-		pthread_mutex_unlock(&linkstat.mutex);
+	if (pthread_mutex_trylock(&linkstat_mutex) == 0) {
+		if (ls_new && !ls_tmp) {
+			ls_tmp = ls_cur;
+			ls_cur = ls_new;
+			ls_new = NULL;
+		}
+		pthread_mutex_unlock(&linkstat_mutex);
 	}
+	display_levels();
+	display_stats();
 
 	if (now - last_update >= conf.info_iv) {
 		last_update = now;
