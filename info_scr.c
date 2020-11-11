@@ -493,29 +493,30 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	wclrtoborder(w_info);
 
+	/* Power */
 	wmove(w_info, 6, 1);
-	waddstr(w_info, "power mgt: ");
-	if (info.cap_power)
-		waddstr_b(w_info, format_power(&info.power, &range));
-	else
-		waddstr(w_info, "n/a");
-
 	if (info.cap_txpower && info.txpower.disabled) {
-		waddstr(w_info, ",  tx-power: off");
+		waddstr(w_info, "tx power: off");
 	} else if (info.cap_txpower) {
 		/*
 		 * Convention: auto-selected values start with a capital
 		 *             letter, otherwise with a small letter.
 		 */
 		if (info.txpower.fixed)
-			waddstr(w_info, ",  tx-power: ");
+			waddstr(w_info, "tx power: ");
 		else
-			waddstr(w_info, ",  TX-power: ");
+			waddstr(w_info, "TX power: ");
 		waddstr_b(w_info, format_txpower(&info.txpower));
 	}
+	waddstr(w_info, ", power mgt: ");
+	if (info.cap_power)
+		waddstr_b(w_info, format_power(&info.power, &range));
+	else
+		waddstr(w_info, "n/a");
 
 	wclrtoborder(w_info);
 
+	/* Retry handling */
 	wmove(w_info, 7, 1);
 	waddstr(w_info, "retry: ");
 	if (info.cap_retry)
