@@ -392,49 +392,8 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	/* Channel data */
-	wmove(w_info, 3, 1);
-	if (iw_nl80211_have_survey_data(ls_cur)) {
-		waddstr(w_info, "channel ");
-		waddstr(w_info, "active: ");
-		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.active));
-
-		waddstr(w_info, ", busy: ");
-		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.busy));
-
-		if (ls_cur->survey.time.ext_busy) {
-			waddstr(w_info, ", ext-busy: ");
-			waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.ext_busy));
-		}
-
-		waddstr(w_info, ", rx: ");
-		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.rx));
-
-		waddstr(w_info, ", tx: ");
-		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.tx));
-
-		if (ls_cur->survey.time.scan) {
-			waddstr(w_info, ", scan: ");
-			waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.scan));
-		}
-	} else {
-		wclrtoborder(w_info);
-		waddstr(w_info, "rx rate: ");
-		waddstr_b(w_info, ls_cur->rx_bitrate[0] ? ls_cur->rx_bitrate : "n/a");
-
-		if (ls_cur->expected_thru) {
-			if (ls_cur->expected_thru >= 1024)
-				sprintf(tmp, " (exp: %.1f MB/s)",  ls_cur->expected_thru/1024.0);
-			else
-				sprintf(tmp, " (exp: %u kB/s)",  ls_cur->expected_thru);
-			waddstr(w_info, tmp);
-		}
-		waddstr(w_info, ", tx rate: ");
-		waddstr_b(w_info, ls_cur->tx_bitrate[0] ? ls_cur->tx_bitrate : "n/a");
-	}
-
 	/* Beacons */
-	wmove(w_info, 4, 1);
+	wmove(w_info, 3, 1);
 	if (ls_cur->beacons) {
 		waddstr(w_info, "beacons: ");
 		sprintf(tmp, "%'llu", (unsigned long long)ls_cur->beacons);
@@ -479,6 +438,49 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr_b(w_info, " long");
 	}
 
+	/* Channel data */
+	wmove(w_info, 4, 1);
+	if (iw_nl80211_have_survey_data(ls_cur)) {
+		waddstr(w_info, "channel ");
+		waddstr(w_info, "active: ");
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.active));
+
+		waddstr(w_info, ", busy: ");
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.busy));
+
+		if (ls_cur->survey.time.ext_busy) {
+			waddstr(w_info, ", ext-busy: ");
+			waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.ext_busy));
+		}
+
+		wmove(w_info, 5, 1);
+		waddstr(w_info, "channel rx: ");
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.rx));
+
+		waddstr(w_info, ", tx: ");
+		waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.tx));
+
+		if (ls_cur->survey.time.scan) {
+			waddstr(w_info, ", scan: ");
+			waddstr_b(w_info, pretty_time_ms(ls_cur->survey.time.scan));
+		}
+	} else {
+		wclrtoborder(w_info);
+		waddstr(w_info, "rx rate: ");
+		waddstr_b(w_info, ls_cur->rx_bitrate[0] ? ls_cur->rx_bitrate : "n/a");
+
+		if (ls_cur->expected_thru) {
+			if (ls_cur->expected_thru >= 1024)
+				sprintf(tmp, " (exp: %.1f MB/s)",  ls_cur->expected_thru/1024.0);
+			else
+				sprintf(tmp, " (exp: %u kB/s)",  ls_cur->expected_thru);
+			waddstr(w_info, tmp);
+		}
+		wmove(w_info, 5, 1);
+		waddstr(w_info, "tx rate: ");
+		waddstr_b(w_info, ls_cur->tx_bitrate[0] ? ls_cur->tx_bitrate : "n/a");
+	}
+
 	if (info.cap_sens) {
 		waddstr(w_info, ",  sensitivity: ");
 		if (info.sens < 0)
@@ -491,7 +493,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	wclrtoborder(w_info);
 
-	wmove(w_info, 5, 1);
+	wmove(w_info, 6, 1);
 	waddstr(w_info, "power mgt: ");
 	if (info.cap_power)
 		waddstr_b(w_info, format_power(&info.power, &range));
@@ -511,9 +513,10 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, ",  TX-power: ");
 		waddstr_b(w_info, format_txpower(&info.txpower));
 	}
+
 	wclrtoborder(w_info);
 
-	wmove(w_info, 6, 1);
+	wmove(w_info, 7, 1);
 	waddstr(w_info, "retry: ");
 	if (info.cap_retry)
 		waddstr_b(w_info, format_retry(&info.retry, &range));
@@ -546,7 +549,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	wclrtoborder(w_info);
 
 	/* FIXME: re-enable encryption information (issue #8)
-	wmove(w_info, 7, 1);
+	wmove(w_info, 8, 1);
 	waddstr(w_info, "encryption: ");
 	*/
 
@@ -654,7 +657,7 @@ void scr_info_init(void)
 	line += WH_IFACE;
 	w_levels = newwin_title(line, WH_LEVEL, "Levels", true);
 	line += WH_LEVEL;
-	w_stats	 = newwin_title(line, WH_STATS, "Statistics", true);
+	w_stats	 = newwin_title(line, WH_STATS, "Packet Counts", true);
 	line += WH_STATS;
 	w_info	 = newwin_title(line, WH_INFO_MIN, "Info", true);
 	line += WH_INFO_MIN;
