@@ -60,6 +60,7 @@ static void *sampling_loop(void *arg)
 	return NULL;
 }
 
+/* Start thread. Ensure that !ls_new && ls_tmp. */
 void sampling_init(bool do_not_swap_pointers)
 {
 	if (!ls_tmp && !ls_cur) {
@@ -193,7 +194,7 @@ static void display_levels(void)
 	wrefresh(w_levels);
 }
 
-static void display_stats(void)
+static void display_packet_counts(void)
 {
 	char tmp[0x120];
 
@@ -668,6 +669,7 @@ static void display_netinfo(WINDOW *w_net)
 void scr_info_init(void)
 {
 	int line = 0;
+	bool ready = false;
 
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
@@ -683,6 +685,12 @@ void scr_info_init(void)
 		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 
 	sampling_init(false);
+
+	while (!ready) {
+		pthread_mutex_lock(&linkstat_mutex);
+		ready = ls_new && !ls_tmp;
+		pthread_mutex_unlock(&linkstat_mutex);
+	}
 }
 
 int scr_info_loop(WINDOW *w_menu)
@@ -698,7 +706,7 @@ int scr_info_loop(WINDOW *w_menu)
 		pthread_mutex_unlock(&linkstat_mutex);
 	}
 	display_levels();
-	display_stats();
+	display_packet_counts();
 
 	if (now - last_update >= conf.info_iv) {
 		last_update = now;
