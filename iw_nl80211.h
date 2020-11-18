@@ -81,7 +81,8 @@ struct iw_nl80211_phy {
  * @chan_type:	channel type
  * @freq_ctr1:	center frequency #1
  * @freq_ctr2:	center frequency #2
- * @phy:        PHY information
+ * @power_save:	whether power-saving mode is enabled
+ * @phy:	PHY information
  */
 struct iw_nl80211_ifstat {
 	uint32_t	phy_id,
@@ -97,10 +98,12 @@ struct iw_nl80211_ifstat {
 			freq_ctr1,
 			freq_ctr2;
 
+	bool		power_save;
 	struct iw_nl80211_phy phy;
 };
 extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
 extern void iw_nl80211_get_phy(struct iw_nl80211_ifstat *ifs);
+extern void iw_nl80211_get_power_save(struct iw_nl80211_ifstat *ifs);
 
 /**
  * struct iw_nl80211_survey_data - channel survey data

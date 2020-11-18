@@ -222,11 +222,6 @@ void dyn_info_get(struct iw_dyn_info *info, const char *ifname)
 		memcpy(&info->txpower, &iwr.u.txpower, sizeof(info->txpower));
 	}
 
-	if (ioctl(skfd, SIOCGIWPOWER, &iwr) >= 0) {
-		info->cap_power = 1;
-		memcpy(&info->power, &iwr.u.power, sizeof(info->power));
-	}
-
 	if (ioctl(skfd, SIOCGIWRETRY, &iwr) >= 0) {
 		info->cap_retry = 1;
 		memcpy(&info->retry, &iwr.u.retry, sizeof(info->retry));

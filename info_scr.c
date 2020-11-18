@@ -279,6 +279,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	iw_getinf_range(conf_ifname(), &range);
 	dyn_info_get(&info, conf_ifname());
 	iw_nl80211_getifstat(&ifs);
+	iw_nl80211_get_power_save(&ifs);
 	iw_nl80211_get_phy(&ifs);
 	iw_nl80211_getreg(&ir);
 
@@ -444,6 +445,7 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		else
 			waddstr_b(w_info, " long");
 	}
+	wclrtoborder(w_info);
 
 	/* Channel data */
 	wmove(w_info, 4, 1);
@@ -515,11 +517,11 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 			waddstr(w_info, "TX power: ");
 		waddstr_b(w_info, format_txpower(&info.txpower));
 	}
-	waddstr(w_info, ", power mgt: ");
-	if (info.cap_power)
-		waddstr_b(w_info, format_power(&info.power, &range));
-	else
-		waddstr(w_info, "n/a");
+
+	/* Power-saving mode */
+	waddstr(w_info, ", power save: ");
+	sprintf(tmp, "%s", ifs.power_save ? "on" : "off");
+	waddstr_b(w_info, tmp);
 
 	wclrtoborder(w_info);
 
@@ -568,9 +570,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	/* FIXME: re-enable encryption information (issue #8)
 	wmove(w_info, 8, 1);
 	waddstr(w_info, "encryption: ");
+	wclrtoborder(w_info);
 	*/
 
-	wclrtoborder(w_info);
 	wrefresh(w_info);
 }
 

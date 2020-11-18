@@ -226,6 +226,24 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
+/* Power-saving-mode handler. Adapted from iw:ps.c. */
+static int power_save_handler(struct nl_msg *msg, void *arg)
+{
+	struct iw_nl80211_ifstat *ifs = (struct iw_nl80211_ifstat *)arg;
+	struct nlattr *attrs[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+
+	nla_parse(attrs, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (attrs[NL80211_ATTR_PS_STATE]) {
+		uint32_t state = nla_get_u32(attrs[NL80211_ATTR_PS_STATE]);
+
+		ifs->power_save = state == NL80211_PS_ENABLED;
+	}
+	return NL_SKIP;
+}
+
 /* Query PHY information. */
 static int phy_handler(struct nl_msg *msg, void *arg)
 {
@@ -674,6 +692,18 @@ void iw_nl80211_get_phy(struct iw_nl80211_ifstat *ifs)
 	cmd_phy_info.handler_arg = ifs;
 	memset(&ifs->phy, 0, sizeof(ifs->phy));
 	handle_cmd(&cmd_phy_info);
+}
+
+void iw_nl80211_get_power_save(struct iw_nl80211_ifstat *ifs) {
+	static struct cmd cmd_power_save_info = {
+		.cmd	   = NL80211_CMD_GET_POWER_SAVE,
+		.flags	   = 0,
+		.handler   = power_save_handler,
+	};
+
+	cmd_power_save_info.handler_arg = ifs;
+	ifs->power_save = false;
+	handle_cmd(&cmd_power_save_info);
 }
 
 void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)

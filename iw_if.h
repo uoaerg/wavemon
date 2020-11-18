@@ -107,7 +107,6 @@ struct iw_key {
  * @rts:	minimum packet size for which to perform RTS/CTS handshake
  * @frag:	802.11 frame fragmentation threshold size
  * @txpower:	TX power information
- * @power	power management information
  *
  * @freq:	frequency in Hz
  * @sens:	sensitivity threshold of the card
@@ -132,7 +131,6 @@ struct iw_dyn_info {
 			cap_frag:1,
 			cap_mode:1,
 			cap_ap:1,
-			cap_power:1,
 			cap_aplist:1;
 
 	char		essid[IW_ESSID_MAX_SIZE+2];
@@ -144,7 +142,6 @@ struct iw_dyn_info {
 	struct iw_param rts;
 	struct iw_param frag;
 	struct iw_param txpower;
-	struct iw_param power;
 
 	float		freq;
 	int32_t		sens;
@@ -212,62 +209,6 @@ static inline char *format_txpower(const struct iw_param *txpwr)
 		snprintf(txline, sizeof(txline), "%d dBm (%.2f mW)",
 				txpwr->value, dbm2mw(txpwr->value));
 	return txline;
-}
-
-/* Format driver Power Management information */
-static inline char *format_power(const struct iw_param *pwr,
-				 const struct iw_range *range)
-{
-	static char buf[0x80];
-	double val = pwr->value;
-	int len = 0;
-
-	if (pwr->disabled)
-		return "off";
-	else if (pwr->flags == IW_POWER_ON)
-		return "on";
-
-	if (pwr->flags & IW_POWER_MIN)
-		len += snprintf(buf + len, sizeof(buf) - len, "min ");
-	if (pwr->flags & IW_POWER_MAX)
-		len += snprintf(buf + len, sizeof(buf) - len, "max ");
-
-	if (pwr->flags & IW_POWER_TIMEOUT)
-		len += snprintf(buf + len, sizeof(buf) - len, "timeout ");
-	else if (pwr->flags & IW_POWER_SAVING)
-		len += snprintf(buf + len, sizeof(buf) - len, "saving ");
-	else
-		len += snprintf(buf + len, sizeof(buf) - len, "period ");
-
-	if (pwr->flags & IW_POWER_RELATIVE && range->we_version_compiled < 21)
-		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val/1e6);
-	else if (pwr->flags & IW_POWER_RELATIVE)
-		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val);
-	else if (val > 1e6)
-		len += snprintf(buf + len, sizeof(buf) - len, "%g s", val/1e6);
-	else if (val > 1e3)
-		len += snprintf(buf + len, sizeof(buf) - len, "%g ms", val/1e3);
-	else
-		len += snprintf(buf + len, sizeof(buf) - len, "%g us", val);
-
-	switch (pwr->flags & IW_POWER_MODE) {
-	case IW_POWER_UNICAST_R:
-		len += snprintf(buf + len, sizeof(buf) - len, ", rcv unicast");
-		break;
-	case IW_POWER_MULTICAST_R:
-		len += snprintf(buf + len, sizeof(buf) - len, ", rcv mcast");
-		break;
-	case IW_POWER_ALL_R:
-		len += snprintf(buf + len, sizeof(buf) - len, ", rcv all");
-		break;
-	case IW_POWER_FORCE_S:
-		len += snprintf(buf + len, sizeof(buf) - len, ", force send");
-		break;
-	case IW_POWER_REPEATER:
-		len += snprintf(buf + len, sizeof(buf) - len, ", repeat mcast");
-	}
-
-	return buf;
 }
 
 /* See comments on 'struct iw_freq' in wireless.h */
