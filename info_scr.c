@@ -267,45 +267,45 @@ static void display_packet_counts(void)
 	wrefresh(w_stats);
 }
 
-static void display_info(WINDOW *w_if, WINDOW *w_info)
+/** Wireless interface information */
+static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool if_is_up)
 {
-	struct iw_dyn_info info;
-	struct iw_range	range;
-	struct iw_nl80211_ifstat ifs;
 	struct iw_nl80211_reg ir;
 	char tmp[0x100];
 
-	iw_getinf_range(conf_ifname(), &range);
-	dyn_info_get(&info, conf_ifname());
-	iw_nl80211_getifstat(&ifs);
-	iw_nl80211_get_power_save(&ifs);
-	iw_nl80211_get_phy(&ifs);
 	iw_nl80211_getreg(&ir);
 
-	/*
-	 * Interface Part
-	 */
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
 
-	/* PHY */
-	waddstr(w_if, " - phy ");
-	sprintf(tmp, "%d", ifs.phy_id);
-	waddstr_b(w_if, tmp);
+	if (if_is_up) {
+		/* Wireless device index */
+		waddstr(w_if, " - wdev ");
+		sprintf(tmp, "%d", ifs->wdev);
+		waddstr_b(w_if, tmp);
 
-	/* Regulatory domain */
-	waddstr(w_if, ", reg: ");
-	if (ir.region > 0) {
-		waddstr_b(w_if, ir.country);
-		sprintf(tmp, " (%s)", dfs_domain_name(ir.region));
-		waddstr(w_if, tmp);
+		/* PHY */
+		waddstr(w_if, ", phy ");
+		sprintf(tmp, "%d", ifs->phy_id);
+		waddstr_b(w_if, tmp);
+
+		/* Regulatory domain */
+		waddstr(w_if, ", reg: ");
+		if (ir.region > 0) {
+			waddstr_b(w_if, ir.country);
+			sprintf(tmp, " (%s)", dfs_domain_name(ir.region));
+			waddstr(w_if, tmp);
+		} else {
+			waddstr_b(w_if, "n/a");
+		}
+
+		if (ifs->ssid[0]) {
+			waddstr(w_if, ", SSID: ");
+			waddstr_b(w_if, ifs->ssid);
+		}
 	} else {
-		waddstr_b(w_if, "n/a");
-	}
-
-	if (ifs.ssid[0]) {
-		waddstr(w_if, ", SSID: ");
-		waddstr_b(w_if, ifs.ssid);
+		waddstr(w_if, "  ");
+		wadd_attr_str(w_if, COLOR_PAIR(CP_SCAN_CRYPT) | A_REVERSE, "Interface is DOWN");
 	}
 
 	wclrtoborder(w_if);
@@ -320,12 +320,9 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 	iw_nl80211_get_power_save(ifs);
 	iw_nl80211_get_phy(ifs);
 
-	/*
-	 * Info window:
-	 */
 	wmove(w_info, 1, 1);
 	waddstr(w_info, "mode: ");
-	waddstr_b(w_info, iftype_name(ifs.iftype));
+	waddstr_b(w_info, iftype_name(ifs->iftype));
 
 	if (!ether_addr_is_zero(&ls_cur->bssid)) {
 		waddstr_b(w_info, ", ");
@@ -359,37 +356,39 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 
 	/* Frequency / channel */
 	wmove(w_info, 2, 1);
-	if (ifs.freq) {
+	if (ifs->freq) {
 		waddstr(w_info, "freq: ");
-		sprintf(tmp, "%d MHz", ifs.freq);
+		sprintf(tmp, "%d MHz", ifs->freq);
 		waddstr_b(w_info, tmp);
 
 		/* The following condition should in theory never happen: */
-		if (ls_cur->survey.freq && ls_cur->survey.freq != ifs.freq) {
+		if (ls_cur->survey.freq && ls_cur->survey.freq != ifs->freq) {
 			sprintf(tmp, " [survey freq: %d MHz]", ls_cur->survey.freq);
 			waddstr(w_info, tmp);
 		}
 
-		if (ifs.freq_ctr1 && ifs.freq_ctr1 != ifs.freq) {
+		if (ifs->freq_ctr1 && ifs->freq_ctr1 != ifs->freq) {
 			waddstr(w_info, ", ctr1: ");
-			sprintf(tmp, "%d MHz", ifs.freq_ctr1);
+			sprintf(tmp, "%d MHz", ifs->freq_ctr1);
 			waddstr_b(w_info, tmp);
 		}
-		if (ifs.freq_ctr2 && ifs.freq_ctr2 != ifs.freq_ctr1 && ifs.freq_ctr2 != ifs.freq) {
+		if (ifs->freq_ctr2 &&
+		    ifs->freq_ctr2 != ifs->freq_ctr1 &&
+		    ifs->freq_ctr2 != ifs->freq) {
 			waddstr(w_info, ", ctr2: ");
-			sprintf(tmp, "%d MHz", ifs.freq_ctr2);
+			sprintf(tmp, "%d MHz", ifs->freq_ctr2);
 			waddstr_b(w_info, tmp);
 		}
 
 		waddstr(w_info, ", channel: ");
-		sprintf(tmp, "%d", ieee80211_frequency_to_channel(ifs.freq));
+		sprintf(tmp, "%d", ieee80211_frequency_to_channel(ifs->freq));
 		waddstr_b(w_info, tmp);
 
-		if (ifs.chan_width >= 0) {
-			sprintf(tmp, " (width: %s)", channel_width_name(ifs.chan_width));
+		if (ifs->chan_width >= 0) {
+			sprintf(tmp, " (width: %s)", channel_width_name(ifs->chan_width));
 			waddstr(w_info, tmp);
-		} else if (ifs.chan_type >= 0) {
-			sprintf(tmp, " (%s)", channel_type_name(ifs.chan_type));
+		} else if (ifs->chan_type >= 0) {
+			sprintf(tmp, " (%s)", channel_type_name(ifs->chan_type));
 			waddstr(w_info, tmp);
 		}
 	} else if (iw_nl80211_have_survey_data(ls_cur)) {
@@ -401,7 +400,7 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 	}
 
 	waddstr(w_info, ", bands: ");
-	sprintf(tmp, "%u", ifs.phy.bands);
+	sprintf(tmp, "%u", ifs->phy.bands);
 	waddstr_b(w_info, tmp);
 
 	wclrtoborder(w_info);
@@ -506,7 +505,7 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 
 	/* Power-saving mode */
 	waddstr(w_info, ", power save: ");
-	sprintf(tmp, "%s", ifs.power_save ? "on" : "off");
+	sprintf(tmp, "%s", ifs->power_save ? "on" : "off");
 	waddstr_b(w_info, tmp);
 
 	wclrtoborder(w_info);
@@ -514,7 +513,6 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 	/* Retry handling */
 	wmove(w_info, 7, 1);
 	waddstr(w_info, "retry short/long: ");
-
 	sprintf(tmp, "%u", ifs->phy.retry_short);
 	waddstr_b(w_info, tmp);
 
@@ -545,65 +543,70 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 	wrefresh(w_info);
 }
 
-static void display_netinfo(WINDOW *w_net)
+/** Network information pertaining to interface. */
+static void display_netinfo(WINDOW *w_net, struct if_info *info)
 {
-	struct if_info info;
 	char tmp[0x40];
-
-	if_getinf(conf_ifname(), &info);
 
 	wmove(w_net, 1, 1);
 	wclrtoborder(w_net);
 	if (getmaxy(w_net) == WH_NET_MAX) {
 		waddstr(w_net, conf_ifname());
+		waddstr(w_net, " (");
 
-		waddstr_b(w_net, " (");
-		waddstr(w_net, info.flags & IFF_UP ? "UP" : "DOWN");
-		if (info.flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
-			waddstr(w_net, " RUNNING");
+		if (info->flags & IFF_UP) {
+			waddstr(w_net, "UP");
+
+			if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
+				waddstr(w_net, " RUNNING");
 #ifdef IFF_LOWER_UP	/* Linux 2.6.17 */
-		if (info.flags & IFF_LOWER_UP)		/* Driver signals L1 up		*/
-			waddstr(w_net, " LOWER_UP");
+			if (info->flags & IFF_LOWER_UP)		/* Driver signals L1 up		*/
+				waddstr(w_net, " LOWER_UP");
 #endif
 #ifdef IFF_DORMANT	/* Linux 2.6.17 */
-		if (info.flags & IFF_DORMANT)		/* Driver signals dormant	*/
-			waddstr(w_net, " DORMANT");
+			if (info->flags & IFF_DORMANT)		/* Driver signals dormant	*/
+				waddstr(w_net, " DORMANT");
 #endif
-		if (info.flags & IFF_MASTER)		/* Master of a load balancer 	*/
-			waddstr(w_net, " MASTER");
-		if (info.flags & IFF_SLAVE)		/* Slave of a load balancer 	*/
-			waddstr(w_net, " SLAVE");
-		if (info.flags & IFF_POINTOPOINT)	/* Is a point-to-point link	*/
-			waddstr(w_net, " POINTOPOINT");
-		if (info.flags & IFF_DYNAMIC)		/* Address is volatile		*/
-			waddstr(w_net, " DYNAMIC");
-		if (info.flags & IFF_BROADCAST)		/* Valid broadcast address set	*/
-			waddstr(w_net, " BROADCAST");
-		if (info.flags & IFF_MULTICAST)		/* Supports multicast		*/
-			waddstr(w_net, " MULTICAST");
-		if (info.flags & IFF_ALLMULTI)		/* Receive all mcast  packets	*/
-			waddstr(w_net, " ALLMULTI");
-		if (info.flags & IFF_NOARP)		/* No ARP protocol		*/
-			waddstr(w_net, " NOARP");
-		if (info.flags & IFF_NOTRAILERS)	/* Avoid use of trailers	*/
-			waddstr(w_net, " NOTRAILERS");
-		if (info.flags & IFF_PROMISC)		/* Is in promiscuous mode	*/
-			waddstr(w_net, " PROMISC");
-		if (info.flags & IFF_DEBUG)		/* Internal debugging flag	*/
-			waddstr(w_net, " DEBUG");
+			if (info->flags & IFF_MASTER)		/* Master of a load balancer 	*/
+				waddstr(w_net, " MASTER");
+			if (info->flags & IFF_SLAVE)		/* Slave of a load balancer 	*/
+				waddstr(w_net, " SLAVE");
+			if (info->flags & IFF_POINTOPOINT)	/* Is a point-to-point link	*/
+				waddstr(w_net, " POINTOPOINT");
+			if (info->flags & IFF_DYNAMIC)		/* Address is volatile		*/
+				waddstr(w_net, " DYNAMIC");
+			if (info->flags & IFF_BROADCAST)		/* Valid broadcast address set	*/
+				waddstr(w_net, " BROADCAST");
+			if (info->flags & IFF_MULTICAST)		/* Supports multicast		*/
+				waddstr(w_net, " MULTICAST");
+			if (info->flags & IFF_ALLMULTI)		/* Receive all mcast  packets	*/
+				waddstr(w_net, " ALLMULTI");
+			if (info->flags & IFF_NOARP)		/* No ARP protocol		*/
+				waddstr(w_net, " NOARP");
+			if (info->flags & IFF_NOTRAILERS)	/* Avoid use of trailers	*/
+				waddstr(w_net, " NOTRAILERS");
+			if (info->flags & IFF_PROMISC)		/* Is in promiscuous mode	*/
+				waddstr(w_net, " PROMISC");
+			if (info->flags & IFF_DEBUG)		/* Internal debugging flag	*/
+				waddstr(w_net, " DEBUG");
+		} else {
+			wadd_attr_str(w_net, COLOR_PAIR(CP_SCAN_CRYPT) | A_REVERSE, "DOWN");
+		}
 		waddstr_b(w_net, ")");
 
 		wmove(w_net, 2, 1);
 		wclrtoborder(w_net);
 	}
 	waddstr(w_net, "mac: ");
-	waddstr_b(w_net, ether_lookup(&info.hwaddr));
+	waddstr_b(w_net, ether_lookup(&info->hwaddr));
 
 	if (getmaxy(w_net) == WH_NET_MAX) {
-		waddstr(w_net, ", qlen: ");
-		sprintf(tmp, "%u", info.txqlen);
-		waddstr_b(w_net, tmp);
+		if (info->flags & IFF_UP) {
+			waddstr(w_net, ", qlen: ");
+			sprintf(tmp, "%u", info->txqlen);
+			waddstr_b(w_net, tmp);
 
+		}
 		wmove(w_net, 3, 1);
 		wclrtoborder(w_net);
 	} else {
@@ -611,30 +614,51 @@ static void display_netinfo(WINDOW *w_net)
 	}
 	waddstr(w_net, "ip: ");
 
-	if (!info.addr.s_addr) {
+	if (!info->addr.s_addr) {
 		waddstr(w_net, "n/a");
 	} else {
-		sprintf(tmp, "%s/%u", inet_ntoa(info.addr),
-				      prefix_len(&info.netmask));
+		sprintf(tmp, "%s/%u", inet_ntoa(info->addr),
+				      prefix_len(&info->netmask));
 		waddstr_b(w_net, tmp);
 
 		/* only show bcast address if not set to the obvious default */
-		if (info.bcast.s_addr !=
-		    (info.addr.s_addr | ~info.netmask.s_addr)) {
+		if (info->bcast.s_addr !=
+		    (info->addr.s_addr | ~info->netmask.s_addr)) {
 			waddstr(w_net, ",  bcast: ");
-			waddstr_b(w_net, inet_ntoa(info.bcast));
+			waddstr_b(w_net, inet_ntoa(info->bcast));
 		}
 	}
 	wclrtoborder(w_net);
 
 	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
-	if (info.mtu && info.mtu != ETH_DATA_LEN) {
+	if (info->mtu && info->mtu != ETH_DATA_LEN) {
 		waddstr(w_net, ",  mtu: ");
-		sprintf(tmp, "%u", info.mtu);
+		sprintf(tmp, "%u", info->mtu);
 		waddstr_b(w_net, tmp);
 	}
 
 	wrefresh(w_net);
+}
+
+static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
+{
+	struct iw_nl80211_ifstat ifs;
+	struct if_info net_info;
+
+	if_getinf(conf_ifname(), &net_info);
+	iw_nl80211_getifstat(&ifs);
+
+	display_interface(w_if, &ifs, net_info.flags & IFF_UP);
+
+	if (net_info.flags & IFF_UP) {
+		display_info(w_info, &ifs);
+	} else {
+		for (int i = 1; i <= WH_INFO; i++)
+			mvwclrtoborder(w_info, i, 1);
+	}
+	wrefresh(w_info);
+
+	display_netinfo(w_net, &net_info);
 }
 
 void scr_info_init(void)
@@ -648,12 +672,12 @@ void scr_info_init(void)
 	line += WH_LEVEL;
 	w_stats	 = newwin_title(line, WH_STATS, "Packet Counts", true);
 	line += WH_STATS;
-	w_info	 = newwin_title(line, WH_INFO_MIN, "Info", true);
-	line += WH_INFO_MIN;
+	w_info	 = newwin_title(line, WH_INFO, "Info", true);
+	line += WH_INFO;
 	if (LINES >= WH_INFO_SCR_MIN + (WH_NET_MAX - WH_NET_MIN))
 		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 	else
-		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
+		w_net = newwin_title(line, WH_NET_MIN, "Network", false);
 
 	sampling_init(false);
 
@@ -681,8 +705,7 @@ int scr_info_loop(WINDOW *w_menu)
 
 	if (now - last_update >= conf.info_iv) {
 		last_update = now;
-		display_info(w_if, w_info);
-		display_netinfo(w_net);
+		display_static_parts(w_if, w_info, w_net);
 	}
 	return wgetch(w_menu);
 }
