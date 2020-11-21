@@ -567,12 +567,6 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	}
 	wclrtoborder(w_info);
 
-	/* FIXME: re-enable encryption information (issue #8)
-	wmove(w_info, 8, 1);
-	waddstr(w_info, "encryption: ");
-	wclrtoborder(w_info);
-	*/
-
 	wrefresh(w_info);
 }
 

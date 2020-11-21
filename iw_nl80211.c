@@ -194,9 +194,9 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 
 	if (tb_msg[NL80211_ATTR_IFINDEX])
 		ifs->ifindex = nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]);
-
 	if (tb_msg[NL80211_ATTR_WDEV])
 		ifs->wdev = nla_get_u64(tb_msg[NL80211_ATTR_WDEV]);
+
 	if (tb_msg[NL80211_ATTR_SSID])
 		print_ssid_escaped(ifs->ssid, sizeof(ifs->ssid),
 				   nla_data(tb_msg[NL80211_ATTR_SSID]),
