@@ -129,10 +129,9 @@ print version information and exit.
 .SH Troubleshooting
 .IP \(bu
 \fIwavemon\fR will exit with \fB'no supported wireless interfaces found'\fR if no usable wireless interfaces
-were detected. Check if your wireless interfaces is otherwise usable, using e.g. \fIiw\fR, \fIiwconfig\fR,
-or similar tools. The interface should appear in /proc/net/dev and, if wireless extensions are supported,
-also in /proc/net/wireless. If the interface does not appear, causes can be a missing (or not loaded)
-kernel module, or missing firmware, which some cards need to operate.
+were detected. Check if your wireless interfaces is otherwise usable, using e.g. \fIiw\fR(8).
+If the interface does not appear, causes can be a missing (or not loaded) kernel module, or missing firmware,
+which some cards need to operate.
 
 .IP \(bu
 Some operations, such as displaying encryption information or performing scans, require
@@ -148,6 +147,6 @@ Written by Jan Morgenstern <jan@jm-music.de>.
 Open an issue on \fIhttps://github.com/uoaerg/wavemon/issues\fR.
 .SH "SEE ALSO"
 .BR wavemonrc (5),
-.BR wireless (7),
+.BR iw (8),
 .BR ethers (5),
 .BR capabilities (7)

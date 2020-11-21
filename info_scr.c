@@ -287,11 +287,9 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 	 */
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
-	sprintf(tmp, " (%s)", info.name);
-	waddstr(w_if, tmp);
 
 	/* PHY */
-	waddstr(w_if, ", phy ");
+	waddstr(w_if, " - phy ");
 	sprintf(tmp, "%d", ifs.phy_id);
 	waddstr_b(w_if, tmp);
 
@@ -312,6 +310,15 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	wclrtoborder(w_if);
 	wrefresh(w_if);
+}
+
+/** General information section */
+static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
+{
+	char tmp[0x100];
+
+	iw_nl80211_get_power_save(ifs);
+	iw_nl80211_get_phy(ifs);
 
 	/*
 	 * Info window:
@@ -489,33 +496,13 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 		waddstr_b(w_info, ls_cur->tx_bitrate[0] ? ls_cur->tx_bitrate : "n/a");
 	}
 
-	if (info.cap_sens) {
-		waddstr(w_info, ",  sensitivity: ");
-		if (info.sens < 0)
-			sprintf(tmp, "%d dBm", info.sens);
-		else
-			sprintf(tmp, "%d/%d", info.sens,
-				range.sensitivity);
-		waddstr_b(w_info, tmp);
-	}
-
 	wclrtoborder(w_info);
 
-	/* Power */
+	/* TX Power */
 	wmove(w_info, 6, 1);
-	if (info.cap_txpower && info.txpower.disabled) {
-		waddstr(w_info, "tx power: off");
-	} else if (info.cap_txpower) {
-		/*
-		 * Convention: auto-selected values start with a capital
-		 *             letter, otherwise with a small letter.
-		 */
-		if (info.txpower.fixed)
-			waddstr(w_info, "tx power: ");
-		else
-			waddstr(w_info, "TX power: ");
-		waddstr_b(w_info, format_txpower(&info.txpower));
-	}
+	waddstr(w_info, "tx power: ");
+	sprintf(tmp, "%g dBm (%.2f mW)", ifs->tx_power, dbm2mw(ifs->tx_power));
+	waddstr_b(w_info, tmp);
 
 	/* Power-saving mode */
 	waddstr(w_info, ", power save: ");
@@ -526,46 +513,35 @@ static void display_info(WINDOW *w_if, WINDOW *w_info)
 
 	/* Retry handling */
 	wmove(w_info, 7, 1);
-	if (ifs.phy.retry_short || ifs.phy.retry_long) {
-		waddstr(w_info, "retry short/long: ");
-		sprintf(tmp, "%u", ifs.phy.retry_short);
-		waddstr_b(w_info, tmp);
-		waddstr(w_info, "/");
-		sprintf(tmp, "%u", ifs.phy.retry_long);
-		waddstr_b(w_info, tmp);
-	} else {	/* wext-based information */
-		waddstr(w_info, "retry: ");
-		if (info.cap_retry)
-			waddstr_b(w_info, format_retry(&info.retry, &range));
-		else
-			waddstr(w_info, "n/a");
-	}
+	waddstr(w_info, "retry short/long: ");
 
-	waddstr(w_info, ",  ");
-	if (info.cap_rts) {
-		waddstr(w_info, info.rts.fixed ? "rts/cts: " : "RTS/cts: ");
-		if (info.rts.disabled)
-			sprintf(tmp, "off");
-		else
-			sprintf(tmp, "%d B", info.rts.value);
-		waddstr_b(w_info, tmp);
-	} else {
-		waddstr(w_info, "rts/cts: n/a");
-	}
+	sprintf(tmp, "%u", ifs->phy.retry_short);
+	waddstr_b(w_info, tmp);
 
-	waddstr(w_info, ",  ");
-	if (info.cap_frag) {
-		waddstr(w_info, info.frag.fixed ? "frag: " : "Frag: ");
-		if (info.frag.disabled)
-			sprintf(tmp, "off");
-		else
-			sprintf(tmp, "%d B", info.frag.value);
-		waddstr_b(w_info, tmp);
+	waddstr(w_info, "/");
+
+	sprintf(tmp, "%u", ifs->phy.retry_long);
+	waddstr_b(w_info, tmp);
+
+	/* RTS/CTS handshake threshold */
+	waddstr(w_info, ", rts/cts: ");
+	if (ifs->phy.rts_threshold != (uint32_t)-1) {
+		sprintf(tmp, "%u", ifs->phy.rts_threshold);
 	} else {
-		waddstr(w_info, "frag: n/a");
+		sprintf(tmp, "off");
 	}
+	waddstr_b(w_info, tmp);
+
+	/* Fragmentation threshold */
+	waddstr(w_info, ", frag: ");
+	if (ifs->phy.frag_threshold != (uint32_t)-1) {
+		sprintf(tmp, "%u", ifs->phy.frag_threshold);
+	} else {
+		sprintf(tmp, "off");
+	}
+	waddstr_b(w_info, tmp);
+
 	wclrtoborder(w_info);
-
 	wrefresh(w_info);
 }
 

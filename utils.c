@@ -54,19 +54,6 @@ char *mac_addr(const struct sockaddr *sa)
 	return ether_lookup((const struct ether_addr *)sa->sa_data);
 }
 
-/* Format a (I)BSSID */
-char *format_bssid(const struct sockaddr *ap)
-{
-	uint8_t bcast_addr[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-	uint8_t  zero_addr[ETH_ALEN] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-	if (memcmp(ap->sa_data, zero_addr, ETH_ALEN) == 0)
-		return "Not-Associated";
-	if (memcmp(ap->sa_data, bcast_addr, ETH_ALEN) == 0)
-		return "Invalid";
-	return mac_addr(ap);
-}
-
 /* count bits set in @mask the Brian Kernighan way */
 uint8_t bit_count(uint32_t mask)
 {
@@ -122,16 +109,6 @@ const char *pretty_time_ms(const unsigned msec)
 		return buf;
 	}
 	return pretty_time(msec/1000);
-}
-
-/* Absolute power measurement in dBm (IW_QUAL_DBM): map into -192 .. 63 range */
-int u8_to_dbm(const int power)
-{
-	return power > 63 ? power - 0x100 : power;
-}
-uint8_t dbm_to_u8(const int dbm)
-{
-	return dbm < 0 ? dbm + 0x100 : dbm;
 }
 
 /* Convert log dBm values to linear mW */

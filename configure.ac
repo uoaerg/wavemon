@@ -14,7 +14,7 @@ CFLAGS="-O2 -Wall"
 AC_CANONICAL_HOST
 case "$host_os" in
   *linux*|*LINUX*) ;;
-  *) AC_MSG_ERROR([incompatible OS '$host_os' - required is Linux with wireless extensions.])
+  *) AC_MSG_ERROR([incompatible OS '$host_os' - required is Linux with nl80211.])
 esac
 
 # Checks for programs.

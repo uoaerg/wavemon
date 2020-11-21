@@ -90,66 +90,6 @@ struct iw_key {
 	uint16_t	flags;
 };
 
-/**
- * struct iw_dyn_info  -  modified iw_req
- * @name:	interface name
- * @mode:	current operation mode (IW_MODE_xxx)
- *
- * @cap_*:	indicating capability/presence
- *
- * @essid:	Extended Service Set ID (network name)
- * @essid_ct:	index number of the @essid (starts at 1, 0 = off)
- * @nickname:	optional station nickname
- * @ap_addr:	BSSID or IBSSID
- *
- * @retry:	MAC-retransmission retry behaviour
- * @rts:	minimum packet size for which to perform RTS/CTS handshake
- * @frag:	802.11 frame fragmentation threshold size
- * @txpower:	TX power information
- *
- * @freq:	frequency in Hz
- * @sens:	sensitivity threshold of the card
- * @bitrate:	bitrate (client mode)
- *
- * @keys:	array of encryption keys
- * @nkeys:	length of @keys
- * @active_key:	index of current key into @keys (counting from 1)
- *
- */
-struct iw_dyn_info {
-	char		name[IFNAMSIZ];
-	uint8_t		mode;
-
-	bool		cap_essid:1,
-			cap_nickname:1,
-			cap_freq:1,
-			cap_sens:1,
-			cap_txpower:1,
-			cap_retry:1,
-			cap_rts:1,
-			cap_frag:1,
-			cap_mode:1,
-			cap_ap:1,
-			cap_aplist:1;
-
-	char		essid[IW_ESSID_MAX_SIZE+2];
-	uint8_t		essid_ct;
-	char		nickname[IW_ESSID_MAX_SIZE+2];
-	struct sockaddr ap_addr;
-
-	struct iw_param retry;
-	struct iw_param rts;
-	struct iw_param frag;
-	struct iw_param txpower;
-
-	float		freq;
-	int32_t		sens;
-	unsigned long	bitrate;
-};
-
-extern void dyn_info_get(struct iw_dyn_info *info, const char *ifname);
-
-
 /*
  *	 Structs to communicate WiFi statistics
  */
@@ -159,8 +99,6 @@ struct iw_levelstat {
 	uint8_t	flags;		/* level validity      */
 };
 #define IW_LSTAT_INIT { 0, 0, IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID }
-
-extern void iw_getinf_range(const char *ifname, struct iw_range *range);
 
 /*
  * 	Periodic sampling of wireless statistics
@@ -174,144 +112,15 @@ extern void sampling_stop(void);
 extern char *ether_addr(const struct ether_addr *ea);
 extern char *ether_lookup(const struct ether_addr *ea);
 extern char *mac_addr(const struct sockaddr *sa);
-extern char *format_bssid(const struct sockaddr *ap);
 extern uint8_t bit_count(uint32_t mask);
 extern uint8_t prefix_len(const struct in_addr *netmask);
 extern const char *pretty_time(const unsigned sec);
 extern const char *pretty_time_ms(const unsigned msec);
-extern int u8_to_dbm(const int power);
-extern uint8_t dbm_to_u8(const int dbm);
 extern double dbm2mw(const double in);
 extern char *dbm2units(const double in);
-extern double mw2dbm(const double in);
 
 extern const char *dfs_domain_name(enum nl80211_dfs_regions region);
 extern int ieee80211_frequency_to_channel(int freq);
 extern const char *channel_width_name(enum nl80211_chan_width width);
 extern const char *channel_type_name(enum nl80211_channel_type channel_type);
 extern const char *iftype_name(enum nl80211_iftype iftype);
-
-/*
- *	WEXT helper routines
- */
-/* Format driver TX power information */
-static inline char *format_txpower(const struct iw_param *txpwr)
-{
-	static char txline[0x40];
-
-	if (txpwr->flags & IW_TXPOW_RELATIVE)
-		snprintf(txline, sizeof(txline), "%d (no units)", txpwr->value);
-	else if (txpwr->flags & IW_TXPOW_MWATT)
-		snprintf(txline, sizeof(txline), "%.0f dBm (%d mW)",
-				mw2dbm(txpwr->value), txpwr->value);
-	else
-		snprintf(txline, sizeof(txline), "%d dBm (%.2f mW)",
-				txpwr->value, dbm2mw(txpwr->value));
-	return txline;
-}
-
-/* See comments on 'struct iw_freq' in wireless.h */
-static inline float freq_to_hz(const struct iw_freq *freq)
-{
-	return freq->m * pow(10, freq->e);
-}
-
-/* Return frequency or 0 on error. Based on iw_channel_to_freq() */
-static inline double channel_to_freq(uint8_t chan, const struct iw_range *range)
-{
-	int c;
-
-	for (c = 0; c < range->num_frequency; c++)
-		/* Check if it actually has stored a frequency */
-		if (range->freq[c].i == chan && range->freq[c].m > 1000)
-			return freq_to_hz(&range->freq[c]);
-	return 0.0;
-}
-
-/* Return channel number or -1 on error. Based on iw_freq_to_channel() */
-static inline int freq_to_channel(double freq, const struct iw_range *range)
-{
-	int i;
-
-	if (freq < 1e3)		/* Convention: freq is channel number if < 1e3 */
-		return freq;
-
-	for (i = 0; i < range->num_frequency; i++)
-		if (freq_to_hz(&range->freq[i]) == freq)
-			return range->freq[i].i;
-	return -1;
-}
-
-/* print @key in cleartext if it is in ASCII format, use hex format otherwise */
-static inline char *format_key(const struct iw_key *const iwk)
-{
-	static char buf[128];
-	int i, is_printable = 0, len = 0;
-
-	/* Over-estimate key size: 2 chars per hex digit plus '-' */
-	assert(iwk != NULL && iwk->size * 3 < sizeof(buf));
-
-	for (i = 0; i < iwk->size && (is_printable = isprint(iwk->key[i])); i++)
-		;
-
-	if (is_printable)
-		len += sprintf(buf, "\"");
-
-	for (i = 0; i < iwk->size; i++)
-		if (is_printable) {
-			len += sprintf(buf + len, "%c", iwk->key[i]);
-		} else {
-			if (i > 0 && (i & 1) == 0)
-				len += sprintf(buf + len, "-");
-			len += sprintf(buf + len, "%02X", iwk->key[i]);
-		}
-
-	if (is_printable)
-		len += sprintf(buf + len, "\"");
-
-	sprintf(buf + len, " (%u bits)", iwk->size * 8);
-
-	return buf;
-}
-
-static inline char *format_retry(const struct iw_param *retry,
-				 const struct iw_range *range)
-{
-	static char buf[0x80];
-	double val = retry->value;
-	int len = 0;
-
-	if (retry->disabled)
-		return "off";
-	else if (retry->flags == IW_RETRY_ON)
-		return "on";
-
-	if (retry->flags & IW_RETRY_MIN)
-		len += snprintf(buf + len, sizeof(buf) - len, "min ");
-	if (retry->flags & IW_RETRY_MAX)
-		len += snprintf(buf + len, sizeof(buf) - len, "max ");
-	if (retry->flags & IW_RETRY_SHORT)
-		len += snprintf(buf + len, sizeof(buf) - len, "short ");
-	if (retry->flags & IW_RETRY_LONG)
-		len += snprintf(buf + len, sizeof(buf) - len, "long ");
-
-	if (retry->flags & IW_RETRY_LIFETIME)
-		len += snprintf(buf + len, sizeof(buf) - len, "lifetime ");
-	else {
-		snprintf(buf + len, sizeof(buf) - len, "limit %d", retry->value);
-		return buf;
-	}
-
-	if (retry->flags & IW_RETRY_RELATIVE && range->we_version_compiled < 21)
-		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val/1e6);
-	else if (retry->flags & IW_RETRY_RELATIVE)
-		len += snprintf(buf + len, sizeof(buf) - len, "%+g", val);
-	else if (val > 1e6)
-		len += snprintf(buf + len, sizeof(buf) - len, "%g s", val/1e6);
-	else if (val > 1e3)
-		len += snprintf(buf + len, sizeof(buf) - len, "%g ms", val/1e3);
-	else
-		len += snprintf(buf + len, sizeof(buf) - len, "%g us", val);
-
-	return buf;
-}

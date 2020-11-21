@@ -189,21 +189,22 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
 		  genlmsg_attrlen(gnlh, 0), NULL);
 
+	if (tb_msg[NL80211_ATTR_WDEV])
+		ifs->wdev = nla_get_u64(tb_msg[NL80211_ATTR_WDEV]);
+
 	if (tb_msg[NL80211_ATTR_WIPHY])
 		ifs->phy_id = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]);
 
 	if (tb_msg[NL80211_ATTR_IFINDEX])
 		ifs->ifindex = nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]);
-	if (tb_msg[NL80211_ATTR_WDEV])
-		ifs->wdev = nla_get_u64(tb_msg[NL80211_ATTR_WDEV]);
+
+	if (tb_msg[NL80211_ATTR_IFTYPE])
+		ifs->iftype = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
 
 	if (tb_msg[NL80211_ATTR_SSID])
 		print_ssid_escaped(ifs->ssid, sizeof(ifs->ssid),
 				   nla_data(tb_msg[NL80211_ATTR_SSID]),
 				   nla_len(tb_msg[NL80211_ATTR_SSID]));
-
-	if (tb_msg[NL80211_ATTR_IFTYPE])
-		ifs->iftype = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
 
 	ifs->chan_width = -1;
 	ifs->chan_type  = -1;
@@ -222,6 +223,9 @@ static int iface_handler(struct nl_msg *msg, void *arg)
 		if (tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE])
 			ifs->chan_type = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE]);
 	}
+
+	if (tb_msg[NL80211_ATTR_WIPHY_TX_POWER_LEVEL])
+		ifs->tx_power = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_TX_POWER_LEVEL]) / 100.0;
 
 	return NL_SKIP;
 }
@@ -272,6 +276,13 @@ static int phy_handler(struct nl_msg *msg, void *arg)
 			ifs->phy.bands++;
 		}
 	}
+
+	if (tb_msg[NL80211_ATTR_WIPHY_RTS_THRESHOLD])
+		ifs->phy.rts_threshold = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_RTS_THRESHOLD]);
+
+	if (tb_msg[NL80211_ATTR_WIPHY_FRAG_THRESHOLD])
+		ifs->phy.frag_threshold = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_FRAG_THRESHOLD]);
+
 	return NL_SKIP;
 }
 

@@ -59,14 +59,19 @@ extern int handle_cmd(struct cmd *cmd);
 
 /**
  * iw_nl80211_phy - PHY information
- * @retry_short: short retry limit
- * @retry_long:  long retry limit
- * @bands:       number of bands
+ * @retry_short:	short retry limit
+ * @retry_long:		long retry limit
+ * @bands:		number of bands
+ * @rts_threshold:	RTS/CTS handshake frame length threshold (0..65536)
+ * @frag_threshold:	fragmentation threshold (max frame length, 256..8000)
  */
 struct iw_nl80211_phy {
 	uint8_t		retry_short,
 			retry_long,
 			bands;
+
+	uint32_t	rts_threshold,
+			frag_threshold;
 };
 
 /**
@@ -82,6 +87,7 @@ struct iw_nl80211_phy {
  * @freq_ctr1:	center frequency #1
  * @freq_ctr2:	center frequency #2
  * @power_save:	whether power-saving mode is enabled
+ * @tx_power:   TX power in dBm
  * @phy:	PHY information
  */
 struct iw_nl80211_ifstat {
@@ -98,7 +104,9 @@ struct iw_nl80211_ifstat {
 			freq_ctr1,
 			freq_ctr2;
 
+	double		tx_power;
 	bool		power_save;
+
 	struct iw_nl80211_phy phy;
 };
 extern void iw_nl80211_getifstat(struct iw_nl80211_ifstat *is);
