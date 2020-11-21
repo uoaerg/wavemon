@@ -235,6 +235,7 @@ const char *iftype_name(enum nl80211_iftype iftype)
 		"P2P-GO",
 		"P2P-Device",
 		"Outside of a BSS",
+		"NAN",
 	};
 
 	if (iftype <= NL80211_IFTYPE_MAX && ifmodes[iftype])
