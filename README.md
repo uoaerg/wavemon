@@ -9,14 +9,9 @@ varying features) with all devices supported by the Linux kernel.
 
 See the man page for an in-depth description of operation and configuration.
 
-
 ### Where to obtain
 
 Apart from debian/ubuntu packages (`apt-cache search wavemon`) and [slackbuild  scripts for wavemon](https://slackbuilds.org/result/?search=wavemon&sv=), this repository contains the full source code.
-
-Please check [this page](#) for updates and for further information.
-
-wavemon is distributed under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), refer to the file `COPYING`.
 
 ### Dependencies
 
