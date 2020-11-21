@@ -236,7 +236,7 @@ static void display_lhist(void)
 		iwl = iw_cache_get(x);
 
 		/* Clear screen and set up horizontal grid lines */
-		wattrset(w_lhist, COLOR_PAIR(CP_STATBKG));
+		wattrset(w_lhist, COLOR_PAIR(CP_BLUE));
 		for (y = 1; y <= HIST_MAXYLEN; y++)
 			mvwaddch(w_lhist, hist_y(y), hist_x(x), (y % 5) ? ' ' : '-');
 
@@ -252,14 +252,14 @@ static void display_lhist(void)
 					       conf.sig_min - conf.noise_max,
 					       conf.sig_max - conf.noise_min);
 
-			wattrset(w_lhist, COLOR_PAIR(CP_STATSNR));
+			wattrset(w_lhist, COLOR_PAIR(CP_BLUE_ON_BLUE));
 			for (y = 1; y <= clamp(snr_level, 1, HIST_MAXYLEN); y++)
 				mvwaddch(w_lhist, hist_y(y), hist_x(x), ' ');
 		}
 
 		if (! (iwl.flags & IW_QUAL_NOISE_INVALID)) {
 			noise_level = hist_level(iwl.noise, conf.noise_min, conf.noise_max);
-			plot_colour = noise_level > snr_level ? CP_STATNOISE : CP_STATNOISE_S;
+			plot_colour = noise_level > snr_level ? CP_RED : CP_RED_ON_BLUE;
 			hist_plot(noise_level, x, plot_colour);
 
 		} else if (x == LEVEL_TAG_POS && ! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
@@ -270,7 +270,7 @@ static void display_lhist(void)
 			 * This is only supported for signal levels, when the screen is not
 			 * shared by several graphs (each having a different scale).
 			 */
-			wattrset(w_lhist, COLOR_PAIR(CP_STATSIG));
+			wattrset(w_lhist, COLOR_PAIR(CP_GREEN));
 			for (y = 1; y <= HIST_MAXYLEN; y++) {
 				if (y != 1 && (y % 5) && y != HIST_MAXYLEN)
 					continue;
@@ -283,7 +283,7 @@ static void display_lhist(void)
 
 		if (! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
 			sig_level   = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
-			plot_colour = sig_level > snr_level ? CP_STATSIG : CP_STATSIG_S;
+			plot_colour = sig_level > snr_level ? CP_GREEN : CP_GREEN_ON_BLUE;
 			hist_plot(sig_level, x, plot_colour);
 		}
 	}
@@ -300,7 +300,7 @@ static void display_key(WINDOW *w_key)
 
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 	waddch(w_key, '[');
-	wattrset(w_key, COLOR_PAIR(CP_STATSIG));
+	wattrset(w_key, COLOR_PAIR(CP_GREEN));
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
@@ -308,14 +308,14 @@ static void display_key(WINDOW *w_key)
 		snprintf(buf, sizeof(buf), "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
 		waddstr(w_key, buf);
 
-		wattrset(w_key, COLOR_PAIR(CP_STATNOISE));
+		wattrset(w_key, COLOR_PAIR(CP_RED));
 		waddch(w_key, ACS_HLINE);
 		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
 		snprintf(buf, sizeof(buf), "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
 		waddstr(w_key, buf);
 
-		wattrset(w_key, COLOR_PAIR(CP_STATSNR));
+		wattrset(w_key, COLOR_PAIR(CP_BLUE_ON_BLUE));
 		waddch(w_key, ' ');
 
 		wattrset(w_key, COLOR_PAIR(CP_STANDARD));

@@ -37,7 +37,7 @@ static void waddstr_item(WINDOW *w, int y, struct conf_item *item, char hilight)
 {
 	char s[0x40];
 
-	wattrset(w, COLOR_PAIR(CP_PREF_NORMAL));
+	wattrset(w, COLOR_PAIR(CP_STANDARD));
 
 	mvwhline(w, y, 0, ' ', CONF_SCREEN_WIDTH);
 

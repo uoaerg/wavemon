@@ -124,8 +124,8 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 			wattrset(menu, A_REVERSE | A_BOLD);
 			waddstr(menu, fkey);
 
-			wattrset(menu, cur != active ? COLOR_PAIR(CP_INACTIVE)
-						     : COLOR_PAIR(CP_ACTIVE) | A_BOLD);
+			wattrset(menu, cur != active ? COLOR_PAIR(CP_CYAN)
+						     : COLOR_PAIR(CP_CYAN_ON_BLUE) | A_BOLD);
 
 			for (int i = 0; i < MAX_MENU_KEY; i++) {
 				if (*p == screens[cur].shortcut)	{
@@ -180,28 +180,18 @@ int main(int argc, char *argv[])
 		bg_color = -1;
 		use_default_colors();
 	}
+
 	init_pair(CP_STANDARD,	COLOR_WHITE,	bg_color);
-	init_pair(CP_SCALEHI,	COLOR_RED,	bg_color);
-	init_pair(CP_SCALEMID,	COLOR_YELLOW,	bg_color);
-	init_pair(CP_SCALELOW,	COLOR_GREEN,	bg_color);
-	init_pair(CP_WTITLE,	COLOR_CYAN,	bg_color);
-	init_pair(CP_INACTIVE,	COLOR_CYAN,	bg_color);
-	init_pair(CP_ACTIVE,	COLOR_CYAN,	COLOR_BLUE);
+	init_pair(CP_RED,	COLOR_RED,	bg_color);
+	init_pair(CP_YELLOW,	COLOR_YELLOW,	bg_color);
+	init_pair(CP_GREEN,	COLOR_GREEN,	bg_color);
+	init_pair(CP_CYAN,	COLOR_CYAN,	bg_color);
+	init_pair(CP_BLUE,	COLOR_BLUE,	bg_color);
 
-	init_pair(CP_STATSIG,	  COLOR_GREEN,	bg_color);
-	init_pair(CP_STATNOISE,	  COLOR_RED,	bg_color);
-	init_pair(CP_STATSNR,	  COLOR_BLUE,	COLOR_BLUE);
-	init_pair(CP_STATBKG,	  COLOR_BLUE,	bg_color);
-	init_pair(CP_STATSIG_S,	  COLOR_GREEN,	COLOR_BLUE);
-	init_pair(CP_STATNOISE_S, COLOR_RED,	COLOR_BLUE);
-
-	init_pair(CP_PREF_NORMAL, COLOR_WHITE,	bg_color);
-	init_pair(CP_PREF_SELECT, COLOR_WHITE,	COLOR_BLUE);
-	init_pair(CP_PREF_ARROW,  COLOR_RED,	bg_color);
-
-	init_pair(CP_SCAN_CRYPT,  COLOR_RED,	bg_color);
-	init_pair(CP_SCAN_UNENC,  COLOR_GREEN,	bg_color);
-	init_pair(CP_SCAN_NON_AP, COLOR_YELLOW, bg_color);
+	init_pair(CP_RED_ON_BLUE,	COLOR_RED,	COLOR_BLUE);
+	init_pair(CP_GREEN_ON_BLUE,	COLOR_GREEN,	COLOR_BLUE);
+	init_pair(CP_CYAN_ON_BLUE,	COLOR_CYAN,	COLOR_BLUE);
+	init_pair(CP_BLUE_ON_BLUE,	COLOR_BLUE,	COLOR_BLUE);
 
 	/* Override signal handlers installed during ncurses initialisation. */
 	xsignal(SIGCHLD, SIG_IGN);

@@ -305,7 +305,7 @@ static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool 
 		}
 	} else {
 		waddstr(w_if, "  ");
-		wadd_attr_str(w_if, COLOR_PAIR(CP_SCAN_CRYPT) | A_REVERSE, "Interface is DOWN");
+		wadd_attr_str(w_if, COLOR_PAIR(CP_RED) | A_REVERSE, "Interface is DOWN");
 	}
 
 	wclrtoborder(w_if);
@@ -590,7 +590,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			if (info->flags & IFF_DEBUG)		/* Internal debugging flag	*/
 				waddstr(w_net, " DEBUG");
 		} else {
-			wadd_attr_str(w_net, COLOR_PAIR(CP_SCAN_CRYPT) | A_REVERSE, "DOWN");
+			wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
 		}
 		waddstr_b(w_net, ")");
 

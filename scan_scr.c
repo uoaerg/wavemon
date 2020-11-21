@@ -126,9 +126,9 @@ static void display_aplist(WINDOW *w_aplst)
 			continue;
 
 		if (!WLAN_CAPABILITY_IS_STA_BSS(cur->bss_capa) && (cur->bss_capa & WLAN_CAPABILITY_ESS)) {
-			col = cur->has_key ? CP_SCAN_CRYPT : CP_SCAN_UNENC;
+			col = cur->has_key ? CP_RED : CP_GREEN;
 		} else {
-			col = CP_SCAN_NON_AP;
+			col = CP_YELLOW;
 		}
 
 		wmove(w_aplst, line, 1);

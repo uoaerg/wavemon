@@ -58,9 +58,9 @@ WINDOW *newwin_title(int y, int h, const char *title, bool nobottom)
 			top_left, top_right, ACS_LLCORNER, ACS_LRCORNER);
 	}
 #endif
-	wattrset(win, COLOR_PAIR(CP_WTITLE));
+	wattrset(win, COLOR_PAIR(CP_CYAN));
 	mvwaddstr(win, 0, 2, title);
-	wattroff(win, COLOR_PAIR(CP_WTITLE));
+	wattroff(win, COLOR_PAIR(CP_CYAN));
 
 	return win;
 }

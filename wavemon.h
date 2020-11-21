@@ -263,24 +263,15 @@ extern void waddthreshold(WINDOW *win, int y, float v, float tv,
 			  float minv, float maxv, int8_t *cscale, chtype tch);
 enum colour_pair {
 	CP_STANDARD = 1,
-	CP_SCALEHI,
-	CP_SCALEMID,
-	CP_SCALELOW,
-	CP_WTITLE,
-	CP_INACTIVE,
-	CP_ACTIVE,
-	CP_STATSIG,
-	CP_STATNOISE,
-	CP_STATSNR,
-	CP_STATBKG,
-	CP_STATSIG_S,
-	CP_STATNOISE_S,
-	CP_PREF_NORMAL,
-	CP_PREF_SELECT,
-	CP_PREF_ARROW,
-	CP_SCAN_CRYPT,
-	CP_SCAN_UNENC,
-	CP_SCAN_NON_AP
+	CP_RED,
+	CP_YELLOW,
+	CP_GREEN,
+	CP_CYAN,
+	CP_BLUE,
+	CP_RED_ON_BLUE,
+	CP_GREEN_ON_BLUE,
+	CP_CYAN_ON_BLUE,
+	CP_BLUE_ON_BLUE,
 };
 
 static inline int cp_from_scale(float value, int8_t const *cscale, bool reverse)
@@ -288,11 +279,11 @@ static inline int cp_from_scale(float value, int8_t const *cscale, bool reverse)
 	enum colour_pair cp;
 
 	if (value < (float)cscale[0])
-		cp = reverse ? CP_SCALEHI : CP_SCALELOW;
+		cp = reverse ? CP_RED : CP_GREEN;
 	else if (value < (float)cscale[1])
-		cp = CP_SCALEMID;
+		cp = CP_YELLOW;
 	else
-		cp = reverse ? CP_SCALELOW : CP_SCALEHI;
+		cp = reverse ? CP_GREEN : CP_RED;
 
 	return COLOR_PAIR(cp);
 }
