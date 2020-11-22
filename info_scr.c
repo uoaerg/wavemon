@@ -544,7 +544,7 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 }
 
 /** Network information pertaining to interface. */
-static void display_netinfo(WINDOW *w_net, struct if_info *info)
+static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifindex)
 {
 	char tmp[0x40];
 
@@ -552,7 +552,8 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wclrtoborder(w_net);
 	if (getmaxy(w_net) == WH_NET_MAX) {
 		waddstr(w_net, conf_ifname());
-		waddstr(w_net, " (");
+		sprintf(tmp, " (#%u, ", ifindex);
+		waddstr(w_net, tmp);
 
 		if (info->flags & IFF_UP) {
 			waddstr(w_net, "UP");
@@ -645,8 +646,8 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 	struct iw_nl80211_ifstat ifs;
 	struct if_info net_info;
 
-	if_getinf(conf_ifname(), &net_info);
 	iw_nl80211_getifstat(&ifs);
+	if_getinf(conf_ifname(), &net_info);
 
 	display_interface(w_if, &ifs, net_info.flags & IFF_UP);
 
@@ -658,7 +659,7 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 	}
 	wrefresh(w_info);
 
-	display_netinfo(w_net, &net_info);
+	display_netinfo(w_net, &net_info, ifs.ifindex);
 }
 
 void scr_info_init(void)
