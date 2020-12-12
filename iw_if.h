@@ -19,11 +19,11 @@
 #include "wavemon.h"
 #include "nl80211.h"
 #include <netdb.h>
-#include <stdbool.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ether.h>
+#include <net/if.h>
 #include <net/if_arp.h>
 #include <net/ethernet.h>
 #include <sys/socket.h>
@@ -107,8 +107,26 @@ extern void sampling_init(bool do_not_swap_pointers);
 extern void sampling_stop(void);
 
 /*
+ * rfkill.c
+ */
+typedef enum {
+	RFKILL_STATE_SOFT_BLOCKED = 0, // Transmitter is turned off by software.
+	RFKILL_STATE_UNBLOCKED    = 1, // Transmitter is (potentially) active.
+	RFKILL_STATE_HARD_BLOCKED = 2, // Transmitter is blocked by hardware (e.g. switch).
+	RFKILL_STATE_FULL_BLOCKED = 3, // Transmitter is both soft and hard blocked.
+	RFKILL_STATE_UNDEFINED    = 4, // Unable to determine rfkill state.
+} rfkill_state_t;
+
+extern rfkill_state_t get_rfkill_state(const uint32_t wdev_index);
+extern bool is_rfkill_blocked_state(const rfkill_state_t state);
+extern const char *rfkill_state_name(const rfkill_state_t state);
+
+/*
  * utils.c
  */
+extern ssize_t read_file(const char *path, char *buf, size_t buflen);
+extern int read_number_file(const char *path, uint32_t *num);
+
 extern char *ether_addr(const struct ether_addr *ea);
 extern char *ether_lookup(const struct ether_addr *ea);
 extern char *mac_addr(const struct sockaddr *sa);

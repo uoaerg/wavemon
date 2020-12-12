@@ -277,10 +277,11 @@ static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool 
 
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
+	waddstr(w_if, "  ");
 
 	if (if_is_up) {
 		/* Wireless device index */
-		waddstr(w_if, " - wdev ");
+		waddstr(w_if, "- wdev ");
 		sprintf(tmp, "%d", ifs->wdev);
 		waddstr_b(w_if, tmp);
 
@@ -304,8 +305,14 @@ static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool 
 			waddstr_b(w_if, ifs->ssid);
 		}
 	} else {
-		waddstr(w_if, "  ");
-		wadd_attr_str(w_if, COLOR_PAIR(CP_RED) | A_REVERSE, "Interface is DOWN");
+		rfkill_state_t rfkill_state = get_rfkill_state(ifs->wdev);
+
+		if (is_rfkill_blocked_state(rfkill_state)) {
+			sprintf(tmp, "Interface is blocked by %s", rfkill_state_name(rfkill_state));
+		} else {
+			sprintf(tmp, "Interface is DOWN");
+		}
+		wadd_attr_str(w_if, COLOR_PAIR(CP_RED) | A_REVERSE, tmp);
 	}
 
 	wclrtoborder(w_if);
@@ -543,7 +550,7 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 	wrefresh(w_info);
 }
 
-/** Network information pertaining to interface. */
+/** Network information pertaining to interface with interface index @ifindex. */
 static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifindex)
 {
 	char tmp[0x40];

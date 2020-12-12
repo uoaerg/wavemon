@@ -3,6 +3,7 @@
  */
 #include "wavemon.h"
 #include "nl80211.h"
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ether.h>
@@ -13,6 +14,31 @@
 
 /* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
 #define MAC_ADDR_MAX	18
+
+/** Read up to @buflen contents of file @path into @buf. Returns -1 on error. */
+ssize_t read_file(const char *path, char *buf, size_t buflen) {
+	int fd = open(path, O_RDONLY), n;
+
+	if (fd < 0)
+		return -1;
+
+	memset(buf, 0, buflen);
+
+	n = read(fd, buf, buflen);
+	if (close(fd) < 0)
+		return -1;
+	return n;
+}
+
+/** Read contents of @path into @num. Return 1 if ok, 0 on format error, -1 on error */
+int read_number_file(const char *path, uint32_t *num) {
+	char buf[64];
+	int rc = read_file(path, buf, sizeof(buf));
+
+	if (rc < 0)
+		return rc;
+	return sscanf(buf, "%u", num);
+}
 
 /* Return true if all ethernet octets are zero. */
 bool ether_addr_is_zero(const struct ether_addr *ea)
