@@ -277,7 +277,7 @@ static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool 
 
 	wmove(w_if, 1, 1);
 	waddstr_b(w_if, conf_ifname());
-	waddstr(w_if, "  ");
+	waddstr(w_if, " ");
 
 	if (if_is_up) {
 		/* Wireless device index */
@@ -308,9 +308,9 @@ static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool 
 		rfkill_state_t rfkill_state = get_rfkill_state(ifs->wdev);
 
 		if (is_rfkill_blocked_state(rfkill_state)) {
-			sprintf(tmp, "Interface is blocked by %s", rfkill_state_name(rfkill_state));
+			sprintf(tmp, " Interface is blocked by %s", rfkill_state_name(rfkill_state));
 		} else {
-			sprintf(tmp, "Interface is DOWN");
+			sprintf(tmp, " Interface is DOWN");
 		}
 		wadd_attr_str(w_if, COLOR_PAIR(CP_RED) | A_REVERSE, tmp);
 	}
