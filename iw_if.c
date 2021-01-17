@@ -155,6 +155,18 @@ static int iface_list_handler(struct nl_msg *msg, void *arg)
 	return NL_SKIP;
 }
 
+/** Return information about the default interface in @data. */
+int iw_nl80211_get_interface_data(struct interface_info **data)
+{
+	static struct cmd cmd_get_interface = {
+		.cmd         = NL80211_CMD_GET_INTERFACE,
+		.handler     = iface_list_handler,
+	};
+
+	cmd_get_interface.handler_arg = data;
+	return handle_interface_cmd(&cmd_get_interface);
+}
+
 /** Populate singly-linked list of wireless interfaces starting at @head. */
 int iw_nl80211_get_interface_list(struct interface_info **head)
 {

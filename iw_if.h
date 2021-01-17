@@ -71,6 +71,7 @@ struct interface_info {
 	struct interface_info	*next;
 };
 extern int iw_nl80211_get_interface_list(struct interface_info **head);
+extern int iw_nl80211_get_interface_data(struct interface_info **data);
 extern size_t count_interface_list(struct interface_info *head);
 extern void free_interface_list(struct interface_info *head);
 
@@ -130,6 +131,7 @@ typedef enum {
 extern rfkill_state_t get_rfkill_state(const uint32_t wdev_index);
 extern bool is_rfkill_blocked_state(const rfkill_state_t state);
 extern const char *rfkill_state_name(const rfkill_state_t state);
+extern bool default_interface_is_rfkill_blocked(void);
 
 /*
  * utils.c

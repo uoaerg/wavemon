@@ -426,6 +426,9 @@ void *do_scan(void *sr_ptr)
 		if (-ret == EPERM && !has_net_admin_capability()) {
 			_write_warning_msg(sr, "This screen requires CAP_NET_ADMIN permissions");
 			pthread_exit(0);
+		} else if (-ret == ENETDOWN && default_interface_is_rfkill_blocked()) {
+			_write_warning_msg(sr, "Interface %s is blocked by rfkill", conf_ifname());
+			continue;
 		} else if (-ret == ENETDOWN && !if_is_up(conf_ifname())) {
 			_write_warning_msg(sr, "Interface %s is down - setting it up ...", conf_ifname());
 
