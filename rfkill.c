@@ -50,9 +50,9 @@ rfkill_state_t get_rfkill_state(const uint32_t wdev_index) {
 
 /** Return true if the configured wireless interface is be blocked by rfkill. */
 bool default_interface_is_rfkill_blocked(void) {
-	struct interface_info *default_interface = NULL;
+	struct interface_info *data = NULL;
 
-	iw_nl80211_get_interface_data(&default_interface);
+	iw_nl80211_get_interface_data(&data);
 
-	return is_rfkill_blocked_state(get_rfkill_state(default_interface->wdev));
+	return data && is_rfkill_blocked_state(get_rfkill_state(data->wdev));
 }
