@@ -52,6 +52,28 @@
 #define WLAN_CAPABILITY_DEL_BACK        (1<<14)
 #define WLAN_CAPABILITY_IMM_BACK        (1<<15)
 
+/**
+ * struct interface_info - record wireless interface information
+ *
+ * @ifname:	interface name (e.g. 'wlp3s0')
+ * @mac_addr:	Mac address of @ifname
+ * @phy_id:	PHY index
+ * @ifindex:	general network interface index
+ * @wdev:	wireless-device index
+ */
+struct interface_info {
+	char			*ifname;
+	struct ether_addr	mac_addr;
+	uint32_t		phy_id,
+				ifindex,
+				wdev;
+
+	struct interface_info	*next;
+};
+extern int iw_nl80211_get_interface_list(struct interface_info **head);
+extern size_t count_interface_list(struct interface_info *head);
+extern void free_interface_list(struct interface_info *head);
+
 
 /**
  * struct if_info  -  wireless interface network information
@@ -77,18 +99,6 @@ extern bool if_is_up(const char *ifname);
 extern int  if_set_up(const char *ifname);
 extern void if_set_down_on_exit(void);
 extern void if_getinf(const char *ifname, struct if_info *info);
-
-/**
- * struct iw_key  -  Encoding information
- * @key:	encryption key
- * @size:	length of @key in bytes
- * @flags:	flags reported by SIOCGIWENCODE
- */
-struct iw_key {
-	uint8_t		key[IW_ENCODING_TOKEN_MAX];
-	uint16_t	size;
-	uint16_t	flags;
-};
 
 /*
  *	 Structs to communicate WiFi statistics

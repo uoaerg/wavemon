@@ -291,9 +291,8 @@ static inline int cp_from_scale(float value, int8_t const *cscale, bool reverse)
 /*
  *	Wireless interfaces
  */
-extern const char *conf_ifname(void);
 extern void conf_get_interface_list(void);
-extern void iw_get_interface_list(char** if_list, size_t max_entries);
+extern const char *conf_ifname(void);
 
 /*
  *	Error handling
@@ -317,9 +316,10 @@ static inline void (*xsignal(int signo, void (*handler)(int)))(int)
 	return old_sa.sa_handler;
 }
 
+/** Return the length of the NULL-terminated array @argv. */
 static inline size_t argv_count(char **argv)
 {
-	int cnt = 0;
+	size_t cnt = 0;
 
 	assert(argv != NULL);
 	while (*argv++)
@@ -327,12 +327,12 @@ static inline size_t argv_count(char **argv)
 	return cnt;
 }
 
+/** Find any entry in @argv whose prefix is @what. */
 static inline int argv_find(char **argv, const char *what)
 {
-	int cnt = argv_count(argv), len, i;
+	const size_t len = strlen(what);
 
-	assert(what != NULL);
-	for (i = 0, len = strlen(what); i < cnt; i++)
+	for (size_t i = 0; argv[i]; i++)
 		if (strncasecmp(argv[i], what, len) == 0)
 			return i;
 	return -1;

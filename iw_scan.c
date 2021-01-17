@@ -281,7 +281,7 @@ static int iw_nl80211_scan_trigger(void)
 		.cmd = NL80211_CMD_TRIGGER_SCAN,
 	};
 
-	return handle_cmd(&cmd_trigger_scan);
+	return handle_interface_cmd(&cmd_trigger_scan);
 }
 
 static int iw_nl80211_get_scan_data(struct scan_result *sr)
@@ -295,7 +295,7 @@ static int iw_nl80211_get_scan_data(struct scan_result *sr)
 	sr->max_essid_len = MAX_ESSID_LEN;
 	cmd_scan_dump.handler_arg = sr;
 
-	return handle_cmd(&cmd_scan_dump);
+	return handle_interface_cmd(&cmd_scan_dump);
 }
 
 /*

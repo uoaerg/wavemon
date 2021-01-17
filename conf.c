@@ -16,15 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "wavemon.h"
+#include "iw_if.h"
 #include <pwd.h>
 #include <sys/types.h>
 #include <netlink/version.h>
 
 /* GLOBALS */
-#define MAX_IFLIST_ENTRIES 64
-static char *if_list[MAX_IFLIST_ENTRIES]; /* array of WiFi interface names */
-int conf_items;			/* index into array storing menu items */
+static char **if_names = NULL;	/* Array of WiFi interface names */
+int conf_items;			/* Index into array storing menu items */
 
 static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
 static char *action_items[] = {
@@ -90,35 +89,54 @@ struct wavemon_conf conf = {
 	.startup_scr		= 0,
 };
 
-/** Populate interface list */
+/**
+ * conf_get_interface_list - Initialize interface list.
+ * Ensures that if_names is non-empty and if_names[conf.if_idx] != NULL.
+ */
 void conf_get_interface_list(void)
 {
+	struct interface_info *head = NULL, *cur;
+	int count, idx;
 	char *old_if = NULL;
-	int idx;
 
-	for (idx = 0; if_list[idx]; idx++) {
-		if (idx == conf.if_idx)
-			old_if = if_list[idx];
-		else
-			free(if_list[idx]);
+	iw_nl80211_get_interface_list(&head);
+
+	if (if_names) {
+		for (idx = 0; if_names[idx]; idx++) {
+			if (idx == conf.if_idx)
+				old_if = if_names[idx];
+			else
+				free(if_names[idx]);
+		}
 	}
-	iw_get_interface_list(if_list, MAX_IFLIST_ENTRIES);
-	if (!if_list[0])
+
+	count = count_interface_list(head);
+	if (!count)
 		err_quit("no supported wireless interfaces found! Check manpage for help.");
+
+	if_names = realloc(if_names, sizeof(if_names[0]) * (count + 1));
+	if (!if_names)
+		err_sys("failed to reallocate array of interface names");
+
+	if_names[count] = NULL;
+	for (cur = head; cur; cur = cur->next)
+		if_names[--count] = strdup(cur->ifname);
 
 	conf.if_idx = 0;
 	if (old_if) {
-		idx = argv_find(if_list, old_if);
+		idx = argv_find(if_names, old_if);
 		if (idx > 0)
 			conf.if_idx = idx;
 		free(old_if);
 	}
+
+	free_interface_list(head);
 }
 
-/** Return currently selected interface name */
+/** Return current interface name. Relies on conf_get_interface_list guarantees. */
 const char *conf_ifname(void)
 {
-	return if_list[0] && if_list[conf.if_idx] ? if_list[conf.if_idx] : "(none)";
+	return if_names[conf.if_idx];
 }
 
 /* Return full path of rcfile. Allocates string which must bee free()-d. */
@@ -328,7 +346,7 @@ static void init_conf_items(void)
 	item->cfname	= strdup("interface");
 	item->type	= t_list;
 	item->v.i	= &conf.if_idx;
-	item->list	= if_list;
+	item->list	= if_names;
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
@@ -628,7 +646,7 @@ void getconf(int argc, char *argv[])
 	read_cf();
 
 	if (iface) {
-		conf.if_idx = argv_find(if_list, iface);
+		conf.if_idx = argv_find(if_names, iface);
 		if (conf.if_idx < 0)
 			err_quit("%s is not a usable wireless interface", iface);
 	}

@@ -27,13 +27,13 @@
  * @data:	pointer to data area of length @len
  */
 struct msg_attribute {
-	int		type,
-			len;
+	int		type;
+	size_t		len;
 	const void	*data;
 };
 
 /**
- * struct cmd - stolen and modified from iw:iw.h
+ * struct cmd - represent a single nl80211 command
  * @cmd:	  nl80211 command to send via GeNetlink
  * @sk:		  netlink socket to be used for this command
  * @flags:	  flags to set in the GeNetlink message
@@ -46,15 +46,18 @@ struct msg_attribute {
 struct cmd {
 	enum nl80211_commands	cmd;
 	struct nl_sock		*sk;
+
 	int			flags,
 				hdr_flags;
+
 	int (*handler)(struct nl_msg *msg, void *arg);
 	void			*handler_arg;
 
 	struct msg_attribute	*msg_args;
-	uint8_t			msg_args_len;
+	size_t			msg_args_len;
 };
 extern int handle_cmd(struct cmd *cmd);
+extern int handle_interface_cmd(struct cmd *cmd);
 
 
 /**

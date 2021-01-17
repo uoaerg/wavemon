@@ -9,10 +9,29 @@
 
 #include "iw_nl80211.h"
 
+/** Append msg_attribute{type, len, data} to @cmd. */
+static void add_msg_arg(struct cmd *cmd, int type, size_t len, const void * const data)
+{
+	cmd->msg_args = realloc(cmd->msg_args, sizeof(*cmd->msg_args) * (cmd->msg_args_len + 1));
+	if (!cmd->msg_args)
+		err_sys("failed to allocate space for message attributes");
+
+	cmd->msg_args[cmd->msg_args_len].type = type;
+	cmd->msg_args[cmd->msg_args_len].len  = len;
+	cmd->msg_args[cmd->msg_args_len].data = data;
+	cmd->msg_args_len += 1;
+}
+
+static void free_msg_args(struct cmd *cmd)
+{
+	free(cmd->msg_args);
+	cmd->msg_args = NULL;
+	cmd->msg_args_len = 0;
+}
+
 /**
- * handle_cmd: process @cmd
+ * handle_cmd: process @cmd (generic variant)
  * Returns 0 if ok, -errno < 0 on failure
- * stolen/modified from iw:iw.c
  */
 int handle_cmd(struct cmd *cmd)
 {
@@ -20,7 +39,6 @@ int handle_cmd(struct cmd *cmd)
 	struct nl_msg *msg;
 	static int nl80211_id = -1;
 	int ret;
-	uint32_t ifindex, idx;
 
 	/*
 	 * Initialization of static components:
@@ -44,10 +62,6 @@ int handle_cmd(struct cmd *cmd)
 			err_sys("nl80211 not found");
 	}
 
-	ifindex = if_nametoindex(conf_ifname());
-	if (ifindex == 0 && errno)
-		err_sys("failed to look up interface %s", conf_ifname());
-
 	/*
 	 * Message Preparation
 	 */
@@ -61,15 +75,13 @@ int handle_cmd(struct cmd *cmd)
 
 	genlmsg_put(msg, 0, 0, nl80211_id, 0, cmd->flags, cmd->cmd, 0);
 
-	/* netdev identifier: interface index */
-	NLA_PUT(msg, NL80211_ATTR_IFINDEX, sizeof(ifindex), &ifindex);
-
-	/* Additional attributes */
+	/* Message attributes */
 	if (cmd->msg_args) {
-		for (idx = 0; idx < cmd->msg_args_len; idx++)
+		for (size_t idx = 0; idx < cmd->msg_args_len; idx++)
 			NLA_PUT(msg, cmd->msg_args[idx].type,
 				     cmd->msg_args[idx].len,
 				     cmd->msg_args[idx].data);
+		free_msg_args(cmd);
 	}
 
 	ret = nl_send_auto_complete(cmd->sk, msg);
@@ -96,6 +108,22 @@ nla_put_failure:
 	err_quit("failed to add attribute to netlink message");
 out:
 	return ret;
+}
+
+/**
+ * handle_interface_cmd: handle @cmd for the configured default interface.
+ */
+int handle_interface_cmd(struct cmd *cmd)
+{
+	uint32_t ifindex = if_nametoindex(conf_ifname());
+
+	if (ifindex == 0 && errno)
+		err_sys("failed to look up interface index of '%s'", conf_ifname());
+
+	/* netdev identifier: interface index */
+	add_msg_arg(cmd, NL80211_ATTR_IFINDEX, sizeof(ifindex), &ifindex);
+
+	return handle_cmd(cmd);
 }
 
 /*
@@ -635,15 +663,9 @@ void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
 		.handler = link_sta_handler
 	};
 
-	struct msg_attribute station_addr = {
-		.type = NL80211_ATTR_MAC,
-		.len  = sizeof(ls->bssid),
-		.data = &ls->bssid
-	};
-
 	cmd_linkstat.handler_arg = ls;
 	memset(ls, 0, sizeof(*ls));
-	handle_cmd(&cmd_linkstat);
+	handle_interface_cmd(&cmd_linkstat);
 
 	/* If not associated to another station, the bssid is zeroed out */
 	if (ether_addr_is_zero(&ls->bssid))
@@ -652,10 +674,9 @@ void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
 	 * Details of the associated station
 	 */
 	cmd_getstation.handler_arg  = ls;
-	cmd_getstation.msg_args     = &station_addr;
-	cmd_getstation.msg_args_len = 1;
+	add_msg_arg(&cmd_getstation, NL80211_ATTR_MAC, sizeof(ls->bssid), &ls->bssid);
 
-	handle_cmd(&cmd_getstation);
+	handle_interface_cmd(&cmd_getstation);
 
 	/* Channel survey data */
 	iw_nl80211_get_survey(&ls->survey);
@@ -671,7 +692,7 @@ void iw_nl80211_getreg(struct iw_nl80211_reg *ir)
 
 	cmd_reg.handler_arg = ir;
 	memset(ir, 0, sizeof(*ir));
-	handle_cmd(&cmd_reg);
+	handle_interface_cmd(&cmd_reg);
 }
 
 /** Check kernel for split-wiphy support. Single-thread use only. */
@@ -686,7 +707,7 @@ static bool iw_nl80211_have_split_wiphy_dump()
 	};
 
 	if (!checked)
-		handle_cmd(&cmd_features);
+		handle_interface_cmd(&cmd_features);
 	checked = true;
 	return nl80211_has_split_wiphy;
 }
@@ -701,7 +722,7 @@ void iw_nl80211_getifstat(struct iw_nl80211_ifstat *ifs)
 
 	cmd_ifstat.handler_arg = ifs;
 	memset(ifs, 0, sizeof(*ifs));
-	handle_cmd(&cmd_ifstat);
+	handle_interface_cmd(&cmd_ifstat);
 }
 
 void iw_nl80211_get_phy(struct iw_nl80211_ifstat *ifs)
@@ -719,7 +740,7 @@ void iw_nl80211_get_phy(struct iw_nl80211_ifstat *ifs)
 	}
 	cmd_phy_info.handler_arg = ifs;
 	memset(&ifs->phy, 0, sizeof(ifs->phy));
-	handle_cmd(&cmd_phy_info);
+	handle_interface_cmd(&cmd_phy_info);
 }
 
 void iw_nl80211_get_power_save(struct iw_nl80211_ifstat *ifs) {
@@ -731,7 +752,7 @@ void iw_nl80211_get_power_save(struct iw_nl80211_ifstat *ifs) {
 
 	cmd_power_save_info.handler_arg = ifs;
 	ifs->power_save = false;
-	handle_cmd(&cmd_power_save_info);
+	handle_interface_cmd(&cmd_power_save_info);
 }
 
 void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)
@@ -744,7 +765,7 @@ void iw_nl80211_get_survey(struct iw_nl80211_survey *sd)
 
 	cmd_survey.handler_arg = sd;
 	memset(sd, 0, sizeof(*sd));
-	handle_cmd(&cmd_survey);
+	handle_interface_cmd(&cmd_survey);
 }
 
 /*

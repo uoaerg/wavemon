@@ -17,6 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "iw_if.h"
+#include "iw_nl80211.h"
 
 /*
  * Obtain network device information
@@ -124,44 +125,60 @@ void if_getinf(const char *ifname, struct if_info *info)
 	close(skfd);
 }
 
-/**
- * iw_get_interface_list  -  fill if_list with NULL-terminated array of WiFi
- * interfaces.
- * Use the safe route of checking /proc/net/dev/ for wireless interfaces:
- * - SIOCGIFCONF only returns running interfaces that have an IP address;
- * - /proc/net/wireless may exist, but may not list all wireless interfaces.
- */
-void iw_get_interface_list(char** if_list, size_t max_entries)
+static int iface_list_handler(struct nl_msg *msg, void *arg)
 {
-	char *p, tmp[BUFSIZ];
-	int  nifs = 1;		/* if_list[nifs-1] = NULL */
-	struct iwreq wrq;
-	FILE *fp;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+	struct interface_info **head = arg, *new;
 
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
+	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
 
-	fp = fopen("/proc/net/dev", "r");
-	if (fp == NULL)
-		err_sys("can not open /proc/net/dev");
+	if (tb_msg[NL80211_ATTR_IFNAME]) {
+		new = calloc(1, sizeof(*new));
+		if (!new)
+			err_sys("failed to allocate interface list entry");
 
-	while (fgets(tmp, sizeof(tmp), fp)) {
-		if ((p = strchr(tmp, ':'))) {
-			for (*p = '\0', p = tmp; isspace(*p); )
-				p++;
-			/*
-			 * Use SIOCGIWNAME as indicator: if interface does not
-			 * support this ioctl, it has no wireless extensions.
-			 */
-			snprintf(wrq.ifr_name, IFNAMSIZ, "%s", p);
-			if (ioctl(skfd, SIOCGIWNAME, &wrq) < 0)
-				continue;
-			if(nifs >= max_entries) break;
-			if_list[nifs-1] = strdup(p);
-			if_list[nifs++] = NULL;
-		}
+		new->ifname = strdup(nla_get_string(tb_msg[NL80211_ATTR_IFNAME]));
+		new->next   = *head;
+		*head       = new;
+
+		if (tb_msg[NL80211_ATTR_WIPHY])
+			new->phy_id = nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]);
+		if (tb_msg[NL80211_ATTR_IFINDEX])
+			new->ifindex = nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]);
+		if (tb_msg[NL80211_ATTR_WDEV])
+			new->wdev = nla_get_u64(tb_msg[NL80211_ATTR_WDEV]);
+		if (tb_msg[NL80211_ATTR_MAC])
+			memcpy(&new->mac_addr, nla_data(tb_msg[NL80211_ATTR_MAC]), ETH_ALEN);
 	}
-	close(skfd);
-	fclose(fp);
+	return NL_SKIP;
+}
+
+/** Populate singly-linked list of wireless interfaces starting at @head. */
+int iw_nl80211_get_interface_list(struct interface_info **head)
+{
+	static struct cmd cmd_get_interfaces = {
+		.cmd         = NL80211_CMD_GET_INTERFACE,
+		.flags       = NLM_F_DUMP,
+		.handler     = iface_list_handler,
+	};
+
+	cmd_get_interfaces.handler_arg = head;
+	return handle_cmd(&cmd_get_interfaces);
+}
+
+/** Count the number of wireless interfaces starting at @head. */
+size_t count_interface_list(struct interface_info *head)
+{
+	return head ? count_interface_list(head->next) + 1 : 0;
+}
+
+void free_interface_list(struct interface_info *head)
+{
+	if (head) {
+		free_interface_list(head->next);
+		free(head->ifname);
+		free(head);
+	}
 }
