@@ -38,6 +38,9 @@
 /* GLOBALS */
 static WINDOW *w_lhist, *w_key;
 
+/* Keep track of interface changes. */
+static int last_if_idx = -1;
+
 /*
  *	Keeping track of global minima/maxima
  */
@@ -334,6 +337,13 @@ void scr_lhist_init(void)
 	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level histogram", true);
 	w_key   = newwin_title(HIST_MAXYLEN + 1, KEY_WIN_HEIGHT, "Key", false);
 
+	if (last_if_idx != conf.if_idx) {
+		count = 0;
+		e_signal.initialised = false;
+		e_noise.initialised  = false;
+		e_snr.initialised    = false;
+		last_if_idx = conf.if_idx;
+	}
 	sampling_init(true);
 
 	display_key(w_key);

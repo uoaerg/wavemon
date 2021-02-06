@@ -44,7 +44,6 @@ int handle_cmd(struct cmd *cmd)
 	 * Initialization of static components:
 	 * - per-cmd socket
 	 * - global nl80211 ID
-	 * - per-cmd interface index (in case conf_ifname() changes)
 	 */
 	if (!cmd->sk) {
 		cmd->sk = nl_socket_alloc();
