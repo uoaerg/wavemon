@@ -455,7 +455,12 @@ void *do_scan(void *sr_ptr)
 				if (ret < 0) {
 					_write_warning_msg(sr, "Scan failed on %s: %s", conf_ifname(), strerror(-ret));
 				} else if (!tmp->head) {
-					_write_warning_msg(sr, "Empty scan results on %s", conf_ifname());
+					if (conf.scan_filter_band != SCAN_FILTER_BAND_BOTH) {
+						// Reset filter in case the card does not suport the band.
+						conf.scan_filter_band = SCAN_FILTER_BAND_BOTH;
+					} else {
+						_write_warning_msg(sr, "Empty scan results on %s", conf_ifname());
+					}
 				} else {
 					// Sort only when new data arrives.
 					compute_channel_stats(tmp);
