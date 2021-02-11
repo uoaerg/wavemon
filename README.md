@@ -25,7 +25,7 @@ In addition, minimally the following are required:
 
 On Debian/Ubuntu, this can be done using
 ```bash
-apt -y install pkg-config libncursesw5-dev libnl-3-dev libnl-genl-3-dev
+apt-get -y install pkg-config libncursesw5-dev libnl-3-dev libnl-genl-3-dev
 ```
 
 Please note the "w" in `libncursesw5-dev`, which stands for the _wide-character_ variant of ncurses.
