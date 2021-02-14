@@ -2231,7 +2231,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 ac_config_files="$ac_config_files Makefile"
 
 
-CFLAGS="-O2 -Wall"
+: ${CFLAGS="-O2 -Wall"}
 
 # wavemon is only supported on Linux, warn user about futile compilations
 # Make sure we can run config.sub.

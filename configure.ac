@@ -8,7 +8,7 @@ AC_INIT([wavemon], [0.9.3], [https://github.com/uoaerg/wavemon], [wavemon-curren
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_FILES([Makefile])
 
-CFLAGS="-O2 -Wall"
+: ${CFLAGS="-O2 -Wall"}
 
 # wavemon is only supported on Linux, warn user about futile compilations
 AC_CANONICAL_HOST
