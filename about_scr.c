@@ -31,15 +31,15 @@ static char *about_lines[] = {
 	PACKAGE_URL
 };
 
-static int *linecd[ARRAY_SIZE(about_lines)], i, j;
+static int *linecd[ARRAY_SIZE(about_lines)];
 
 void scr_about_init(void)
 {
 	w_about = newwin_title(0, WAV_HEIGHT, "About", false);
 
-	for (i = 0; i < ARRAY_SIZE(about_lines); i++) {
+	for (size_t i = 0; i < ARRAY_SIZE(about_lines); i++) {
 		linecd[i] = malloc(strlen(about_lines[i]) * sizeof(int));
-		for (j = 0; j < strlen(about_lines[i]); j++)
+		for (size_t j = 0; j < strlen(about_lines[i]); j++)
 			linecd[i][j] = (rand() / (float)RAND_MAX) * 120 + 60;
 	}
 }
@@ -47,6 +47,7 @@ void scr_about_init(void)
 int scr_about_loop(WINDOW *w_menu)
 {
 	char buf[0x100];
+	size_t i, j;
 
 	for (i = 0; i < ARRAY_SIZE(about_lines); i++) {
 		for (j = 0; j < strlen(about_lines[i]); j++) {
@@ -70,6 +71,6 @@ int scr_about_loop(WINDOW *w_menu)
 void scr_about_fini(void)
 {
 	delwin(w_about);
-	for (i = 0; i < ARRAY_SIZE(about_lines); i++)
+	for (size_t i = 0; i < ARRAY_SIZE(about_lines); i++)
 		free(linecd[i]);
 }

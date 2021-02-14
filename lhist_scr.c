@@ -92,7 +92,7 @@ static char *fmt_extrema(const struct iw_extrema *ie, const char *unit)
 #define IW_STACKSIZE		1024
 static struct iw_levelstat	iw_stats_cache[IW_STACKSIZE];
 static uint32_t			count;
-const static uint32_t		COUNTMAX = ~0;
+static const uint32_t		COUNTMAX = ~0;
 
 static void iw_cache_insert(const struct iw_levelstat new)
 {

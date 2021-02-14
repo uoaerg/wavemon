@@ -391,10 +391,10 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 		sprintf(tmp, "%d", ieee80211_frequency_to_channel(ifs->freq));
 		waddstr_b(w_info, tmp);
 
-		if (ifs->chan_width >= 0) {
+		if (ifs->chan_width != (uint32_t)-1) {
 			sprintf(tmp, " (width: %s)", channel_width_name(ifs->chan_width));
 			waddstr(w_info, tmp);
-		} else if (ifs->chan_type >= 0) {
+		} else if (ifs->chan_type != (uint32_t)-1) {
 			sprintf(tmp, " (%s)", channel_type_name(ifs->chan_type));
 			waddstr(w_info, tmp);
 		}

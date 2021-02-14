@@ -109,7 +109,7 @@ int ll_create(void)
 void *ll_get(int ld, unsigned long n)
 {
 	llist *l = lists[ld]->next;
-	int i;
+	unsigned long i;
 
 	for (i = 0; i < n && l->next; i++)
 		l = l->next;
@@ -178,7 +178,7 @@ void ll_push(int ld, const char *format, ...)
 void ll_replace(int ld, unsigned long n, const char *format, ...)
 {
 	llist *prevl = lists[ld], *l = lists[ld]->next;
-	int i;
+	unsigned long i;
 	va_list ap;
 
 	for (i = 0; i < n && l->next; i++) {

@@ -202,7 +202,7 @@ static void display_aplist(WINDOW *w_aplst)
 			sprintf(s, "top-%d:", (int)sr.num.ch_stats);
 		wadd_attr_str(w_aplst, A_REVERSE, s);
 
-		for (i = 0; i < sr.num.ch_stats; i++) {
+		for (size_t i = 0; i < sr.num.ch_stats; i++) {
 			waddstr(w_aplst, i ? ", " : " ");
 			sprintf(s, "ch#%d", sr.channel_stats[i].val);
 			wadd_attr_str(w_aplst, A_BOLD, s);

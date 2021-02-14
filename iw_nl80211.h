@@ -101,8 +101,8 @@ struct iw_nl80211_ifstat {
 
 	char		ssid[64];
 
-	uint32_t	freq;
-	int		chan_width,
+	uint32_t	freq,
+			chan_width,
 			chan_type,
 			freq_ctr1,
 			freq_ctr2;
@@ -276,29 +276,30 @@ enum plink_state {
 };
 
 /* Predefined handlers, stolen from iw:iw.c */
-static inline int error_handler(struct sockaddr_nl *nla, struct nlmsgerr *err,
-			 void *arg)
+static inline int error_handler(struct sockaddr_nl __attribute__((unused))*nla,
+				struct nlmsgerr *err, void *arg)
 {
 	int *ret = arg;
 	*ret = err->error;
 	return NL_STOP;
 }
 
-static inline int finish_handler(struct nl_msg *msg, void *arg)
+static inline int finish_handler(struct nl_msg __attribute__((unused))*msg, void *arg)
 {
 	int *ret = arg;
 	*ret = 0;
 	return NL_SKIP;
 }
 
-static inline int ack_handler(struct nl_msg *msg, void *arg)
+static inline int ack_handler(struct nl_msg __attribute__((unused))*msg, void *arg)
 {
 	int *ret = arg;
 	*ret = 0;
 	return NL_STOP;
 }
 
-static inline int no_seq_check(struct nl_msg *msg, void *arg)
+static inline int no_seq_check(struct nl_msg __attribute__((unused))*msg,
+			       void __attribute__((unused))*arg)
 {
 	return NL_OK;
 }

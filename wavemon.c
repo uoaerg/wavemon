@@ -100,7 +100,7 @@ static const struct {
 static sigjmp_buf		env_winch;
 static volatile sig_atomic_t	env_winch_ready;
 
-static void sig_winch(int signo)
+static void sig_winch(int __attribute__((unused))signo)
 {
 	if (env_winch_ready) {
 		env_winch_ready = false;
@@ -156,7 +156,8 @@ static void check_geometry(void)
 int main(int argc, char *argv[])
 {
 	int bg_color = COLOR_BLACK;
-	enum wavemon_screen cur, next;
+	enum wavemon_screen cur;
+	volatile enum wavemon_screen next;
 	sigset_t blockmask, oldmask;
 
 	getconf(argc, argv);
@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
 
 	for (cur = conf.startup_scr; cur != SCR_QUIT; cur = next) {
 		WINDOW *w_menu;
-		int escape = 0;
+		volatile int escape = 0;
 
 		if (sigprocmask(SIG_BLOCK, &blockmask, &oldmask) < 0)
 			err_sys("cannot block SIGWINCH");
@@ -232,19 +233,17 @@ int main(int argc, char *argv[])
 				case 'O':
 					escape = 2;
 					break;
-				case 'P' ... 'S':
-					if (escape == 2)
-						key = KEY_F(key - 'P' + 1);
-					/* fall through */
 				default:
+					if ('P' <= key && key <= 'S' && escape == 2)
+						key = KEY_F(key - 'P' + 1);
 					escape = 0;
 				}
 
 				/* Main menu */
 				for (enum wavemon_screen s = SCR_INFO; s <= SCR_QUIT; s++) {
 					if (*screens[s].key_name && (
-					    key == (s == SCR_QUIT ? '0' : '1' + s) ||
-					    key == KEY_F(s + 1) ||
+					    (unsigned)key == (s == SCR_QUIT ? '0' : '1' + s) ||
+					    (unsigned)key == KEY_F(s + 1) ||
 					    key == screens[s].shortcut)) {
 						next = s;
 						break;

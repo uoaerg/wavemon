@@ -162,7 +162,8 @@ static void write_cf(void)
 	char tmp[0x100], rv[0x40];
 	struct conf_item *ci = NULL;
 	char *lp, *cp;
-	int add, i;
+	bool add = false;
+	size_t i;
 	char *cfname = get_confname();
 	int cfld = ll_create();
 	FILE *fd = fopen(cfname, "w");
@@ -188,14 +189,14 @@ static void write_cf(void)
 				break;
 			}
 
-			add = 1;
+			add = true;
 
 			for (i = 0; i < ll_size(cfld); i++) {
 				lp = ll_get(cfld, i);
 				cp = lp += strspn(lp, " ");
 				if (!strncasecmp(cp, ci->cfname, strcspn(cp, " ="))
 				    && strlen(ci->cfname) == strcspn(cp, " =")) {
-					add = 0;
+					add = false;
 					cp += strcspn(cp, "=") + 1;
 					cp += strspn(cp, " ");
 					strncpy(tmp, cp, strcspn(cp, " #\n"));

@@ -235,11 +235,13 @@ static int scan_dump_handler(struct nl_msg *msg, void *arg)
 					new->bss_sta_count  = ie[3] << 8 | ie[2];
 					new->bss_chan_usage = ie[4];
 				}
+				break;
 			case IE_HT_CAPABILITIES:
 				new->ht_capable = true;
 				break;
 			case IE_RM_CAPABILITIES:
 				new->rm_enabled = true;
+				break;
 			case IE_MESH_CONFIG:
 				new->mesh_enabled = true;
 				break;

@@ -200,7 +200,7 @@ void parse_bitrate(struct nlattr *bitrate_attr, char *buf, int buflen)
 void print_ssid_escaped(char *buf, const size_t buflen,
 			const uint8_t *data, const size_t datalen)
 {
-	int i, l;
+	size_t i, l;
 
 	memset(buf, '\0', buflen);
 	/* Treat zeroed-out SSIDs separately */

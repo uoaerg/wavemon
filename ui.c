@@ -93,11 +93,11 @@ void wadd_attr_str(WINDOW *win, const int attrs, const char *s)
 }
 
 /* Enforce that @str is at most @len characters (excluding the terminal '\0') */
-const char *curtail(const char *str, const char *sep, int len)
+const char *curtail(const char *str, const char *sep, size_t len)
 {
 	static char out_buf[128];
 	const char fallback_sep[] = "~";
-	int l = 0, front, mid, back;
+	size_t l = 0, front, mid, back;
 
 	if (len >= sizeof(out_buf))
 		len = sizeof(out_buf) - 1;
