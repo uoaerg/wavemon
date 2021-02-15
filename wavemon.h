@@ -32,9 +32,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
-#ifdef HAVE_LIBNCURSESW
-#define _XOPEN_SOURCE_EXTENDED
-#endif
 #if defined(HAVE_LIBNCURSESW) && defined(HAVE_NCURSESW_CURSES_H)
 #include <ncursesw/curses.h>
 #else

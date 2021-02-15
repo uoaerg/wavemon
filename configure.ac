@@ -17,6 +17,32 @@ case "$host_os" in
   *) AC_MSG_ERROR([incompatible OS '$host_os' - required is Linux with nl80211.])
 esac
 
+# NCURSES_CHECK_CONFIG(LIBNAME, CONFIG_SCRIPT, ELSE_PART)
+m4_define([NCURSES_CHECK_CONFIG],
+[
+   ncurses_config_script_libs=$([$2] --libs 2> /dev/null)
+   ncurses_config_script_cflags=$([$2] --cflags 2> /dev/null)
+
+   ncurses_script_success=no
+   ncurses_save_LDFLAGS="$LDFLAGS"
+   ncurses_save_CFLAGS="$CFLAGS"
+   if test "x$ncurses_config_script_libs" != x; then
+      LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
+      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      AC_CHECK_LIB([$1], [addnwstr], [
+                     AC_DEFINE([HAVE_LIBNCURSESW], 1)
+                     LIBS="$ncurses_config_script_libs $LIBS "
+                     ncurses_script_success=yes
+                   ], [
+                     CFLAGS="$ncurses_save_CFLAGS"
+                   ])
+      LDFLAGS="$ncurses_save_LDFLAGS"
+   fi
+   if test "x$ncurses_script_success" == xno; then
+      [$3]
+   fi
+])
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
@@ -53,11 +79,17 @@ AC_HEADER_STDBOOL
 
 # Tests involving libraries
 AC_CHECK_LIB([m], [pow], [],              [AC_MSG_ERROR(math library not found)])
-AC_CHECK_LIB([ncursesw], [waddstr],
-	     [],
-	     [AC_CHECK_LIB([ncurses], [waddstr], [], [AC_MSG_ERROR(ncurses library not found)])])
 AC_CHECK_LIB([pthread], [pthread_create], [CFLAGS="$CFLAGS -pthread"],
 					  [AC_MSG_ERROR(pthread library not found)])
+
+# Check various combinations of ncurses5/6 configuration scripts (based on htop's checks).
+NCURSES_CHECK_CONFIG([ncursesw6], "ncursesw6-config",
+ NCURSES_CHECK_CONFIG([ncursesw], "ncursesw6-config",
+  NCURSES_CHECK_CONFIG([ncursesw], "ncursesw5-config",
+   NCURSES_CHECK_CONFIG([ncurses], "ncurses5-config",
+    AC_CHECK_LIB([ncursesw], [addnwstr], [],
+		 [AC_CHECK_LIB([ncurses], [waddstr], [],
+			       [AC_MSG_ERROR(ncurses library not found)])])))))
 
 # libcap - allow to disable, since e.g. OpenWrt does not use it.
 # https://github.com/uoaerg/wavemon/issues/54

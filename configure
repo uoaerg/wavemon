@@ -2310,6 +2310,9 @@ case "$host_os" in
   *) as_fn_error $? "incompatible OS '$host_os' - required is Linux with nl80211." "$LINENO" 5
 esac
 
+# NCURSES_CHECK_CONFIG(LIBNAME, CONFIG_SCRIPT, ELSE_PART)
+
+
 # Checks for programs.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3848,9 +3851,125 @@ else
   as_fn_error $? "math library not found" "$LINENO" 5
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for waddstr in -lncursesw" >&5
-$as_echo_n "checking for waddstr in -lncursesw... " >&6; }
-if ${ac_cv_lib_ncursesw_waddstr+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
+$as_echo_n "checking for pthread_create in -lpthread... " >&6; }
+if ${ac_cv_lib_pthread_pthread_create+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthread  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pthread_create ();
+int
+main ()
+{
+return pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_pthread_pthread_create=yes
+else
+  ac_cv_lib_pthread_pthread_create=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_create" >&5
+$as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
+if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
+  CFLAGS="$CFLAGS -pthread"
+else
+  as_fn_error $? "pthread library not found" "$LINENO" 5
+fi
+
+
+# Check various combinations of ncurses5/6 configuration scripts (based on htop's checks).
+
+   ncurses_config_script_libs=$("ncursesw6-config" --libs 2> /dev/null)
+   ncurses_config_script_cflags=$("ncursesw6-config" --cflags 2> /dev/null)
+
+   ncurses_script_success=no
+   ncurses_save_LDFLAGS="$LDFLAGS"
+   ncurses_save_CFLAGS="$CFLAGS"
+   if test "x$ncurses_config_script_libs" != x; then
+      LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
+      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw6" >&5
+$as_echo_n "checking for addnwstr in -lncursesw6... " >&6; }
+if ${ac_cv_lib_ncursesw6_addnwstr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lncursesw6  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char addnwstr ();
+int
+main ()
+{
+return addnwstr ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ncursesw6_addnwstr=yes
+else
+  ac_cv_lib_ncursesw6_addnwstr=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw6_addnwstr" >&5
+$as_echo "$ac_cv_lib_ncursesw6_addnwstr" >&6; }
+if test "x$ac_cv_lib_ncursesw6_addnwstr" = xyes; then :
+
+                     $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
+
+                     LIBS="$ncurses_config_script_libs $LIBS "
+                     ncurses_script_success=yes
+
+else
+
+                     CFLAGS="$ncurses_save_CFLAGS"
+
+fi
+
+      LDFLAGS="$ncurses_save_LDFLAGS"
+   fi
+   if test "x$ncurses_script_success" == xno; then
+
+   ncurses_config_script_libs=$("ncursesw6-config" --libs 2> /dev/null)
+   ncurses_config_script_cflags=$("ncursesw6-config" --cflags 2> /dev/null)
+
+   ncurses_script_success=no
+   ncurses_save_LDFLAGS="$LDFLAGS"
+   ncurses_save_CFLAGS="$CFLAGS"
+   if test "x$ncurses_config_script_libs" != x; then
+      LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
+      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw" >&5
+$as_echo_n "checking for addnwstr in -lncursesw... " >&6; }
+if ${ac_cv_lib_ncursesw_addnwstr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -3864,27 +3983,203 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char waddstr ();
+char addnwstr ();
 int
 main ()
 {
-return waddstr ();
+return addnwstr ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ncursesw_waddstr=yes
+  ac_cv_lib_ncursesw_addnwstr=yes
 else
-  ac_cv_lib_ncursesw_waddstr=no
+  ac_cv_lib_ncursesw_addnwstr=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw_waddstr" >&5
-$as_echo "$ac_cv_lib_ncursesw_waddstr" >&6; }
-if test "x$ac_cv_lib_ncursesw_waddstr" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw_addnwstr" >&5
+$as_echo "$ac_cv_lib_ncursesw_addnwstr" >&6; }
+if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
+
+                     $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
+
+                     LIBS="$ncurses_config_script_libs $LIBS "
+                     ncurses_script_success=yes
+
+else
+
+                     CFLAGS="$ncurses_save_CFLAGS"
+
+fi
+
+      LDFLAGS="$ncurses_save_LDFLAGS"
+   fi
+   if test "x$ncurses_script_success" == xno; then
+
+   ncurses_config_script_libs=$("ncursesw5-config" --libs 2> /dev/null)
+   ncurses_config_script_cflags=$("ncursesw5-config" --cflags 2> /dev/null)
+
+   ncurses_script_success=no
+   ncurses_save_LDFLAGS="$LDFLAGS"
+   ncurses_save_CFLAGS="$CFLAGS"
+   if test "x$ncurses_config_script_libs" != x; then
+      LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
+      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw" >&5
+$as_echo_n "checking for addnwstr in -lncursesw... " >&6; }
+if ${ac_cv_lib_ncursesw_addnwstr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lncursesw  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char addnwstr ();
+int
+main ()
+{
+return addnwstr ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ncursesw_addnwstr=yes
+else
+  ac_cv_lib_ncursesw_addnwstr=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw_addnwstr" >&5
+$as_echo "$ac_cv_lib_ncursesw_addnwstr" >&6; }
+if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
+
+                     $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
+
+                     LIBS="$ncurses_config_script_libs $LIBS "
+                     ncurses_script_success=yes
+
+else
+
+                     CFLAGS="$ncurses_save_CFLAGS"
+
+fi
+
+      LDFLAGS="$ncurses_save_LDFLAGS"
+   fi
+   if test "x$ncurses_script_success" == xno; then
+
+   ncurses_config_script_libs=$("ncurses5-config" --libs 2> /dev/null)
+   ncurses_config_script_cflags=$("ncurses5-config" --cflags 2> /dev/null)
+
+   ncurses_script_success=no
+   ncurses_save_LDFLAGS="$LDFLAGS"
+   ncurses_save_CFLAGS="$CFLAGS"
+   if test "x$ncurses_config_script_libs" != x; then
+      LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
+      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncurses" >&5
+$as_echo_n "checking for addnwstr in -lncurses... " >&6; }
+if ${ac_cv_lib_ncurses_addnwstr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lncurses  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char addnwstr ();
+int
+main ()
+{
+return addnwstr ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ncurses_addnwstr=yes
+else
+  ac_cv_lib_ncurses_addnwstr=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncurses_addnwstr" >&5
+$as_echo "$ac_cv_lib_ncurses_addnwstr" >&6; }
+if test "x$ac_cv_lib_ncurses_addnwstr" = xyes; then :
+
+                     $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
+
+                     LIBS="$ncurses_config_script_libs $LIBS "
+                     ncurses_script_success=yes
+
+else
+
+                     CFLAGS="$ncurses_save_CFLAGS"
+
+fi
+
+      LDFLAGS="$ncurses_save_LDFLAGS"
+   fi
+   if test "x$ncurses_script_success" == xno; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw" >&5
+$as_echo_n "checking for addnwstr in -lncursesw... " >&6; }
+if ${ac_cv_lib_ncursesw_addnwstr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lncursesw  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char addnwstr ();
+int
+main ()
+{
+return addnwstr ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ncursesw_addnwstr=yes
+else
+  ac_cv_lib_ncursesw_addnwstr=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw_addnwstr" >&5
+$as_echo "$ac_cv_lib_ncursesw_addnwstr" >&6; }
+if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBNCURSESW 1
 _ACEOF
@@ -3941,47 +4236,13 @@ fi
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
-$as_echo_n "checking for pthread_create in -lpthread... " >&6; }
-if ${ac_cv_lib_pthread_pthread_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+   fi
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pthread_create ();
-int
-main ()
-{
-return pthread_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthread_pthread_create=yes
-else
-  ac_cv_lib_pthread_pthread_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_create" >&5
-$as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
-if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
-  CFLAGS="$CFLAGS -pthread"
-else
-  as_fn_error $? "pthread library not found" "$LINENO" 5
-fi
+   fi
+
+   fi
+
+   fi
 
 
 # libcap - allow to disable, since e.g. OpenWrt does not use it.
