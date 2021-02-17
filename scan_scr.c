@@ -287,6 +287,9 @@ int scr_aplst_loop(WINDOW *w_menu)
 
 void scr_aplst_fini(void)
 {
+	// Unblock mutex in case it was acquired within scr_aplst_loop. If mutex was not acquired
+	// by main thread, it returns EPERM, and we can ignore the error.
+	(void)pthread_mutex_unlock(&sr.mutex);
 	pthread_cancel(scan_thread);
 	pthread_join(scan_thread, NULL);
 	delwin(w_aplst);
