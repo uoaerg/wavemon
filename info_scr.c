@@ -720,6 +720,8 @@ int scr_info_loop(WINDOW *w_menu)
 
 void scr_info_fini(void)
 {
+	/* Unlock mutex in case it was taken when scr_info_loop got interrupted by a SIGWINCH. */
+	pthread_mutex_unlock(&linkstat_mutex);
 	sampling_stop();
 	last_update = 0;
 
