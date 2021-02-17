@@ -20,15 +20,15 @@ wavemon requires a Linux Kernel with wireless extensions enabled. If your Kernel
 In addition, minimally the following are required:
 * Netlink `libnl` at least version 3.2,
 * including the Generic Netlink support (`libnl-genl`),
-* ncurses development files (`libncursesw5-dev`),
+* ncurses development files (`libncursesw6`, `libtinfo6`, `libncurses-dev`),
 * the `pkg-config` package.
 
 On Debian/Ubuntu, this can be done using
 ```bash
-apt-get -y install pkg-config libncursesw5-dev libnl-3-dev libnl-genl-3-dev
+apt-get -y install pkg-config libncursesw6 libtinfo6 libncurses-dev libnl-3-dev libnl-genl-3-dev
 ```
 
-Please note the "w" in `libncursesw5-dev`, which stands for the _wide-character_ variant of ncurses.
+Please note the "w" in `libncursesw6`, which stands for the _wide-character_ variant of ncurses.
 This is required for [proper rendering on UTF-8 terminals](https://github.com/uoaerg/wavemon/issues/70).
 
 ## How to build
@@ -39,9 +39,9 @@ wavemon uses `autoconf`, so that in most cases you can simply run
 make
 sudo make install
 ```
-to build and install the package. Type 'make uninstall' if not happy.
+to build and install the package. Type `make uninstall` if not happy.
 
-To grant users access to restricted networking operations (scan operations), use instead
+To grant users access to _restricted networking operations_ (scanning), use instead
 ```bash
 sudo make install-suid-root
 ```
