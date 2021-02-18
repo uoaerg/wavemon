@@ -118,14 +118,15 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 	wmove(menu, 0, 0);
 	for (enum wavemon_screen cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
 		const char *p = screens[cur].key_name;
+		const int attrs = cur != active ? COLOR_PAIR(CP_CYAN)
+						: COLOR_PAIR(CP_CYAN_ON_BLUE) | A_BOLD;
 
 		if (*p) {
 			snprintf(fkey, sizeof(fkey), "F%d", cur + 1);
 			wattrset(menu, A_REVERSE | A_BOLD);
 			waddstr(menu, fkey);
 
-			wattrset(menu, cur != active ? COLOR_PAIR(CP_CYAN)
-						     : COLOR_PAIR(CP_CYAN_ON_BLUE) | A_BOLD);
+			wattrset(menu, attrs);
 
 			for (int i = 0; i < MAX_MENU_KEY; i++) {
 				if (*p == screens[cur].shortcut)	{
@@ -135,6 +136,7 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 				} else if (*p) {
 					waddch(menu, *p++);
 				} else {
+					wattroff(menu, attrs);
 					waddch(menu, ' ');
 				}
 			}
