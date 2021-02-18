@@ -23,7 +23,6 @@ static struct scan_result sr = {
 	.head          = NULL,
 	.channel_stats = NULL,
 	.msg[0]        = '\0',
-	.mutex         = PTHREAD_MUTEX_INITIALIZER,
 };
 static pthread_t scan_thread;
 static WINDOW *w_aplst;
@@ -217,12 +216,22 @@ done:
 
 void scr_aplst_init(void)
 {
+	static bool initialized = false;
+
 	w_aplst = newwin_title(0, WAV_HEIGHT, "Scan window", false);
 
 	/* Gathering scan data can take seconds. Inform user. */
 	mvwaddstr(w_aplst, 2, 1, "Waiting for scan data ...");
 	wrefresh(w_aplst);
 
+	if (!initialized) {
+		pthread_mutexattr_t attr;
+
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+		pthread_mutex_init(&sr.mutex, &attr);
+		initialized = true;
+	}
 	pthread_create(&scan_thread, NULL, do_scan, &sr);
 }
 
@@ -287,7 +296,8 @@ int scr_aplst_loop(WINDOW *w_menu)
 
 void scr_aplst_fini(void)
 {
-	/* Unlock mutex in case it was taken when scr_aplst_loop got interrupted by a SIGWINCH. */
+	/* Unlock mutex in case it was taken when scr_aplst_loop got interrupted by a SIGWINCH.
+	 * We are ignoring the error (EPERM) here if the main thread did not acquire the mutex. */
 	pthread_mutex_unlock(&sr.mutex);
 	pthread_cancel(scan_thread);
 	pthread_join(scan_thread, NULL);

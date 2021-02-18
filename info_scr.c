@@ -28,7 +28,7 @@ static time_t last_update;
 static struct iw_nl80211_linkstat *ls_tmp = NULL,
 				  *ls_cur = NULL,
 				  *ls_new = NULL;
-static pthread_mutex_t linkstat_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t linkstat_mutex;
 
 /** Sampling pthread - shared by info and histogram screen. */
 static void *sampling_loop(void *arg)
@@ -673,6 +673,7 @@ void scr_info_init(void)
 {
 	int line = 0;
 	bool ready = false;
+	static bool initialized = false;
 
 	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
 	line += WH_IFACE;
@@ -686,6 +687,15 @@ void scr_info_init(void)
 		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
 	else
 		w_net = newwin_title(line, WH_NET_MIN, "Network", false);
+
+	if (!initialized) {
+		pthread_mutexattr_t attr;
+
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+		pthread_mutex_init(&linkstat_mutex, &attr);
+		initialized = true;
+	}
 
 	sampling_init(false);
 
