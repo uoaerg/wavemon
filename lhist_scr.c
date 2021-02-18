@@ -201,7 +201,6 @@ static int hist_x(int xval)
 static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 {
 	double level, fraction;
-	chtype ch;
 
 	fraction = modf(yval, &level);
 
@@ -211,6 +210,25 @@ static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 		 * ncurses will fall back to standard ASCII chars anyway if they
 		 * are not available.
 		 */
+#ifdef HAVE_LIBNCURSESW
+		cchar_t * wch;
+
+		if (fraction < 0.2)
+			wch = WACS_S9;
+		else if (fraction < 0.4)
+			wch = WACS_S7;
+		else if (fraction < 0.6)
+			wch = WACS_HLINE;
+		else if (fraction < 0.8)
+			wch = WACS_S3;
+		else
+			wch = WACS_S1;
+
+		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
+		mvwadd_wch(w_lhist, hist_y(level), hist_x(xval), wch);
+#else
+		chtype ch;
+
 		if (fraction < 0.2)
 			ch = ACS_S9;
 		else if (fraction < 0.4)
@@ -224,6 +242,7 @@ static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 
 		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
 		mvwaddch(w_lhist, hist_y(level), hist_x(xval), ch);
+#endif
 	}
 }
 
