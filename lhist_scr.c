@@ -18,6 +18,11 @@
  */
 #include "iw_if.h"
 #include "iw_nl80211.h"
+#if defined(HAVE_LIBNCURSESW) && defined(HAVE_NCURSESW_CURSES_H)
+#include <ncursesw/curses.h>
+#else
+#include <ncurses.h>
+#endif
 
 /* Number of lines in the key window at the bottom */
 #define KEY_WIN_HEIGHT	3
