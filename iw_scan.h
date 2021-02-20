@@ -26,7 +26,7 @@
  */
 struct scan_entry {
 	struct ether_addr	ap_addr;
-	char			essid[IW_ESSID_MAX_SIZE + 2];
+	char			essid[MAX_ESSID_LEN + 2];
 	uint32_t		freq;
 	int			chan;
 	bool			has_key:1,
@@ -61,7 +61,7 @@ struct cnt {
  * struct scan_result - Structure to aggregate all collected scan data.
  * @head:	   begin of scan_entry list (may be NULL)
  * @msg:	   error message, if any
- * @max_essid_len: maximum ESSID-string length (for formatting)
+ * @max_essid_len: maximum ESSID-string length (up to %MAX_ESSID_LEN)
  * @channel_stats: array of channel statistics entries
  * @num.total:     number of entries in list starting at @head
  * @num.open:      number of open entries among @num.total

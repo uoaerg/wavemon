@@ -95,7 +95,7 @@ static void fmt_scan_entry(struct scan_entry *cur, char buf[], size_t buflen)
 
 static void display_aplist(WINDOW *w_aplst)
 {
-	char s[IW_ESSID_MAX_SIZE << 3];
+	char s[256];
 	const char *sort_type[] = {
 		[SO_CHAN]	= "Chan",
 		[SO_SIGNAL]	= "Sig",

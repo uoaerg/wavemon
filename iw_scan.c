@@ -1,8 +1,5 @@
 /*
- * Auxiliary declarations and functions imported from iwlib in order to
- * process and parse scan events. This code is copied with little change
- * from wireless tools 30. It remains here until the wext code will be
- * replaced by corresponding netlink calls.
+ * Auxiliary declarations and functions to process and parse scan events.
  */
 #include "iw_scan.h"
 #include <search.h>
@@ -36,7 +33,7 @@ static bool cmp_sig(const struct scan_entry *a, const struct scan_entry *b)
 /* Order by ESSID, organize entries with same ESSID by frequency and signal. */
 static bool cmp_essid(const struct scan_entry *a, const struct scan_entry *b)
 {
-	int res = strncmp(a->essid, b->essid, IW_ESSID_MAX_SIZE);
+	int res = strncmp(a->essid, b->essid, MAX_ESSID_LEN);
 
 	return res == 0 ? (a->freq == b->freq ? cmp_sig(a, b) : cmp_freq(a, b))
 			: res < 0;
@@ -262,7 +259,7 @@ static int scan_dump_handler(struct nl_msg *msg, void *arg)
 	} else if (str_is_ascii(new->essid)) {
 		sr->max_essid_len = clamp(strlen(new->essid),
 					  sr->max_essid_len,
-					  IW_ESSID_MAX_SIZE);
+					  MAX_ESSID_LEN);
 	}
 
 	if (new->freq > 45000)	/* 802.11ad 60GHz spectrum */

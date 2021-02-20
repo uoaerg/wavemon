@@ -28,12 +28,6 @@
 #include <net/ethernet.h>
 #include <sys/socket.h>
 #include <linux/if.h>
-#include <linux/wireless.h>
-
-/* Definitions that appeared in more recent versions of wireless.h */
-#ifndef IW_POWER_SAVING
-#define IW_POWER_SAVING	0x4000		/* version 20 -> 21 */
-#endif
 
 /* Definitions from linux/ieee80211.h (not necessarily part of distro headers) */
 #define WLAN_CAPABILITY_ESS		(1<<0)
@@ -109,6 +103,10 @@ struct iw_levelstat {
 	float	noise;		/* noise  level in dBm */
 	uint8_t	flags;		/* level validity      */
 };
+#ifndef IW_QUAL_LEVEL_INVALID /* Reuses existing WEXT constants. */
+#define IW_QUAL_LEVEL_INVALID 2
+#define IW_QUAL_NOISE_INVALID 4
+#endif
 #define IW_LSTAT_INIT { 0, 0, IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID }
 
 /*

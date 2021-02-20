@@ -15,9 +15,7 @@ Apart from debian/ubuntu packages (`apt-cache search wavemon`) and [slackbuild  
 
 ### Dependencies
 
-wavemon requires a Linux Kernel with wireless extensions enabled. If your Kernel setup uses `CONFIG_CFG80211`, make sure that the config option `CONFIG_CFG80211_WEXT` is set.
-
-In addition, minimally the following are required:
+Minimally the following are required:
 * Netlink `libnl` at least version 3.2,
 * including the Generic Netlink support (`libnl-genl`),
 * ncurses development files (`libncursesw6`, `libtinfo6`, `libncurses-dev`),
