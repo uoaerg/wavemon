@@ -31,6 +31,7 @@ m4_define([NCURSES_CHECK_CONFIG],
       CFLAGS="$ncurses_config_script_cflags $CFLAGS"
       AC_CHECK_LIB([$1], [addnwstr], [
                      AC_DEFINE([HAVE_LIBNCURSESW], 1)
+                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
                      LIBS="$ncurses_config_script_libs $LIBS "
                      ncurses_script_success=yes
                    ], [

@@ -3919,6 +3919,7 @@ if test "x$ac_cv_lib_ncursesw6_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
+                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
                      LIBS="$ncurses_config_script_libs $LIBS "
                      ncurses_script_success=yes
 
@@ -3981,6 +3982,7 @@ if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
+                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
                      LIBS="$ncurses_config_script_libs $LIBS "
                      ncurses_script_success=yes
 
@@ -4043,6 +4045,7 @@ if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
+                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
                      LIBS="$ncurses_config_script_libs $LIBS "
                      ncurses_script_success=yes
 
@@ -4105,6 +4108,7 @@ if test "x$ac_cv_lib_ncurses_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
+                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
                      LIBS="$ncurses_config_script_libs $LIBS "
                      ncurses_script_success=yes
 
