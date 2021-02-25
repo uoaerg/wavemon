@@ -254,8 +254,7 @@ static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 static void display_lhist(void)
 {
 	struct iw_levelstat iwl;
-	double snr_level, noise_level, sig_level;
-	enum colour_pair plot_colour;
+	double sig_level;
 	int x, y;
 
 	for (x = 1; x <= MAXXLEN; x++) {
@@ -267,35 +266,11 @@ static void display_lhist(void)
 		for (y = 1; y <= HIST_MAXYLEN; y++)
 			mvwaddch(w_lhist, hist_y(y), hist_x(x), (y % 5) ? ' ' : '-');
 
-		/*
-		 * SNR comes first, as it determines the background. If either
-		 * noise or signal is invalid, set level below minimum value to
-		 * indicate that no background is present.
-		 */
-		if (iwl.flags & (IW_QUAL_NOISE_INVALID | IW_QUAL_LEVEL_INVALID)) {
-			snr_level = 0;
-		} else {
-			snr_level = hist_level(iwl.signal - iwl.noise,
-					       conf.sig_min - conf.noise_max,
-					       conf.sig_max - conf.noise_min);
-
-			wattrset(w_lhist, COLOR_PAIR(CP_BLUE_ON_BLUE));
-			for (y = 1; y <= clamp(snr_level, 1, HIST_MAXYLEN); y++)
-				mvwaddch(w_lhist, hist_y(y), hist_x(x), ' ');
-		}
-
-		if (! (iwl.flags & IW_QUAL_NOISE_INVALID)) {
-			noise_level = hist_level(iwl.noise, conf.noise_min, conf.noise_max);
-			plot_colour = noise_level > snr_level ? CP_RED : CP_RED_ON_BLUE;
-			hist_plot(noise_level, x, plot_colour);
-
-		} else if (x == LEVEL_TAG_POS && ! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
+		if (x == LEVEL_TAG_POS && ! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
 			char	tmp[LEVEL_TAG_POS + 1];
 			int	len;
 			/*
 			 * Tag the horizontal grid lines with dBm levels.
-			 * This is only supported for signal levels, when the screen is not
-			 * shared by several graphs (each having a different scale).
 			 */
 			wattrset(w_lhist, COLOR_PAIR(CP_GREEN));
 			for (y = 1; y <= HIST_MAXYLEN; y++) {
@@ -309,9 +284,8 @@ static void display_lhist(void)
 		}
 
 		if (! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
-			sig_level   = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
-			plot_colour = sig_level > snr_level ? CP_GREEN : CP_GREEN_ON_BLUE;
-			hist_plot(sig_level, x, plot_colour);
+			sig_level = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
+			hist_plot(sig_level, x, CP_GREEN);
 		}
 	}
 
