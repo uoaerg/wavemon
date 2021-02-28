@@ -205,48 +205,14 @@ static int hist_x(int xval)
 /* plot single values, without clamping to min/max */
 static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 {
-	double level, fraction;
-
-	fraction = modf(yval, &level);
+       int level = round(yval);
 
 	if (in_range(level, 1, HIST_MAXYLEN)) {
-		/*
-		 * The 5 different scanline chars provide a pretty good accuracy.
-		 * ncurses will fall back to standard ASCII chars anyway if they
-		 * are not available.
-		 */
+		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
 #ifdef HAVE_LIBNCURSESW
-		cchar_t * wch;
-
-		if (fraction < 0.2)
-			wch = WACS_S9;
-		else if (fraction < 0.4)
-			wch = WACS_S7;
-		else if (fraction < 0.6)
-			wch = WACS_HLINE;
-		else if (fraction < 0.8)
-			wch = WACS_S3;
-		else
-			wch = WACS_S1;
-
-		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
-		mvwadd_wch(w_lhist, hist_y(level), hist_x(xval), wch);
+		mvwadd_wch(w_lhist, hist_y(level), hist_x(xval), WACS_HLINE);
 #else
-		chtype ch;
-
-		if (fraction < 0.2)
-			ch = ACS_S9;
-		else if (fraction < 0.4)
-			ch = ACS_S7;
-		else if (fraction < 0.6)
-			ch = ACS_HLINE;
-		else if (fraction < 0.8)
-			ch = ACS_S3;
-		else
-			ch = ACS_S1;
-
-		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
-		mvwaddch(w_lhist, hist_y(level), hist_x(xval), ch);
+		mvwaddch(w_lhist, hist_y(level), hist_x(xval), ACS_HLINE);
 #endif
 	}
 }
