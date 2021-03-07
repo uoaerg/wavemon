@@ -99,15 +99,9 @@ extern void if_getinf(const char *ifname, struct if_info *info);
  *	 Structs to communicate WiFi statistics
  */
 struct iw_levelstat {
-	float	signal;		/* signal level in dBm */
-	float	noise;		/* noise  level in dBm */
-	uint8_t	flags;		/* level validity      */
+	float	signal;		/* Signal level in dBm. */
+	bool	valid;		/* Whether a valid @signal was registered. */
 };
-#ifndef IW_QUAL_LEVEL_INVALID /* Reuses existing WEXT constants. */
-#define IW_QUAL_LEVEL_INVALID 2
-#define IW_QUAL_NOISE_INVALID 4
-#endif
-#define IW_LSTAT_INIT { 0, 0, IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID }
 
 /*
  * 	Periodic sampling of wireless statistics

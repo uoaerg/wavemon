@@ -18,11 +18,6 @@
  */
 #include "iw_if.h"
 #include "iw_nl80211.h"
-#if defined(HAVE_LIBNCURSESW) && defined(HAVE_NCURSESW_CURSES_H)
-#include <ncursesw/curses.h>
-#else
-#include <ncurses.h>
-#endif
 
 /* Number of lines in the key window at the bottom */
 #define KEY_WIN_HEIGHT	3
@@ -53,7 +48,7 @@ static struct iw_extrema {
 	bool	initialised;
 	float	min;
 	float	max;
-} e_signal, e_noise, e_snr;
+} e_signal;
 
 static void track_extrema(const float new_sample, struct iw_extrema *ie)
 {
@@ -113,7 +108,7 @@ static void iw_cache_insert(const struct iw_levelstat new)
 
 static struct iw_levelstat iw_cache_get(const uint32_t index)
 {
-	struct iw_levelstat zero = IW_LSTAT_INIT;
+	struct iw_levelstat zero = {.signal = 0, .valid = false};
 
 	if (index > IW_STACKSIZE || index > count)
 		return zero;
@@ -122,7 +117,7 @@ static struct iw_levelstat iw_cache_get(const uint32_t index)
 
 void iw_cache_update(struct iw_nl80211_linkstat *ls)
 {
-	static struct iw_levelstat prev, avg = IW_LSTAT_INIT;
+	static struct iw_levelstat prev, avg = {.signal = 0, .valid = false};
 	static int slot;
 	int sig_level = ls->signal;
 
@@ -144,19 +139,11 @@ void iw_cache_update(struct iw_nl80211_linkstat *ls)
 		sig_level = ls->bss_signal;
 
 	if (sig_level == 0) {
-		avg.flags  |= IW_QUAL_LEVEL_INVALID;
+		avg.valid = false;
 	} else {
-		avg.flags  &= ~IW_QUAL_LEVEL_INVALID;
+		avg.valid = true;
 		avg.signal += (float)sig_level / conf.slotsize;
 		track_extrema(sig_level, &e_signal);
-	}
-
-	if (iw_nl80211_have_survey_data(ls)) {
-		avg.flags  &= ~IW_QUAL_NOISE_INVALID;
-		avg.noise += (float)ls->survey.noise / conf.slotsize;
-		track_extrema(ls->survey.noise, &e_noise);
-		if (! (avg.flags & IW_QUAL_LEVEL_INVALID))
-			track_extrema(sig_level - ls->survey.noise, &e_snr);
 	}
 
 	if (++slot >= conf.slotsize) {
@@ -172,8 +159,8 @@ void iw_cache_update(struct iw_nl80211_linkstat *ls)
 			threshold_action(conf.hthreshold);
 
 		prev = avg;
-		avg.signal = avg.noise = slot = 0;
-		avg.flags  = IW_QUAL_LEVEL_INVALID | IW_QUAL_NOISE_INVALID;
+		avg.signal = slot = 0;
+		avg.valid  = false;
 	}
 }
 
@@ -205,7 +192,7 @@ static int hist_x(int xval)
 /* plot single values, without clamping to min/max */
 static void hist_plot(double yval, int xval, enum colour_pair plot_colour)
 {
-       int level = round(yval);
+	int level = round(yval);
 
 	if (in_range(level, 1, HIST_MAXYLEN)) {
 		wattrset(w_lhist, COLOR_PAIR(plot_colour) | A_BOLD);
@@ -232,7 +219,7 @@ static void display_lhist(void)
 		for (y = 1; y <= HIST_MAXYLEN; y++)
 			mvwaddch(w_lhist, hist_y(y), hist_x(x), (y % 5) ? ' ' : '-');
 
-		if (x == LEVEL_TAG_POS && ! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
+		if (x == LEVEL_TAG_POS && iwl.valid) {
 			char	tmp[LEVEL_TAG_POS + 1];
 			int	len;
 			/*
@@ -249,7 +236,7 @@ static void display_lhist(void)
 			}
 		}
 
-		if (! (iwl.flags & IW_QUAL_LEVEL_INVALID)) {
+		if (iwl.valid) {
 			sig_level = hist_level(iwl.signal, conf.sig_min, conf.sig_max);
 			hist_plot(sig_level, x, CP_GREEN);
 		}
@@ -260,7 +247,7 @@ static void display_lhist(void)
 
 static void display_key(WINDOW *w_key)
 {
-	char buf[128];
+	char buf[280];
 	/* Clear the (one-line) screen) */
 	wmove(w_key, 1, 1);
 	wclrtoborder(w_key);
@@ -271,27 +258,8 @@ static void display_key(WINDOW *w_key)
 	waddch(w_key, ACS_HLINE);
 	wattrset(w_key, COLOR_PAIR(CP_STANDARD));
 
-	if (e_noise.initialised && e_snr.initialised) {
-		snprintf(buf, sizeof(buf), "] sig lvl (%s)  [", fmt_extrema(&e_signal, "dBm"));
-		waddstr(w_key, buf);
-
-		wattrset(w_key, COLOR_PAIR(CP_RED));
-		waddch(w_key, ACS_HLINE);
-		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-
-		snprintf(buf, sizeof(buf), "] ns lvl (%s)  [", fmt_extrema(&e_noise, "dBm"));
-		waddstr(w_key, buf);
-
-		wattrset(w_key, COLOR_PAIR(CP_BLUE_ON_BLUE));
-		waddch(w_key, ' ');
-
-		wattrset(w_key, COLOR_PAIR(CP_STANDARD));
-		snprintf(buf, sizeof(buf), "] S-N ratio (%s)", fmt_extrema(&e_snr, "dB"));
-		waddstr(w_key, buf);
-	} else {
-		snprintf(buf, sizeof(buf), "] signal level (%s)", fmt_extrema(&e_signal, "dBm"));
-		waddstr(w_key, buf);
-	}
+	snprintf(buf, sizeof(buf), "] signal level (%s)", fmt_extrema(&e_signal, "dBm"));
+	waddstr(w_key, buf);
 
 	wrefresh(w_key);
 }
@@ -304,8 +272,6 @@ void scr_lhist_init(void)
 	if (last_if_idx != conf.if_idx) {
 		count = 0;
 		e_signal.initialised = false;
-		e_noise.initialised  = false;
-		e_snr.initialised    = false;
 		last_if_idx = conf.if_idx;
 	}
 	sampling_init(true);

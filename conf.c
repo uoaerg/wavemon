@@ -74,8 +74,6 @@ struct wavemon_conf conf = {
 
 	.sig_min		= -100,
 	.sig_max		= -10,
-	.noise_min		= -120,
-	.noise_max		= -40,
 
 	.scan_sort_order	= SO_CHAN_SIG,
 	.scan_sort_asc		= false,
@@ -490,30 +488,6 @@ static void init_conf_items(void)
 	item->v.i	= &conf.sig_max;
 	item->min	= -40;
 	item->max	= -10;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Minimum noise level");
-	item->cfname	= strdup("min_noise_level");
-	item->type	= t_int;
-	item->v.i	= &conf.noise_min;
-	item->min	= -120;
-	item->max	= -70;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Maximum noise level");
-	item->cfname	= strdup("max_noise_level");
-	item->type	= t_int;
-	item->v.i	= &conf.noise_max;
-	item->min	= -69;
-	item->max	= -40;
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
