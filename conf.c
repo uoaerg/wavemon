@@ -26,13 +26,6 @@ static char **if_names = NULL;	/* Array of WiFi interface names */
 int conf_items;			/* Index into array storing menu items */
 
 static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
-static char *action_items[] = {
-	[TA_DISABLED]	= "Disabled",
-	[TA_BEEP]	= "Beep",
-	[TA_FLASH]	= "Flash",
-	[TA_BEEP_FLASH]	= "Beep+Flash",
-	NULL
-};
 
 static char *sort_order[] = {
 	[SO_CHAN]	= "Channel",
@@ -79,10 +72,6 @@ struct wavemon_conf conf = {
 	.scan_sort_asc		= false,
 	.scan_hidden_essids	= true,
 	.scan_filter_band	= SCAN_FILTER_BAND_BOTH,
-	.lthreshold_action	= TA_DISABLED,
-	.lthreshold		= -80,
-	.hthreshold_action	= TA_DISABLED,
-	.hthreshold		= -10,
 
 	.startup_scr		= 0,
 };
@@ -491,47 +480,6 @@ static void init_conf_items(void)
 	item->inc	= 1;
 	item->unit	= strdup("dBm");
 	item->dep	= &conf.override_bounds;
-	ll_push(conf_items, "*", item);
-
-	/* thresholds */
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Low threshold action");
-	item->cfname	= strdup("lo_threshold_action");
-	item->type	= t_list;
-	item->v.i	= &conf.lthreshold_action;
-	item->list	= action_items;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Low threshold");
-	item->cfname	= strdup("lo_threshold");
-	item->type	= t_int;
-	item->v.i	= &conf.lthreshold;
-	item->min	= -120;
-	item->max	= -60;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.lthreshold_action;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("High threshold action");
-	item->cfname	= strdup("hi_threshold_action");
-	item->type	= t_list;
-	item->v.i	= &conf.hthreshold_action;
-	item->list	= action_items;
-	ll_push(conf_items, "*", item);
-
-	item = calloc(1, sizeof(*item));
-	item->name	= strdup("High threshold");
-	item->cfname	= strdup("hi_threshold");
-	item->type	= t_int;
-	item->v.i	= &conf.hthreshold;
-	item->min	= -59;
-	item->max	= 120;
-	item->inc	= 1;
-	item->unit	= strdup("dBm");
-	item->dep	= &conf.hthreshold_action;
 	ll_push(conf_items, "*", item);
 
 	/* start-up items */

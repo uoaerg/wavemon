@@ -117,7 +117,7 @@ static struct iw_levelstat iw_cache_get(const uint32_t index)
 
 void iw_cache_update(struct iw_nl80211_linkstat *ls)
 {
-	static struct iw_levelstat prev, avg = {.signal = 0, .valid = false};
+	static struct iw_levelstat avg = {.signal = 0, .valid = false};
 	static int slot;
 	int sig_level = ls->signal;
 
@@ -149,16 +149,6 @@ void iw_cache_update(struct iw_nl80211_linkstat *ls)
 	if (++slot >= conf.slotsize) {
 		iw_cache_insert(avg);
 
-		if (conf.lthreshold_action &&
-		    prev.signal < conf.lthreshold &&
-		    avg.signal >= conf.lthreshold)
-			threshold_action(conf.lthreshold);
-		else if (conf.hthreshold_action &&
-			 prev.signal > conf.hthreshold &&
-			 avg.signal <= conf.hthreshold)
-			threshold_action(conf.hthreshold);
-
-		prev = avg;
 		avg.signal = slot = 0;
 		avg.valid  = false;
 	}
