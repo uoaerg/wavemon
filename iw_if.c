@@ -18,6 +18,8 @@
  */
 #include "iw_if.h"
 #include "iw_nl80211.h"
+#include <netdb.h>
+#include <ifaddrs.h>
 
 /*
  * Obtain network device information
@@ -95,14 +97,52 @@ void if_set_down_on_exit(void)
 /* Interface information */
 void if_getinf(const char *ifname, struct if_info *info)
 {
+	struct ifaddrs *iface, *head;
 	struct ifreq ifr;
-	int skfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
+	int skfd, rc;
 
 	memset(&ifr, 0, sizeof(struct ifreq));
 	memset(info, 0, sizeof(struct if_info));
+
+	if (getifaddrs(&head) < 0)
+		err_sys("%s: failed to query interface addresses", __func__);
+
+	for (iface = head; iface != NULL; iface = iface->ifa_next) {
+		const struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)iface->ifa_addr;
+		char ip_string[INET6_ADDRSTRLEN+1];
+
+		if (iface->ifa_addr == NULL || strcmp(iface->ifa_name, ifname))
+			continue;
+
+		if (iface->ifa_addr->sa_family == AF_INET) {
+			rc = getnameinfo(iface->ifa_addr, sizeof(struct sockaddr_in),
+					 ip_string, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+			if (rc != 0)
+				snprintf(info->v4_addr, sizeof(info->v4_addr)-1,
+					 "(error: %s)", gai_strerror(rc));
+			else
+				snprintf(info->v4_addr, sizeof(info->v4_addr)-1, "%s/%u",
+					 ip_string, prefix_len(iface->ifa_netmask));
+		} else if (iface->ifa_addr->sa_family == AF_INET6 &&
+			   !IN6_IS_ADDR_LINKLOCAL(sin6->sin6_addr.s6_addr) &&
+			   !IN6_IS_ADDR_SITELOCAL(sin6->sin6_addr.s6_addr) &&
+			   !IN6_IS_ADDR_UNSPECIFIED(sin6->sin6_addr.s6_addr)) {
+			rc = getnameinfo(iface->ifa_addr, sizeof(struct sockaddr_in6),
+					 ip_string, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+			if (rc != 0)
+				snprintf(info->v6_addr, sizeof(info->v6_addr)-1,
+					 "(error: %s)", gai_strerror(rc));
+			else
+				snprintf(info->v6_addr, sizeof(info->v6_addr)-1, "%s/%u",
+					 ip_string, prefix_len(iface->ifa_netmask));
+		}
+		info->flags = iface->ifa_flags;
+	}
+	freeifaddrs(head);
+
+	skfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (skfd < 0)
+		err_sys("%s: can not open socket", __func__);
 
 	info->flags = if_get_flags(skfd, ifname);
 
@@ -113,15 +153,8 @@ void if_getinf(const char *ifname, struct if_info *info)
 	if (ioctl(skfd, SIOCGIFTXQLEN, &ifr) >= 0)
 		info->txqlen = ifr.ifr_qlen;
 
-	/* Copy the 6 byte Ethernet address and the 4 byte struct in_addrs */
 	if (ioctl(skfd, SIOCGIFHWADDR, &ifr) >= 0)
 		memcpy(&info->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
-	if (ioctl(skfd, SIOCGIFADDR, &ifr) >= 0)
-		memcpy(&info->addr, &ifr.ifr_addr.sa_data[2], 4);
-	if (ioctl(skfd, SIOCGIFNETMASK, &ifr) >= 0)
-		memcpy(&info->netmask, &ifr.ifr_netmask.sa_data[2], 4);
-	if (ioctl(skfd, SIOCGIFBRDADDR, &ifr) >= 0)
-		memcpy(&info->bcast, &ifr.ifr_broadaddr.sa_data[2], 4);
 	close(skfd);
 }
 

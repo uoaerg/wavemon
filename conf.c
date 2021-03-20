@@ -18,7 +18,6 @@
  */
 #include "iw_if.h"
 #include <pwd.h>
-#include <sys/types.h>
 #include <netlink/version.h>
 
 /* GLOBALS */

@@ -92,9 +92,15 @@ uint8_t bit_count(uint32_t mask)
 }
 
 /* netmask = contiguous 1's followed by contiguous 0's */
-uint8_t prefix_len(const struct in_addr *netmask)
+uint8_t prefix_len(const struct sockaddr *netmask)
 {
-	return bit_count(netmask->s_addr);
+	uint8_t bs = 0;
+
+	if (netmask->sa_family == AF_INET)
+		return bit_count(((const struct sockaddr_in *)netmask)->sin_addr.s_addr);
+	for (int i = 0; i < 16; i++)
+		bs += bit_count(((const struct sockaddr_in6 *)netmask)->sin6_addr.s6_addr[i]);
+	return bs;
 }
 
 /* Pretty-print @sec into a string of up to 6 characters. */

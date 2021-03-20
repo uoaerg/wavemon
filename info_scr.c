@@ -615,35 +615,35 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 			waddstr_b(w_net, tmp);
 
 		}
+
+		/* 802.11 MTU may be greater than Ethernet MTU (1500) */
+		if (info->mtu && info->mtu != ETH_DATA_LEN) {
+			waddstr(w_net, ",  mtu: ");
+			sprintf(tmp, "%u", info->mtu);
+			waddstr_b(w_net, tmp);
+		}
+
 		wmove(w_net, 3, 1);
 		wclrtoborder(w_net);
 	} else {
 		waddstr(w_net, ", ");
 	}
-	waddstr(w_net, "ip: ");
 
-	if (!info->addr.s_addr) {
-		waddstr(w_net, "n/a");
-	} else {
-		sprintf(tmp, "%s/%u", inet_ntoa(info->addr),
-				      prefix_len(&info->netmask));
-		waddstr_b(w_net, tmp);
-
-		/* only show bcast address if not set to the obvious default */
-		if (info->bcast.s_addr !=
-		    (info->addr.s_addr | ~info->netmask.s_addr)) {
-			waddstr(w_net, ",  bcast: ");
-			waddstr_b(w_net, inet_ntoa(info->bcast));
+	if (info->v4_addr[0]) {
+		waddstr(w_net, "ip4: ");
+		waddstr_b(w_net, info->v4_addr);
+		if (info->v6_addr[0]) {
+			waddstr(w_net, ", ip6: ");
+			waddstr_b(w_net, info->v6_addr);
 		}
+	} else if (info->v6_addr[0]) {
+		waddstr(w_net, "ip6: ");
+		waddstr_b(w_net, info->v6_addr);
+	} else {
+		waddstr(w_net, "ip: ");
+		waddstr_b(w_net, "n/a");
 	}
 	wclrtoborder(w_net);
-
-	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
-	if (info->mtu && info->mtu != ETH_DATA_LEN) {
-		waddstr(w_net, ",  mtu: ");
-		sprintf(tmp, "%u", info->mtu);
-		waddstr_b(w_net, tmp);
-	}
 
 	wrefresh(w_net);
 }

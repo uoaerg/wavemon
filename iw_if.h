@@ -26,6 +26,7 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <net/ethernet.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/if.h>
 
@@ -72,20 +73,18 @@ extern void free_interface_list(struct interface_info *head);
 
 /**
  * struct if_info  -  wireless interface network information
- * @hwaddr:		MAC address
- * @addr:		IPv4 interface address
- * @netmask:		IPv4 interface netmask
- * @bcast:		IPv4 interface broadcast address
- * @mtu:		interface MTU
- * @txqlen:		tx queue length
- * @flags:		interface flags
+ * @hwaddr:	MAC address
+ * @v4_addr:	IPv4 address in CIDR format
+ * @v6_addr:	IPv6 address in CIDR format
+ * @mtu:	Interface MTU
+ * @txqlen:	TX queue length
+ * @flags:	Interface flags
  * See also netdevice(7)
  */
 struct if_info {
 	struct ether_addr	hwaddr;
-	struct in_addr		addr,
-				netmask,
-				bcast;
+	char			v4_addr[64],
+				v6_addr[64];
 	uint16_t		mtu;
 	uint16_t		txqlen;
 	uint16_t		flags;
@@ -135,7 +134,7 @@ extern char *ether_addr(const struct ether_addr *ea);
 extern char *ether_lookup(const struct ether_addr *ea);
 extern char *mac_addr(const struct sockaddr *sa);
 extern uint8_t bit_count(uint32_t mask);
-extern uint8_t prefix_len(const struct in_addr *netmask);
+extern uint8_t prefix_len(const struct sockaddr *netmask);
 extern const char *pretty_time(const unsigned sec);
 extern const char *pretty_time_ms(const unsigned msec);
 extern double dbm2mw(const double in);
