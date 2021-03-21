@@ -50,18 +50,16 @@
  * screen size, in particular allowing the use on the console.
  */
 enum info_screen_geometry {
-	WH_IFACE    = 2,	/* 'Interface' area at the top */
-	WH_LEVEL    = 9,	/* Level meters */
-	WH_STATS    = 3,	/* WiFi statistics area */
-	WH_INFO     = 8,	/* WiFi information area */
-	WH_NET_MIN  = 3,	/* Network interface information area */
-	WH_NET_MAX  = 5,	/* Network interface information area */
-	WH_MENU	    = 1		/* Menu bar at the bottom */
+	WH_IFACE = 2,	/* 'Interface' area at the top */
+	WH_LEVEL = 9,	/* Level meters */
+	WH_STATS = 3,	/* WiFi statistics area */
+	WH_INFO  = 8,	/* WiFi information area */
+	WH_NET   = 5,	/* Network interface information area */
+	WH_MENU  = 1	/* Menu bar at the bottom */
 };
 #define WH_INFO_SCR_BASE	(WH_IFACE + WH_LEVEL + WH_STATS + WH_MENU)
-#define WH_INFO_SCR_MIN		(WH_INFO_SCR_BASE + WH_INFO + WH_NET_MIN)
 
-#define MIN_SCREEN_LINES	WH_INFO_SCR_MIN
+#define MIN_SCREEN_LINES	(WH_INFO_SCR_BASE + WH_INFO + WH_NET)
 #define MIN_SCREEN_COLS		80
 /*
  * Screen layout constants.

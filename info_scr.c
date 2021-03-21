@@ -557,78 +557,76 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 
 	wmove(w_net, 1, 1);
 	wclrtoborder(w_net);
-	if (getmaxy(w_net) == WH_NET_MAX) {
-		waddstr(w_net, conf_ifname());
-		sprintf(tmp, " (#%u, ", ifindex);
-		waddstr(w_net, tmp);
 
-		if (info->flags & IFF_UP) {
-			waddstr(w_net, "UP");
+	waddstr(w_net, conf_ifname());
+	sprintf(tmp, " (#%u, ", ifindex);
+	waddstr(w_net, tmp);
 
-			if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
-				waddstr(w_net, " RUNNING");
+	if (info->flags & IFF_UP) {
+		waddstr(w_net, "UP");
+
+		if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
+			waddstr(w_net, " RUNNING");
 #ifdef IFF_LOWER_UP	/* Linux 2.6.17 */
-			if (info->flags & IFF_LOWER_UP)		/* Driver signals L1 up		*/
-				waddstr(w_net, " LOWER_UP");
+		if (info->flags & IFF_LOWER_UP)		/* Driver signals L1 up		*/
+			waddstr(w_net, " LOWER_UP");
 #endif
 #ifdef IFF_DORMANT	/* Linux 2.6.17 */
-			if (info->flags & IFF_DORMANT)		/* Driver signals dormant	*/
-				waddstr(w_net, " DORMANT");
+		if (info->flags & IFF_DORMANT)		/* Driver signals dormant	*/
+			waddstr(w_net, " DORMANT");
 #endif
-			if (info->flags & IFF_MASTER)		/* Master of a load balancer 	*/
-				waddstr(w_net, " MASTER");
-			if (info->flags & IFF_SLAVE)		/* Slave of a load balancer 	*/
-				waddstr(w_net, " SLAVE");
-			if (info->flags & IFF_POINTOPOINT)	/* Is a point-to-point link	*/
-				waddstr(w_net, " POINTOPOINT");
-			if (info->flags & IFF_DYNAMIC)		/* Address is volatile		*/
-				waddstr(w_net, " DYNAMIC");
-			if (info->flags & IFF_BROADCAST)		/* Valid broadcast address set	*/
-				waddstr(w_net, " BROADCAST");
-			if (info->flags & IFF_MULTICAST)		/* Supports multicast		*/
-				waddstr(w_net, " MULTICAST");
-			if (info->flags & IFF_ALLMULTI)		/* Receive all mcast  packets	*/
-				waddstr(w_net, " ALLMULTI");
-			if (info->flags & IFF_NOARP)		/* No ARP protocol		*/
-				waddstr(w_net, " NOARP");
-			if (info->flags & IFF_NOTRAILERS)	/* Avoid use of trailers	*/
-				waddstr(w_net, " NOTRAILERS");
-			if (info->flags & IFF_PROMISC)		/* Is in promiscuous mode	*/
-				waddstr(w_net, " PROMISC");
-			if (info->flags & IFF_DEBUG)		/* Internal debugging flag	*/
-				waddstr(w_net, " DEBUG");
-		} else {
-			wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
-		}
-		waddstr_b(w_net, ")");
-
-		wmove(w_net, 2, 1);
-		wclrtoborder(w_net);
+		if (info->flags & IFF_MASTER)		/* Master of a load balancer 	*/
+			waddstr(w_net, " MASTER");
+		if (info->flags & IFF_SLAVE)		/* Slave of a load balancer 	*/
+			waddstr(w_net, " SLAVE");
+		if (info->flags & IFF_POINTOPOINT)	/* Is a point-to-point link	*/
+			waddstr(w_net, " POINTOPOINT");
+		if (info->flags & IFF_DYNAMIC)		/* Address is volatile		*/
+			waddstr(w_net, " DYNAMIC");
+		if (info->flags & IFF_BROADCAST)		/* Valid broadcast address set	*/
+			waddstr(w_net, " BROADCAST");
+		if (info->flags & IFF_MULTICAST)		/* Supports multicast		*/
+			waddstr(w_net, " MULTICAST");
+		if (info->flags & IFF_ALLMULTI)		/* Receive all mcast  packets	*/
+			waddstr(w_net, " ALLMULTI");
+		if (info->flags & IFF_NOARP)		/* No ARP protocol		*/
+			waddstr(w_net, " NOARP");
+		if (info->flags & IFF_NOTRAILERS)	/* Avoid use of trailers	*/
+			waddstr(w_net, " NOTRAILERS");
+		if (info->flags & IFF_PROMISC)		/* Is in promiscuous mode	*/
+			waddstr(w_net, " PROMISC");
+		if (info->flags & IFF_DEBUG)		/* Internal debugging flag	*/
+			waddstr(w_net, " DEBUG");
+	} else {
+		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
 	}
+	waddstr_b(w_net, ")");
+
+	wmove(w_net, 2, 1);
+	wclrtoborder(w_net);
+
+	/* Layer 2 information */
 	waddstr(w_net, "mac: ");
 	waddstr_b(w_net, ether_lookup(&info->hwaddr));
 
-	if (getmaxy(w_net) == WH_NET_MAX) {
-		if (info->flags & IFF_UP) {
-			waddstr(w_net, ", qlen: ");
-			sprintf(tmp, "%u", info->txqlen);
-			waddstr_b(w_net, tmp);
+	if (info->flags & IFF_UP) {
+		waddstr(w_net, ", qlen: ");
+		sprintf(tmp, "%u", info->txqlen);
+		waddstr_b(w_net, tmp);
 
-		}
-
-		/* 802.11 MTU may be greater than Ethernet MTU (1500) */
-		if (info->mtu && info->mtu != ETH_DATA_LEN) {
-			waddstr(w_net, ",  mtu: ");
-			sprintf(tmp, "%u", info->mtu);
-			waddstr_b(w_net, tmp);
-		}
-
-		wmove(w_net, 3, 1);
-		wclrtoborder(w_net);
-	} else {
-		waddstr(w_net, ", ");
 	}
 
+	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
+	if (info->mtu && info->mtu != ETH_DATA_LEN) {
+		waddstr(w_net, ",  mtu: ");
+		sprintf(tmp, "%u", info->mtu);
+		waddstr_b(w_net, tmp);
+	}
+
+	wmove(w_net, 3, 1);
+	wclrtoborder(w_net);
+
+	/* Layer 3 information */
 	if (info->v4_addr[0]) {
 		waddstr(w_net, "ip4: ");
 		waddstr_b(w_net, info->v4_addr);
@@ -683,10 +681,7 @@ void scr_info_init(void)
 	line += WH_STATS;
 	w_info	 = newwin_title(line, WH_INFO, "Info", true);
 	line += WH_INFO;
-	if (LINES >= WH_INFO_SCR_MIN + (WH_NET_MAX - WH_NET_MIN))
-		w_net = newwin_title(line, WH_NET_MAX, "Network", false);
-	else
-		w_net = newwin_title(line, WH_NET_MIN, "Network", false);
+	w_net = newwin_title(line, WH_NET, "Network", false);
 
 	if (!initialized) {
 		pthread_mutexattr_t attr;
