@@ -54,7 +54,7 @@ enum info_screen_geometry {
 	WH_LEVEL = 9,	/* Level meters */
 	WH_STATS = 3,	/* WiFi statistics area */
 	WH_INFO  = 8,	/* WiFi information area */
-	WH_NET   = 5,	/* Network interface information area */
+	WH_NET   = 6,	/* Network interface information area */
 	WH_MENU  = 1	/* Menu bar at the bottom */
 };
 #define WH_INFO_SCR_BASE	(WH_IFACE + WH_LEVEL + WH_STATS + WH_MENU)

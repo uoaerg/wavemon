@@ -613,7 +613,6 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 		waddstr(w_net, ", qlen: ");
 		sprintf(tmp, "%u", info->txqlen);
 		waddstr_b(w_net, tmp);
-
 	}
 
 	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
@@ -623,26 +622,18 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 		waddstr_b(w_net, tmp);
 	}
 
-	wmove(w_net, 3, 1);
 	wclrtoborder(w_net);
+	wmove(w_net, 3, 1);
 
 	/* Layer 3 information */
-	if (info->v4_addr[0]) {
-		waddstr(w_net, "ip4: ");
-		waddstr_b(w_net, info->v4_addr);
-		if (info->v6_addr[0]) {
-			waddstr(w_net, ", ip6: ");
-			waddstr_b(w_net, info->v6_addr);
-		}
-	} else if (info->v6_addr[0]) {
-		waddstr(w_net, "ip6: ");
-		waddstr_b(w_net, info->v6_addr);
-	} else {
-		waddstr(w_net, "ip: ");
-		waddstr_b(w_net, "n/a");
-	}
-	wclrtoborder(w_net);
+	waddstr(w_net, "ip4: ");
+	waddstr_b(w_net, *info->v4_addr ? info->v4_addr : "n/a");
 
+	wmove(w_net, 4, 1);
+	waddstr(w_net, "ip6: ");
+	waddstr_b(w_net, *info->v6_addr ? info->v6_addr : "n/a");
+
+	wclrtoborder(w_net);
 	wrefresh(w_net);
 }
 
