@@ -374,12 +374,12 @@ static inline char *int_counts(uint32_t count)
 {
 	static char result[0x10];
 
-	if (count < 1000)
+	if (count < 1e3)
 		sprintf(result, "%u", count);
-	else if (count < 1000000)
-		sprintf(result, "%uk", count/1000);
+	else if (count < 1e9)
+		sprintf(result, "%.0fk", count/1e3);
 	else
-		sprintf(result, "%.lg", (double)count);
+		sprintf(result, "%.lG", (double)count);
 
 	return result;
 }

@@ -607,9 +607,17 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 
 	/* Layer 2 information */
 	waddstr(w_net, "mac: ");
-	waddstr_b(w_net, ether_lookup(&info->hwaddr));
+	if (ether_addr_is_zero(&info->hwaddr)) {
+		waddstr_b(w_net, "n/a");
+	} else {
+		waddstr_b(w_net, ether_lookup(&info->hwaddr));
+	}
 
 	if (info->flags & IFF_UP) {
+		if (*info->qdisc) {
+			waddstr(w_net, ", qdisc: ");
+			waddstr_b(w_net, info->qdisc);
+		}
 		waddstr(w_net, ", qlen: ");
 		sprintf(tmp, "%u", info->txqlen);
 		waddstr_b(w_net, tmp);
@@ -627,11 +635,41 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 
 	/* Layer 3 information */
 	waddstr(w_net, "ip4: ");
-	waddstr_b(w_net, *info->v4_addr ? info->v4_addr : "n/a");
+	if (!*info->v4.addr) {
+		waddstr_b(w_net, "n/a");
+	} else {
+		waddstr_b(w_net, info->v4.addr);
+		if (info->v4.count > 1) {
+			sprintf(tmp, " (+%d)", info->v4.count-1);
+			waddstr(w_net, tmp);
+		}
+		if (info->v4.valid_lft && info->v4.valid_lft >= info->v4.preferred_lft) {
+			waddstr(w_net, ", valid: ");
+			waddstr_b(w_net, lft2str(info->v4.valid_lft));
+		} else if (info->v4.preferred_lft) {
+			waddstr(w_net, ", preferred: ");
+			waddstr_b(w_net, lft2str(info->v4.preferred_lft));
+		}
+	}
 
 	wmove(w_net, 4, 1);
 	waddstr(w_net, "ip6: ");
-	waddstr_b(w_net, *info->v6_addr ? info->v6_addr : "n/a");
+	if (!*info->v6.addr) {
+		waddstr_b(w_net, "n/a");
+	} else {
+		waddstr_b(w_net, info->v6.addr);
+		if (info->v6.count > 1) {
+			sprintf(tmp, " (+%d)", info->v6.count-1);
+			waddstr(w_net, tmp);
+		}
+		if (info->v6.valid_lft && info->v6.valid_lft >= info->v6.preferred_lft) {
+			waddstr(w_net, ", valid: ");
+			waddstr_b(w_net, lft2str(info->v6.valid_lft));
+		} else if (info->v6.preferred_lft) {
+			waddstr(w_net, ", preferred: ");
+			waddstr_b(w_net, lft2str(info->v6.preferred_lft));
+		}
+	}
 
 	wclrtoborder(w_net);
 	wrefresh(w_net);

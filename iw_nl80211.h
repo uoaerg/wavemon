@@ -1,12 +1,12 @@
 /*
  * Definitions and functions for nl80211 based routines.
  */
-#include <netlink/netlink.h>
-#include <netlink/genl/genl.h>
-#include <netlink/genl/ctrl.h>
-
-#include <netinet/ether.h>
 #include <stdbool.h>
+#include <netinet/ether.h>
+
+#include <netlink/netlink.h>
+#include <netlink/cli/addr.h>
+#include <netlink/cli/link.h>
 
 /*
  * Use local copy of nl80211.h rather than the one shipped with the distro in

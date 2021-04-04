@@ -9,11 +9,11 @@ exec_perms  = 0755
 install-suid-root: exec_perms = 4755
 
 CC	 ?= @CC@
-CFLAGS	 ?= @CFLAGS@ @LIBNL3_CFLAGS@
+CFLAGS	 ?= @CFLAGS@ @LIBNL3_CLI_CFLAGS@
 CPPFLAGS ?= @CPPFLAGS@
 LDFLAGS  ?= @LDFLAGS@
 DEFS	 ?= @DEFS@
-LDLIBS	 ?= @LIBS@ @LIBNL3_LIBS@
+LDLIBS	 ?= @LIBS@ @LIBNL3_CLI_LIBS@
 
 INSTALL = @INSTALL@
 RM	= rm -vf

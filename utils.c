@@ -143,6 +143,14 @@ const char *pretty_time_ms(const unsigned msec)
 	return pretty_time(msec/1000);
 }
 
+/* Convert (preferred, valid) address lifetime to string. */
+const char *lft2str(const uint32_t lifetime)
+{
+	if (lifetime == (uint32_t)-1)
+		return "forever";
+	return pretty_time(lifetime);
+}
+
 /* Convert log dBm values to linear mW */
 double dbm2mw(const double in)
 {

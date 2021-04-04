@@ -95,67 +95,71 @@ void if_set_down_on_exit(void)
 }
 
 /* Interface information */
+static void if_info_cb(struct nl_object *obj, void *data) {
+	struct rtnl_addr *addr = (struct rtnl_addr *)obj;
+	struct if_info *info = data;
+
+	if (!addr || rtnl_addr_get_ifindex(addr) != info->ifindex)
+		return;
+
+	// Only display addresses with global scope, omit site/link-local addresses.
+	if (rtnl_addr_get_scope(addr) == RT_SCOPE_UNIVERSE) {
+		struct addr_info *ai;
+
+		switch (rtnl_addr_get_family(addr)) {
+		case AF_INET:
+			ai = &info->v4;
+			break;
+		case AF_INET6:
+			ai = &info->v6;
+			break;
+		default:
+			return;
+		}
+
+		if (!ai->count) {
+			const struct nl_addr *local = rtnl_addr_get_local(addr);
+
+			if (!local)
+				return;
+			if (!nl_addr2str(local, ai->addr, sizeof(ai->addr)))
+				return;
+			ai->preferred_lft = rtnl_addr_get_preferred_lifetime(addr);
+			ai->valid_lft     = rtnl_addr_get_valid_lifetime(addr);
+		}
+		ai->count++;
+	}
+
+	if (!info->flags) {
+		struct rtnl_link *link = rtnl_addr_get_link(addr);
+		struct nl_addr *hwaddr = rtnl_link_get_addr(link);
+
+		info->flags  = rtnl_link_get_flags(link);
+		info->mtu    = rtnl_link_get_mtu(link);
+		info->txqlen = rtnl_link_get_txqlen(link);
+
+		memcpy(&info->hwaddr, nl_addr_get_binary_addr(hwaddr), nl_addr_get_len(hwaddr));
+
+		snprintf(info->qdisc, sizeof(info->qdisc), rtnl_link_get_qdisc(link));
+	}
+}
+
 void if_getinf(const char *ifname, struct if_info *info)
 {
-	struct ifaddrs *iface, *head;
-	struct ifreq ifr;
-	int skfd, rc;
+	static struct nl_cache *link_cache = NULL, *addr_cache = NULL;
 
-	memset(&ifr, 0, sizeof(struct ifreq));
-	memset(info, 0, sizeof(struct if_info));
+	if (!link_cache) {
+		struct nl_sock *sock = nl_cli_alloc_socket();
 
-	if (getifaddrs(&head) < 0)
-		err_sys("%s: failed to query interface addresses", __func__);
-
-	for (iface = head; iface != NULL; iface = iface->ifa_next) {
-		const struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)iface->ifa_addr;
-		char ip_string[INET6_ADDRSTRLEN+1];
-
-		if (iface->ifa_addr == NULL || strcmp(iface->ifa_name, ifname))
-			continue;
-
-		if (iface->ifa_addr->sa_family == AF_INET) {
-			rc = getnameinfo(iface->ifa_addr, sizeof(struct sockaddr_in),
-					 ip_string, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-			if (rc != 0)
-				snprintf(info->v4_addr, sizeof(info->v4_addr)-1,
-					 "(error: %s)", gai_strerror(rc));
-			else
-				snprintf(info->v4_addr, sizeof(info->v4_addr)-1, "%s/%u",
-					 ip_string, prefix_len(iface->ifa_netmask));
-		} else if (iface->ifa_addr->sa_family == AF_INET6 &&
-			   !IN6_IS_ADDR_LINKLOCAL(sin6->sin6_addr.s6_addr) &&
-			   !IN6_IS_ADDR_SITELOCAL(sin6->sin6_addr.s6_addr) &&
-			   !IN6_IS_ADDR_UNSPECIFIED(sin6->sin6_addr.s6_addr)) {
-			rc = getnameinfo(iface->ifa_addr, sizeof(struct sockaddr_in6),
-					 ip_string, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-			if (rc != 0)
-				snprintf(info->v6_addr, sizeof(info->v6_addr)-1,
-					 "(error: %s)", gai_strerror(rc));
-			else
-				snprintf(info->v6_addr, sizeof(info->v6_addr)-1, "%s/%u",
-					 ip_string, prefix_len(iface->ifa_netmask));
-		}
-		info->flags = iface->ifa_flags;
+		nl_cli_connect(sock, NETLINK_ROUTE);
+		link_cache = nl_cli_link_alloc_cache(sock);
+		addr_cache = nl_cli_addr_alloc_cache(sock);
 	}
-	freeifaddrs(head);
 
-	skfd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (skfd < 0)
-		err_sys("%s: can not open socket", __func__);
+	memset(info, 0, sizeof(struct if_info));
+	info->ifindex = if_nametoindex(ifname);
 
-	info->flags = if_get_flags(skfd, ifname);
-
-	strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
-	if (ioctl(skfd, SIOCGIFMTU, &ifr) == 0)
-		info->mtu = ifr.ifr_mtu;
-
-	if (ioctl(skfd, SIOCGIFTXQLEN, &ifr) >= 0)
-		info->txqlen = ifr.ifr_qlen;
-
-	if (ioctl(skfd, SIOCGIFHWADDR, &ifr) >= 0)
-		memcpy(&info->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
-	close(skfd);
+	nl_cache_foreach(addr_cache, if_info_cb, info);
 }
 
 static int iface_list_handler(struct nl_msg *msg, void *arg)

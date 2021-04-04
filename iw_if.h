@@ -72,23 +72,40 @@ extern void free_interface_list(struct interface_info *head);
 
 
 /**
+ * struct addr_info  -  interface address information
+ * @addr:	   IP address in CIDR format
+ * @count:	   How many addresses of this type are present
+ * @preferred_lft: Preferred lifetime of @addr
+ * @valid_lft:     Valid lifetime of @addr
+ */
+struct addr_info {
+	char		addr[64];
+	uint8_t		count;
+	uint32_t	preferred_lft,
+			valid_lft;
+};
+
+/**
  * struct if_info  -  wireless interface network information
+ * @ifindex:	Interface index
  * @hwaddr:	MAC address
- * @v4_addr:	IPv4 address in CIDR format
- * @v6_addr:	IPv6 address in CIDR format
- * @mtu:	Interface MTU
- * @txqlen:	TX queue length
+ * @v4,v6:	IPv4/6 address
  * @flags:	Interface flags
- * See also netdevice(7)
+ * @mtu:	Interface MTU
+ * @qdisc:	Queuing discipline
+ * @txqlen:	TX queue length
  */
 struct if_info {
+	int			ifindex;
 	struct ether_addr	hwaddr;
-	char			v4_addr[64],
-				v6_addr[64];
-	uint16_t		mtu;
-	uint16_t		txqlen;
+	struct addr_info	v4,
+				v6;
 	uint16_t		flags;
+	uint16_t		mtu;
+	char			qdisc[16];
+	uint16_t		txqlen;
 };
+
 extern bool if_is_up(const char *ifname);
 extern int  if_set_up(const char *ifname);
 extern void if_set_down_on_exit(void);
@@ -135,6 +152,7 @@ extern char *ether_lookup(const struct ether_addr *ea);
 extern char *mac_addr(const struct sockaddr *sa);
 extern uint8_t bit_count(uint32_t mask);
 extern uint8_t prefix_len(const struct sockaddr *netmask);
+extern const char *lft2str(const uint32_t lifetime);
 extern const char *pretty_time(const unsigned sec);
 extern const char *pretty_time_ms(const unsigned msec);
 extern double dbm2mw(const double in);

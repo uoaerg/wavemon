@@ -623,10 +623,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-LIBNL3_GENL_LIBS
-LIBNL3_GENL_CFLAGS
-LIBNL3_LIBS
-LIBNL3_CFLAGS
+LIBNL3_CLI_LIBS
+LIBNL3_CLI_CFLAGS
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
@@ -707,10 +705,8 @@ CPP
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
-LIBNL3_CFLAGS
-LIBNL3_LIBS
-LIBNL3_GENL_CFLAGS
-LIBNL3_GENL_LIBS'
+LIBNL3_CLI_CFLAGS
+LIBNL3_CLI_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1350,13 +1346,10 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
-  LIBNL3_CFLAGS
-              C compiler flags for LIBNL3, overriding pkg-config
-  LIBNL3_LIBS linker flags for LIBNL3, overriding pkg-config
-  LIBNL3_GENL_CFLAGS
-              C compiler flags for LIBNL3_GENL, overriding pkg-config
-  LIBNL3_GENL_LIBS
-              linker flags for LIBNL3_GENL, overriding pkg-config
+  LIBNL3_CLI_CFLAGS
+              C compiler flags for LIBNL3_CLI, overriding pkg-config
+  LIBNL3_CLI_LIBS
+              linker flags for LIBNL3_CLI, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -3920,7 +3913,7 @@ if test "x$ac_cv_lib_ncursesw6_addnwstr" = xyes; then :
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
                      CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
-                     LIBS="$ncurses_config_script_libs $LIBS "
+                     LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
 else
@@ -3983,7 +3976,7 @@ if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
                      CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
-                     LIBS="$ncurses_config_script_libs $LIBS "
+                     LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
 else
@@ -4046,7 +4039,7 @@ if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
                      CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
-                     LIBS="$ncurses_config_script_libs $LIBS "
+                     LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
 else
@@ -4109,7 +4102,7 @@ if test "x$ac_cv_lib_ncurses_addnwstr" = xyes; then :
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
                      CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
-                     LIBS="$ncurses_config_script_libs $LIBS "
+                     LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
 else
@@ -4298,7 +4291,7 @@ fi
 done
 
 
-# libnl3 with GeNetlink support - wavemon is tracking changes to iw
+# libnl3 cli package (pulls in genl and route package).
 
 
 
@@ -4421,19 +4414,19 @@ $as_echo "no" >&6; }
 fi
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBNL3" >&5
-$as_echo_n "checking for LIBNL3... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBNL3_CLI" >&5
+$as_echo_n "checking for LIBNL3_CLI... " >&6; }
 
-if test -n "$LIBNL3_CFLAGS"; then
-    pkg_cv_LIBNL3_CFLAGS="$LIBNL3_CFLAGS"
+if test -n "$LIBNL3_CLI_CFLAGS"; then
+    pkg_cv_LIBNL3_CLI_CFLAGS="$LIBNL3_CLI_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-3.0 >= 3.2\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libnl-3.0 >= 3.2") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-cli-3.0 >= 3.2\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libnl-cli-3.0 >= 3.2") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_LIBNL3_CFLAGS=`$PKG_CONFIG --cflags "libnl-3.0 >= 3.2" 2>/dev/null`
+  pkg_cv_LIBNL3_CLI_CFLAGS=`$PKG_CONFIG --cflags "libnl-cli-3.0 >= 3.2" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -4441,87 +4434,16 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$LIBNL3_LIBS"; then
-    pkg_cv_LIBNL3_LIBS="$LIBNL3_LIBS"
+if test -n "$LIBNL3_CLI_LIBS"; then
+    pkg_cv_LIBNL3_CLI_LIBS="$LIBNL3_CLI_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-3.0 >= 3.2\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libnl-3.0 >= 3.2") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-cli-3.0 >= 3.2\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libnl-cli-3.0 >= 3.2") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_LIBNL3_LIBS=`$PKG_CONFIG --libs "libnl-3.0 >= 3.2" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        LIBNL3_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnl-3.0 >= 3.2" 2>&1`
-        else
-	        LIBNL3_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnl-3.0 >= 3.2" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$LIBNL3_PKG_ERRORS" >&5
-
-	CFLAGS="$CFLAGS $LIBNL3_CFLAGS"
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	CFLAGS="$CFLAGS $LIBNL3_CFLAGS"
-else
-	LIBNL3_CFLAGS=$pkg_cv_LIBNL3_CFLAGS
-	LIBNL3_LIBS=$pkg_cv_LIBNL3_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-fi
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBNL3_GENL" >&5
-$as_echo_n "checking for LIBNL3_GENL... " >&6; }
-
-if test -n "$LIBNL3_GENL_CFLAGS"; then
-    pkg_cv_LIBNL3_GENL_CFLAGS="$LIBNL3_GENL_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-genl-3.0 >= 3.2\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libnl-genl-3.0 >= 3.2") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBNL3_GENL_CFLAGS=`$PKG_CONFIG --cflags "libnl-genl-3.0 >= 3.2" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$LIBNL3_GENL_LIBS"; then
-    pkg_cv_LIBNL3_GENL_LIBS="$LIBNL3_GENL_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-genl-3.0 >= 3.2\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libnl-genl-3.0 >= 3.2") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBNL3_GENL_LIBS=`$PKG_CONFIG --libs "libnl-genl-3.0 >= 3.2" 2>/dev/null`
+  pkg_cv_LIBNL3_CLI_LIBS=`$PKG_CONFIG --libs "libnl-cli-3.0 >= 3.2" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -4542,24 +4464,24 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        LIBNL3_GENL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnl-genl-3.0 >= 3.2" 2>&1`
+	        LIBNL3_CLI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnl-cli-3.0 >= 3.2" 2>&1`
         else
-	        LIBNL3_GENL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnl-genl-3.0 >= 3.2" 2>&1`
+	        LIBNL3_CLI_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnl-cli-3.0 >= 3.2" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
-	echo "$LIBNL3_GENL_PKG_ERRORS" >&5
+	echo "$LIBNL3_CLI_PKG_ERRORS" >&5
 
-	as_fn_error $? "need libnl-genl >= 3.2" "$LINENO" 5
+	as_fn_error $? "need libnl-cli-3.0 >= 3.2" "$LINENO" 5
 elif test $pkg_failed = untried; then
      	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	as_fn_error $? "need libnl-genl >= 3.2" "$LINENO" 5
+	as_fn_error $? "need libnl-cli-3.0 >= 3.2" "$LINENO" 5
 else
-	LIBNL3_GENL_CFLAGS=$pkg_cv_LIBNL3_GENL_CFLAGS
-	LIBNL3_GENL_LIBS=$pkg_cv_LIBNL3_GENL_LIBS
+	LIBNL3_CLI_CFLAGS=$pkg_cv_LIBNL3_CLI_CFLAGS
+	LIBNL3_CLI_LIBS=$pkg_cv_LIBNL3_CLI_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	LIBS="$LIBS $LIBNL3_GENL_LIBS"
+
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.

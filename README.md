@@ -16,14 +16,13 @@ Apart from debian/ubuntu packages (`apt-cache search wavemon`) and [slackbuild  
 ### Dependencies
 
 Minimally the following are required:
-* Netlink `libnl` at least version 3.2,
-* including the Generic Netlink support (`libnl-genl`),
-* ncurses development files (`libncursesw6`, `libtinfo6`, `libncurses-dev`),
-* the `pkg-config` package.
+* the `pkg-config` package,
+* netlink `libnl-cli-3-dev` at least version 3.2 (pulls in `libnl-3-dev`, `libnl-genl-3-dev`),
+* ncurses development files (`libncursesw6`, `libtinfo6`, `libncurses-dev`).
 
 On Debian/Ubuntu, this can be done using
 ```bash
-apt-get -y install pkg-config libncursesw6 libtinfo6 libncurses-dev libnl-3-dev libnl-genl-3-dev
+apt-get -y install pkg-config libncursesw6 libtinfo6 libncurses-dev libnl-cli-3-dev
 ```
 
 Please note the "w" in `libncursesw6`, which stands for the _wide-character_ variant of ncurses.
