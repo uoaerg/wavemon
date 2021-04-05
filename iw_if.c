@@ -146,20 +146,21 @@ static void if_info_cb(struct nl_object *obj, void *data) {
 
 void if_getinf(const char *ifname, struct if_info *info)
 {
-	static struct nl_cache *link_cache = NULL, *addr_cache = NULL;
+	static struct nl_cache *link_cache, *addr_cache;
+	struct nl_sock *sock = nl_cli_alloc_socket();
 
-	if (!link_cache) {
-		struct nl_sock *sock = nl_cli_alloc_socket();
-
-		nl_cli_connect(sock, NETLINK_ROUTE);
-		link_cache = nl_cli_link_alloc_cache(sock);
-		addr_cache = nl_cli_addr_alloc_cache(sock);
-	}
+	nl_cli_connect(sock, NETLINK_ROUTE);
+	link_cache = nl_cli_link_alloc_cache(sock);
+	addr_cache = nl_cli_addr_alloc_cache(sock);
 
 	memset(info, 0, sizeof(struct if_info));
 	info->ifindex = if_nametoindex(ifname);
 
 	nl_cache_foreach(addr_cache, if_info_cb, info);
+
+	nl_socket_free(sock);
+	nl_cache_free(link_cache);
+	nl_cache_free(addr_cache);
 }
 
 static int iface_list_handler(struct nl_msg *msg, void *arg)

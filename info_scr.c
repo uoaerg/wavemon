@@ -651,6 +651,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 			waddstr_b(w_net, lft2str(info->v4.preferred_lft));
 		}
 	}
+	wclrtoborder(w_net);
 
 	wmove(w_net, 4, 1);
 	waddstr(w_net, "ip6: ");
