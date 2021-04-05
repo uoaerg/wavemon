@@ -139,8 +139,7 @@ static void if_info_cb(struct nl_object *obj, void *data) {
 		info->txqlen = rtnl_link_get_txqlen(link);
 
 		memcpy(&info->hwaddr, nl_addr_get_binary_addr(hwaddr), nl_addr_get_len(hwaddr));
-
-		snprintf(info->qdisc, sizeof(info->qdisc), rtnl_link_get_qdisc(link));
+		strncpy(info->qdisc, rtnl_link_get_qdisc(link), sizeof(info->qdisc)-1);
 	}
 }
 
