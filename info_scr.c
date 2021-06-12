@@ -559,12 +559,16 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wmove(w_net, 1, 1);
 	wclrtoborder(w_net);
 
-	waddstr_b(w_net, info->ifname);
-
-	if (!(info->flags & IFF_UP)) {
+	if (info->master) {
+		waddstr_b(w_net, info->ifname);
+	} else {
+		waddstr(w_net, info->ifname);
 		waddstr_b(w_net, " (");
 		sprintf(tmp, "#%u, ", info->ifindex);
 		waddstr(w_net, tmp);
+	}
+
+	if (!(info->flags & IFF_UP)) {
 		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
 	} else if (info->master) {
 		sprintf(tmp, " #%u, ", info->ifindex);
@@ -591,8 +595,6 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			waddstr(w_net, "DOWN");
 		}
 	} else {
-		waddstr_b(w_net, " (");
-
 		waddstr(w_net, "UP");
 
 		if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
@@ -643,13 +645,15 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 
 	if (info->flags & IFF_UP) {
 		// Number of TX queues
-		waddstr(w_net, ", txq: ");
-		sprintf(tmp, "%u", info->numtxq);
-		waddstr_b(w_net, tmp);
-		if (info->master && info->master->numtxq != info->numtxq) {
-			waddstr(w_net, "/");
-			sprintf(tmp, "%u", info->master->numtxq);
+		if (info->numtxq > 1 || (info->master && info->master->numtxq > 1)) {
+			waddstr(w_net, ", txq: ");
+			sprintf(tmp, "%u", info->numtxq);
 			waddstr_b(w_net, tmp);
+			if (info->master && info->master->numtxq != info->numtxq) {
+				waddstr(w_net, "/");
+				sprintf(tmp, "%u", info->master->numtxq);
+				waddstr_b(w_net, tmp);
+			}
 		}
 
 		// Queueing discipline
@@ -665,7 +669,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 
 		// Queue lengths
 		waddstr(w_net, ", qlen: ");
-		sprintf(tmp, "%u", info->master->txqlen);
+		sprintf(tmp, "%u", info->txqlen);
 		waddstr_b(w_net, tmp);
 		if (info->master && info->master->txqlen != info->txqlen) {
 			waddstr(w_net, "/");
