@@ -551,18 +551,48 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 }
 
 /** Network information pertaining to interface with interface index @ifindex. */
-static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifindex)
+static void display_netinfo(WINDOW *w_net, struct if_info *info)
 {
+	struct if_info *active = info->master ?: info;
 	char tmp[0x40];
 
 	wmove(w_net, 1, 1);
 	wclrtoborder(w_net);
 
-	waddstr(w_net, conf_ifname());
-	sprintf(tmp, " (#%u, ", ifindex);
-	waddstr(w_net, tmp);
+	waddstr_b(w_net, info->ifname);
 
-	if (info->flags & IFF_UP) {
+	if (!(info->flags & IFF_UP)) {
+		waddstr_b(w_net, " (");
+		sprintf(tmp, "#%u, ", info->ifindex);
+		waddstr(w_net, tmp);
+		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
+	} else if (info->master) {
+		sprintf(tmp, " #%u, ", info->ifindex);
+		waddstr(w_net, tmp);
+		if (*info->master->type && strcmp(info->master->type, "bond")) {
+			sprintf(tmp, "%s ", info->master->type);
+			waddstr(w_net, tmp);
+		}
+		// TODO: print active/primary slave information
+		waddstr(w_net, "slave of ");
+		waddstr_b(w_net, info->master->ifname);
+
+		sprintf(tmp, " #%u", info->master->ifindex);
+		waddstr(w_net, tmp);
+
+		waddstr_b(w_net, " (");
+		if (active->flags & IFF_UP) {
+			waddstr(w_net, "UP");
+			if (active->flags & IFF_RUNNING)
+				waddstr(w_net, " RUNNING");
+			if (active->flags & IFF_MASTER)
+				waddstr(w_net, " MASTER");
+		} else {
+			waddstr(w_net, "DOWN");
+		}
+	} else {
+		waddstr_b(w_net, " (");
+
 		waddstr(w_net, "UP");
 
 		if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
@@ -583,9 +613,9 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 			waddstr(w_net, " POINTOPOINT");
 		if (info->flags & IFF_DYNAMIC)		/* Address is volatile		*/
 			waddstr(w_net, " DYNAMIC");
-		if (info->flags & IFF_BROADCAST)		/* Valid broadcast address set	*/
+		if (info->flags & IFF_BROADCAST)	/* Valid broadcast address set	*/
 			waddstr(w_net, " BROADCAST");
-		if (info->flags & IFF_MULTICAST)		/* Supports multicast		*/
+		if (info->flags & IFF_MULTICAST)	/* Supports multicast		*/
 			waddstr(w_net, " MULTICAST");
 		if (info->flags & IFF_ALLMULTI)		/* Receive all mcast  packets	*/
 			waddstr(w_net, " ALLMULTI");
@@ -597,30 +627,51 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 			waddstr(w_net, " PROMISC");
 		if (info->flags & IFF_DEBUG)		/* Internal debugging flag	*/
 			waddstr(w_net, " DEBUG");
-	} else {
-		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
 	}
 	waddstr_b(w_net, ")");
 
 	wmove(w_net, 2, 1);
 	wclrtoborder(w_net);
 
-	/* Layer 2 information */
+	/* Layer 2 information (display hardware address of active interface). */
 	waddstr(w_net, "mac: ");
-	if (ether_addr_is_zero(&info->hwaddr)) {
+	if (ether_addr_is_zero(&active->hwaddr)) {
 		waddstr_b(w_net, "n/a");
 	} else {
-		waddstr_b(w_net, ether_lookup(&info->hwaddr));
+		waddstr_b(w_net, ether_lookup(&active->hwaddr));
 	}
 
 	if (info->flags & IFF_UP) {
+		// Number of TX queues
+		waddstr(w_net, ", txq: ");
+		sprintf(tmp, "%u", info->numtxq);
+		waddstr_b(w_net, tmp);
+		if (info->master && info->master->numtxq != info->numtxq) {
+			waddstr(w_net, "/");
+			sprintf(tmp, "%u", info->master->numtxq);
+			waddstr_b(w_net, tmp);
+		}
+
+		// Queueing discipline
 		if (*info->qdisc) {
 			waddstr(w_net, ", qdisc: ");
 			waddstr_b(w_net, info->qdisc);
+			if (info->master && *info->master->qdisc &&
+			    strcmp(info->master->qdisc, info->qdisc)) {
+				waddstr(w_net, "/");
+				waddstr_b(w_net, info->master->qdisc);
+			}
 		}
+
+		// Queue lengths
 		waddstr(w_net, ", qlen: ");
-		sprintf(tmp, "%u", info->txqlen);
+		sprintf(tmp, "%u", info->master->txqlen);
 		waddstr_b(w_net, tmp);
+		if (info->master && info->master->txqlen != info->txqlen) {
+			waddstr(w_net, "/");
+			sprintf(tmp, "%u", info->master->txqlen);
+			waddstr_b(w_net, tmp);
+		}
 	}
 
 	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
@@ -628,47 +679,52 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info, uint32_t ifinde
 		waddstr(w_net, ",  mtu: ");
 		sprintf(tmp, "%u", info->mtu);
 		waddstr_b(w_net, tmp);
+		if (info->master && info->master->mtu != info->mtu) {
+			waddstr(w_net, "/");
+			sprintf(tmp, "%u", info->master->mtu);
+			waddstr_b(w_net, tmp);
+		}
 	}
 
 	wclrtoborder(w_net);
 	wmove(w_net, 3, 1);
 
-	/* Layer 3 information */
+	/* Layer 3 information of active interface */
 	waddstr(w_net, "ip4: ");
-	if (!*info->v4.addr) {
+	if (!*active->v4.addr) {
 		waddstr_b(w_net, "n/a");
 	} else {
-		waddstr_b(w_net, info->v4.addr);
-		if (info->v4.count > 1) {
-			sprintf(tmp, " (+%d)", info->v4.count-1);
+		waddstr_b(w_net, active->v4.addr);
+		if (active->v4.count > 1) {
+			sprintf(tmp, " (+%d)", active->v4.count-1);
 			waddstr(w_net, tmp);
 		}
-		if (info->v4.valid_lft && info->v4.valid_lft >= info->v4.preferred_lft) {
+		if (active->v4.valid_lft && active->v4.valid_lft >= active->v4.preferred_lft) {
 			waddstr(w_net, ", valid: ");
-			waddstr_b(w_net, lft2str(info->v4.valid_lft));
-		} else if (info->v4.preferred_lft) {
+			waddstr_b(w_net, lft2str(active->v4.valid_lft));
+		} else if (active->v4.preferred_lft) {
 			waddstr(w_net, ", preferred: ");
-			waddstr_b(w_net, lft2str(info->v4.preferred_lft));
+			waddstr_b(w_net, lft2str(active->v4.preferred_lft));
 		}
 	}
 	wclrtoborder(w_net);
 
 	wmove(w_net, 4, 1);
 	waddstr(w_net, "ip6: ");
-	if (!*info->v6.addr) {
+	if (!*active->v6.addr) {
 		waddstr_b(w_net, "n/a");
 	} else {
-		waddstr_b(w_net, info->v6.addr);
-		if (info->v6.count > 1) {
-			sprintf(tmp, " (+%d)", info->v6.count-1);
+		waddstr_b(w_net, active->v6.addr);
+		if (active->v6.count > 1) {
+			sprintf(tmp, " (+%d)", active->v6.count-1);
 			waddstr(w_net, tmp);
 		}
-		if (info->v6.valid_lft && info->v6.valid_lft >= info->v6.preferred_lft) {
+		if (active->v6.valid_lft && active->v6.valid_lft >= active->v6.preferred_lft) {
 			waddstr(w_net, ", valid: ");
-			waddstr_b(w_net, lft2str(info->v6.valid_lft));
-		} else if (info->v6.preferred_lft) {
+			waddstr_b(w_net, lft2str(active->v6.valid_lft));
+		} else if (active->v6.preferred_lft) {
 			waddstr(w_net, ", preferred: ");
-			waddstr_b(w_net, lft2str(info->v6.preferred_lft));
+			waddstr_b(w_net, lft2str(active->v6.preferred_lft));
 		}
 	}
 
@@ -694,7 +750,7 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 	}
 	wrefresh(w_info);
 
-	display_netinfo(w_net, &net_info, ifs.ifindex);
+	display_netinfo(w_net, &net_info);
 }
 
 void scr_info_init(void)

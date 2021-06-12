@@ -94,8 +94,38 @@ void if_set_down_on_exit(void)
 	}
 }
 
-/* Interface information */
-static void if_info_cb(struct nl_object *obj, void *data) {
+/* if_info_link_cb fills in link information into @data. */
+static void if_info_link_cb(struct nl_object *obj, void *data) {
+	struct rtnl_link *link = (struct rtnl_link *)obj;
+	struct if_info *info = data;
+
+	if (link && rtnl_link_get_ifindex(link) == info->ifindex) {
+		struct nl_addr *hwaddr = rtnl_link_get_addr(link);
+		const char * const type = rtnl_link_get_type(link);
+
+		memcpy(&info->hwaddr, nl_addr_get_binary_addr(hwaddr), nl_addr_get_len(hwaddr));
+		if (type)
+			strncpy(info->type, type, sizeof(info->type)-1);
+		strncpy(info->ifname, rtnl_link_get_name(link), sizeof(info->ifname)-1);
+		strncpy(info->qdisc, rtnl_link_get_qdisc(link), sizeof(info->qdisc)-1);
+
+		info->flags  = rtnl_link_get_flags(link);
+		info->mtu    = rtnl_link_get_mtu(link);
+		info->numtxq = rtnl_link_get_num_tx_queues(link);
+		info->txqlen = rtnl_link_get_txqlen(link);
+
+		if (info->flags & IFF_SLAVE) {
+			info->master = calloc(1, sizeof(*info->master));
+			if (!info->master)
+				err_sys("failed to allocate master interface entry");
+
+			info->master->ifindex = rtnl_link_get_master(link);
+		}
+	}
+}
+
+/* if_info_addr_cb fills in interface address information into @data. */
+static void if_info_addr_cb(struct nl_object *obj, void *data) {
 	struct rtnl_addr *addr = (struct rtnl_addr *)obj;
 	struct if_info *info = data;
 
@@ -136,6 +166,7 @@ static void if_info_cb(struct nl_object *obj, void *data) {
 
 		info->flags  = rtnl_link_get_flags(link);
 		info->mtu    = rtnl_link_get_mtu(link);
+		info->numtxq = rtnl_link_get_num_tx_queues(link);
 		info->txqlen = rtnl_link_get_txqlen(link);
 
 		memcpy(&info->hwaddr, nl_addr_get_binary_addr(hwaddr), nl_addr_get_len(hwaddr));
@@ -145,7 +176,7 @@ static void if_info_cb(struct nl_object *obj, void *data) {
 
 void if_getinf(const char *ifname, struct if_info *info)
 {
-	static struct nl_cache *link_cache, *addr_cache;
+	struct nl_cache *link_cache, *addr_cache;
 	struct nl_sock *sock = nl_cli_alloc_socket();
 
 	nl_cli_connect(sock, NETLINK_ROUTE);
@@ -155,7 +186,10 @@ void if_getinf(const char *ifname, struct if_info *info)
 	memset(info, 0, sizeof(struct if_info));
 	info->ifindex = if_nametoindex(ifname);
 
-	nl_cache_foreach(addr_cache, if_info_cb, info);
+	nl_cache_foreach(link_cache, if_info_link_cb, info);
+	if (info->master)
+		nl_cache_foreach(link_cache, if_info_link_cb, info->master);
+	nl_cache_foreach(addr_cache, if_info_addr_cb, info->master ?: info);
 
 	nl_socket_free(sock);
 	nl_cache_free(link_cache);

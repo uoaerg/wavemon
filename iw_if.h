@@ -88,22 +88,31 @@ struct addr_info {
 /**
  * struct if_info  -  wireless interface network information
  * @ifindex:	Interface index
+ * @ifname:	Interface name
  * @hwaddr:	MAC address
  * @v4,v6:	IPv4/6 address
  * @flags:	Interface flags
+ * @type:	Interface type (relevant for master interface)
  * @mtu:	Interface MTU
  * @qdisc:	Queuing discipline
+ * @numtxq:	Number of TX queues
  * @txqlen:	TX queue length
+ * @master:	Information about master interface (if present)
  */
 struct if_info {
 	int			ifindex;
+	char			ifname[64];
 	struct ether_addr	hwaddr;
 	struct addr_info	v4,
 				v6;
+	char			type[16];
 	uint16_t		flags;
 	uint16_t		mtu;
 	char			qdisc[16];
-	uint16_t		txqlen;
+	uint16_t		numtxq,
+				txqlen;
+
+	struct if_info		*master;
 };
 
 extern bool if_is_up(const char *ifname);
