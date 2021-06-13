@@ -15,18 +15,22 @@
 /* Maximum length of a MAC address: 2 * 6 hex digits, 6 - 1 colons, plus '\0' */
 #define MAC_ADDR_MAX	18
 
-/** Read up to @buflen contents of file @path into @buf. Returns -1 on error. */
+/** Read up to @buflen-1 contents of file @path into @buf. Returns -1 on error. */
 ssize_t read_file(const char *path, char *buf, size_t buflen) {
-	int fd = open(path, O_RDONLY), n;
+	int fd = open(path, O_RDONLY), i, n;
 
 	if (fd < 0)
 		return -1;
 
-	memset(buf, 0, buflen);
+	buf[buflen-1] = '\0';
 
-	n = read(fd, buf, buflen);
+	n = read(fd, buf, buflen-1);
 	if (close(fd) < 0)
 		return -1;
+
+	// Strip trailing whitespace.
+	for (i = n-1; i >= 0 && isspace(buf[i]); i--)
+		buf[i] = '\0';
 	return n;
 }
 

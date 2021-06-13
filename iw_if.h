@@ -120,6 +120,10 @@ extern int  if_set_up(const char *ifname);
 extern void if_set_down_on_exit(void);
 extern void if_getinf(const char *ifname, struct if_info *info);
 
+/** Interface bonding. */
+extern const char *get_bonding_mode(const char *bonding_iface);
+extern bool is_primary_slave(const char *bonding_iface, const char *slave);
+
 /*
  *	 Structs to communicate WiFi statistics
  */

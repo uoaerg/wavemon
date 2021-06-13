@@ -94,6 +94,37 @@ void if_set_down_on_exit(void)
 	}
 }
 
+/**
+ * Return bonding mode of @bonding_iface, or NULL if not appropriate.
+ * https://www.kernel.org/doc/Documentation/networking/bonding.txt for possible modes.
+ */
+const char *get_bonding_mode(const char *bonding_iface) {
+	static char mode[64];
+	char path[128];
+
+	snprintf(path, sizeof(path)-1, "/sys/class/net/%s/bonding/mode", bonding_iface);
+	if (read_file(path, mode, sizeof(mode)) > 0) {
+		char *p = mode;
+
+		// File contents look like: "active-backup 1". Return first word only.
+		for (int i = strlen(mode); --i > 0 && !isspace(*p);)
+			p++;
+		*p = '\0';
+		return mode;
+	}
+	return NULL;
+}
+
+/** Return true if @slave is the primary slave interface of @bonding_iface. */
+bool is_primary_slave(const char *bonding_iface, const char *slave) {
+	char path[128], primary[64];
+
+	snprintf(path, sizeof(path)-1, "/sys/class/net/%s/bonding/primary", bonding_iface);
+	if (read_file(path, primary, sizeof(primary)) > 0)
+		return strncmp(slave, primary, strlen(slave)) == 0;
+	return false;
+}
+
 /* if_info_link_cb fills in link information into @data. */
 static void if_info_link_cb(struct nl_object *obj, void *data) {
 	struct rtnl_link *link = (struct rtnl_link *)obj;

@@ -570,28 +570,38 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	} else if (info->master) {
 		waddstr_b(w_net, info->ifname);
 
-		sprintf(tmp, " #%u, ", info->ifindex);
+		sprintf(tmp, " #%u, %sslave of ", info->ifindex,
+			is_primary_slave(info->master->ifname, info->ifname)
+			? "primary " : "");
 		waddstr(w_net, tmp);
-		if (*info->master->type && strcmp(info->master->type, "bond")) {
-			sprintf(tmp, "%s ", info->master->type);
-			waddstr(w_net, tmp);
-		}
-		// TODO: print active/primary slave information
-		waddstr(w_net, "slave of ");
 		waddstr_b(w_net, info->master->ifname);
 
 		sprintf(tmp, " #%u", info->master->ifindex);
 		waddstr(w_net, tmp);
 
 		waddstr_b(w_net, " (");
-		if (active->flags & IFF_UP) {
-			waddstr(w_net, "UP");
-			if (active->flags & IFF_RUNNING)
-				waddstr(w_net, " RUNNING");
-			if (active->flags & IFF_MASTER)
-				waddstr(w_net, " MASTER");
-		} else {
+
+		if (!(active->flags & IFF_UP)) {
 			waddstr(w_net, "DOWN");
+		} else {
+			const char *mode = NULL;
+
+			if (strcmp(info->master->type, "bond") == 0)
+				mode = get_bonding_mode(info->master->ifname);
+
+			if (mode) {
+				sprintf(tmp, "%s mode", mode);
+				waddstr(w_net, tmp);
+			} else if (*info->master->type) {
+				sprintf(tmp, "type %s", info->master->type);
+				waddstr(w_net, tmp);
+			} else {
+				waddstr(w_net, "UP");
+				if (active->flags & IFF_RUNNING)
+					waddstr(w_net, " RUNNING");
+				if (active->flags & IFF_MASTER)
+					waddstr(w_net, " MASTER");
+			}
 		}
 	} else {
 		waddstr_b(w_net, " (");
