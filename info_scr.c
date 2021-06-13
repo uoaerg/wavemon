@@ -559,18 +559,17 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wmove(w_net, 1, 1);
 	wclrtoborder(w_net);
 
-	if (info->master) {
-		waddstr_b(w_net, info->ifname);
-	} else {
+	if (!(info->flags & IFF_UP)) {
 		waddstr(w_net, info->ifname);
+
 		waddstr_b(w_net, " (");
 		sprintf(tmp, "#%u, ", info->ifindex);
 		waddstr(w_net, tmp);
-	}
 
-	if (!(info->flags & IFF_UP)) {
 		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
 	} else if (info->master) {
+		waddstr_b(w_net, info->ifname);
+
 		sprintf(tmp, " #%u, ", info->ifindex);
 		waddstr(w_net, tmp);
 		if (*info->master->type && strcmp(info->master->type, "bond")) {
@@ -595,7 +594,9 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			waddstr(w_net, "DOWN");
 		}
 	} else {
-		waddstr(w_net, "UP");
+		waddstr_b(w_net, " (");
+		sprintf(tmp, "#%u, UP", info->ifindex);
+		waddstr(w_net, tmp);
 
 		if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
 			waddstr(w_net, " RUNNING");
@@ -643,7 +644,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 		waddstr_b(w_net, ether_lookup(&active->hwaddr));
 	}
 
-	if (info->flags & IFF_UP) {
+	if (active->flags & info->flags & IFF_UP) {
 		// Number of TX queues
 		if (info->numtxq > 1 || (info->master && info->master->numtxq > 1)) {
 			waddstr(w_net, ", txq: ");
