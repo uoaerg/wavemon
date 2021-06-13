@@ -159,19 +159,6 @@ static void if_info_addr_cb(struct nl_object *obj, void *data) {
 		}
 		ai->count++;
 	}
-
-	if (!info->flags) {
-		struct rtnl_link *link = rtnl_addr_get_link(addr);
-		struct nl_addr *hwaddr = rtnl_link_get_addr(link);
-
-		info->flags  = rtnl_link_get_flags(link);
-		info->mtu    = rtnl_link_get_mtu(link);
-		info->numtxq = rtnl_link_get_num_tx_queues(link);
-		info->txqlen = rtnl_link_get_txqlen(link);
-
-		memcpy(&info->hwaddr, nl_addr_get_binary_addr(hwaddr), nl_addr_get_len(hwaddr));
-		strncpy(info->qdisc, rtnl_link_get_qdisc(link), sizeof(info->qdisc)-1);
-	}
 }
 
 void if_getinf(const char *ifname, struct if_info *info)

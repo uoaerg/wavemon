@@ -733,6 +733,8 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 		}
 	}
 
+	free(info->master);
+
 	wclrtoborder(w_net);
 	wrefresh(w_net);
 }
