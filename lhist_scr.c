@@ -138,6 +138,10 @@ void iw_cache_update(struct iw_nl80211_linkstat *ls)
 	if (sig_level == 0)
 		sig_level = ls->bss_signal;
 
+	/* If the signal level is positive, assume it is an absolute value (#100). */
+	if (sig_level > 0)
+		sig_level *= -1;
+
 	if (sig_level == 0) {
 		avg.valid = false;
 	} else {

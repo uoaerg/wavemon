@@ -105,6 +105,10 @@ static void display_levels(void)
 	if (sig_level == 0)
 		sig_level = ls_cur->bss_signal;
 
+	/* If the signal level is positive, assume it is an absolute value (#100). */
+	if (sig_level > 0)
+		sig_level *= -1;
+
 	for (line = 1; line <= WH_LEVEL; line++)
 		mvwclrtoborder(w_levels, line, 1);
 
