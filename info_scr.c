@@ -608,6 +608,8 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			}
 		}
 	} else {
+		waddstr(w_net, info->ifname);
+
 		waddstr_b(w_net, " (");
 		sprintf(tmp, "#%u, UP", info->ifindex);
 		waddstr(w_net, tmp);
