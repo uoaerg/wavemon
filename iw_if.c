@@ -139,6 +139,8 @@ static void if_info_link_cb(struct nl_object *obj, void *data) {
 			strncpy(info->type, type, sizeof(info->type)-1);
 		strncpy(info->ifname, rtnl_link_get_name(link), sizeof(info->ifname)-1);
 		strncpy(info->qdisc, rtnl_link_get_qdisc(link), sizeof(info->qdisc)-1);
+		rtnl_link_mode2str(rtnl_link_get_linkmode(link), info->mode, sizeof(info->mode)-1);
+		rtnl_link_carrier2str(rtnl_link_get_carrier(link), info->carrier, sizeof(info->carrier)-1);
 
 		info->flags  = rtnl_link_get_flags(link);
 		info->mtu    = rtnl_link_get_mtu(link);

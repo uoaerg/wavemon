@@ -652,6 +652,31 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wmove(w_net, 2, 1);
 	wclrtoborder(w_net);
 
+	waddstr(w_net, "mode: ");
+	if (active->flags & info->flags & IFF_UP) {
+		waddstr_b(w_net, info->mode);
+
+		waddstr(w_net, ", carrier: ");
+		waddstr_b(w_net, info->carrier);
+
+		// Queueing discipline
+		if (*info->qdisc) {
+			waddstr(w_net, ", qdisc: ");
+			waddstr_b(w_net, info->qdisc);
+			if (info->master && *info->master->qdisc &&
+			    strcmp(info->master->qdisc, info->qdisc)) {
+				waddstr(w_net, "/");
+				waddstr_b(w_net, info->master->qdisc);
+			}
+		}
+	} else {
+		waddstr_b(w_net, "n/a");
+	}
+
+
+	wmove(w_net, 3, 1);
+	wclrtoborder(w_net);
+
 	/* Layer 2 information (display hardware address of active interface). */
 	waddstr(w_net, "mac: ");
 	if (ether_addr_is_zero(&active->hwaddr)) {
@@ -673,17 +698,6 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			}
 		}
 
-		// Queueing discipline
-		if (*info->qdisc) {
-			waddstr(w_net, ", qdisc: ");
-			waddstr_b(w_net, info->qdisc);
-			if (info->master && *info->master->qdisc &&
-			    strcmp(info->master->qdisc, info->qdisc)) {
-				waddstr(w_net, "/");
-				waddstr_b(w_net, info->master->qdisc);
-			}
-		}
-
 		// Queue lengths
 		waddstr(w_net, ", qlen: ");
 		sprintf(tmp, "%u", info->txqlen);
@@ -693,22 +707,22 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			sprintf(tmp, "%u", info->master->txqlen);
 			waddstr_b(w_net, tmp);
 		}
-	}
 
-	/* 802.11 MTU may be greater than Ethernet MTU (1500) */
-	if (info->mtu && info->mtu != ETH_DATA_LEN) {
-		waddstr(w_net, ",  mtu: ");
-		sprintf(tmp, "%u", info->mtu);
-		waddstr_b(w_net, tmp);
-		if (info->master && info->master->mtu != info->mtu) {
-			waddstr(w_net, "/");
-			sprintf(tmp, "%u", info->master->mtu);
+		/* 802.11 MTU may be greater than Ethernet MTU (1500) */
+		if (info->mtu && info->mtu != ETH_DATA_LEN) {
+			waddstr(w_net, ", mtu: ");
+			sprintf(tmp, "%u", info->mtu);
 			waddstr_b(w_net, tmp);
+			if (info->master && info->master->mtu != info->mtu) {
+				waddstr(w_net, "/");
+				sprintf(tmp, "%u", info->master->mtu);
+				waddstr_b(w_net, tmp);
+			}
 		}
 	}
 
 	wclrtoborder(w_net);
-	wmove(w_net, 3, 1);
+	wmove(w_net, 4, 1);
 
 	/* Layer 3 information of active interface */
 	waddstr(w_net, "ip4: ");
@@ -730,7 +744,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	}
 	wclrtoborder(w_net);
 
-	wmove(w_net, 4, 1);
+	wmove(w_net, 5, 1);
 	waddstr(w_net, "ip6: ");
 	if (!*active->v6.addr) {
 		waddstr_b(w_net, "n/a");

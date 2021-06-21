@@ -94,6 +94,8 @@ struct addr_info {
  * @flags:	Interface flags
  * @type:	Interface type (relevant for master interface)
  * @mtu:	Interface MTU
+ * @carrier:    Carrier mode of the interface
+ * @mode:       Link mode of the interface
  * @qdisc:	Queuing discipline
  * @numtxq:	Number of TX queues
  * @txqlen:	TX queue length
@@ -108,7 +110,9 @@ struct if_info {
 	char			type[16];
 	uint16_t		flags;
 	uint16_t		mtu;
-	char			qdisc[16];
+	char			carrier[16],
+				mode[16],
+				qdisc[16];
 	uint16_t		numtxq,
 				txqlen;
 
