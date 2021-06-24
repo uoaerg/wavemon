@@ -563,14 +563,17 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wmove(w_net, 1, 1);
 	wclrtoborder(w_net);
 
-	if (!(info->flags & IFF_UP)) {
+	if (!ifinfo_is_up(info)) {
 		waddstr(w_net, info->ifname);
 
-		waddstr_b(w_net, " (");
-		sprintf(tmp, "#%u, ", info->ifindex);
+		sprintf(tmp, " #%u ", info->ifindex);
 		waddstr(w_net, tmp);
 
-		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE, "DOWN");
+		waddstr_b(w_net, "(");
+
+		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE,
+			!(info->flags & IFF_UP) ? "DOWN" : "no carrier");
+
 	} else if (info->master) {
 		waddstr_b(w_net, info->ifname);
 
@@ -578,12 +581,12 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			is_primary_slave(info->master->ifname, info->ifname)
 			? "primary " : "");
 		waddstr(w_net, tmp);
-		waddstr_b(w_net, info->master->ifname);
 
-		sprintf(tmp, " #%u", info->master->ifindex);
+		waddstr_b(w_net, info->master->ifname);
+		sprintf(tmp, " #%u ", info->master->ifindex);
 		waddstr(w_net, tmp);
 
-		waddstr_b(w_net, " (");
+		waddstr_b(w_net, "(");
 
 		if (!(active->flags & IFF_UP)) {
 			waddstr(w_net, "DOWN");
@@ -609,10 +612,11 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 		}
 	} else {
 		waddstr(w_net, info->ifname);
-
-		waddstr_b(w_net, " (");
-		sprintf(tmp, "#%u, UP", info->ifindex);
+		sprintf(tmp, " #%u ", info->ifindex);
 		waddstr(w_net, tmp);
+		waddstr_b(w_net, "(");
+
+		waddstr(w_net, "UP");
 
 		if (info->flags & IFF_RUNNING)		/* Interface RFC2863 OPER_UP	*/
 			waddstr(w_net, " RUNNING");
@@ -653,11 +657,8 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wclrtoborder(w_net);
 
 	waddstr(w_net, "mode: ");
-	if (active->flags & info->flags & IFF_UP) {
+	if (ifinfo_is_up(info)) {
 		waddstr_b(w_net, info->mode);
-
-		waddstr(w_net, ", carrier: ");
-		waddstr_b(w_net, info->carrier);
 
 		// Queueing discipline
 		if (*info->qdisc) {
@@ -669,23 +670,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 				waddstr_b(w_net, info->master->qdisc);
 			}
 		}
-	} else {
-		waddstr_b(w_net, "n/a");
-	}
 
-
-	wmove(w_net, 3, 1);
-	wclrtoborder(w_net);
-
-	/* Layer 2 information (display hardware address of active interface). */
-	waddstr(w_net, "mac: ");
-	if (ether_addr_is_zero(&active->hwaddr)) {
-		waddstr_b(w_net, "n/a");
-	} else {
-		waddstr_b(w_net, ether_lookup(&active->hwaddr));
-	}
-
-	if (active->flags & info->flags & IFF_UP) {
 		// Number of TX queues
 		if (info->numtxq > 1 || (info->master && info->master->numtxq > 1)) {
 			waddstr(w_net, ", txq: ");
@@ -707,7 +692,24 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 			sprintf(tmp, "%u", info->master->txqlen);
 			waddstr_b(w_net, tmp);
 		}
+	}
 
+	wmove(w_net, 3, 1);
+	wclrtoborder(w_net);
+
+	/* Layer 2 information (display hardware address of active interface). */
+	waddstr(w_net, "mac: ");
+	if (ether_addr_is_zero(&active->hwaddr)) {
+		waddstr_b(w_net, "n/a");
+	} else if (!ifinfo_is_up(info)) {
+		wadd_attr_str(w_net, COLOR_PAIR(CP_RED) | A_REVERSE,
+			ether_lookup(&active->hwaddr));
+	} else {
+		waddstr_b(w_net, ether_lookup(&active->hwaddr));
+	}
+
+
+	if (ifinfo_is_up(info)) {
 		/* 802.11 MTU may be greater than Ethernet MTU (1500) */
 		if (info->mtu && info->mtu != ETH_DATA_LEN) {
 			waddstr(w_net, ", mtu: ");
@@ -779,7 +781,7 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 
 	display_interface(w_if, &ifs, net_info.flags & IFF_UP);
 
-	if (net_info.flags & IFF_UP) {
+	if (ifinfo_is_up(&net_info)) {
 		display_info(w_info, &ifs);
 	} else {
 		for (int i = 1; i <= WH_INFO; i++)

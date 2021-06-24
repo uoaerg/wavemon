@@ -140,12 +140,12 @@ static void if_info_link_cb(struct nl_object *obj, void *data) {
 		strncpy(info->ifname, rtnl_link_get_name(link), sizeof(info->ifname)-1);
 		strncpy(info->qdisc, rtnl_link_get_qdisc(link), sizeof(info->qdisc)-1);
 		rtnl_link_mode2str(rtnl_link_get_linkmode(link), info->mode, sizeof(info->mode)-1);
-		rtnl_link_carrier2str(rtnl_link_get_carrier(link), info->carrier, sizeof(info->carrier)-1);
 
-		info->flags  = rtnl_link_get_flags(link);
-		info->mtu    = rtnl_link_get_mtu(link);
-		info->numtxq = rtnl_link_get_num_tx_queues(link);
-		info->txqlen = rtnl_link_get_txqlen(link);
+		info->flags   = rtnl_link_get_flags(link);
+		info->carrier = rtnl_link_get_carrier(link);
+		info->mtu     = rtnl_link_get_mtu(link);
+		info->numtxq  = rtnl_link_get_num_tx_queues(link);
+		info->txqlen  = rtnl_link_get_txqlen(link);
 
 		if (info->flags & IFF_SLAVE) {
 			info->master = calloc(1, sizeof(*info->master));
@@ -155,6 +155,13 @@ static void if_info_link_cb(struct nl_object *obj, void *data) {
 			info->master->ifindex = rtnl_link_get_master(link);
 		}
 	}
+}
+
+/* ifinfo_is_up if the interface specified by @if_info is up and has carrier. */
+bool ifinfo_is_up(const struct if_info *const info) {
+	if (info->master && !(info->master->flags & IFF_UP))
+		return false;
+	return (info->flags & IFF_UP) && info->carrier;
 }
 
 /* if_info_addr_cb fills in interface address information into @data. */

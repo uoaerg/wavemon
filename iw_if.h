@@ -92,32 +92,37 @@ struct addr_info {
  * @hwaddr:	MAC address
  * @v4,v6:	IPv4/6 address
  * @flags:	Interface flags
- * @type:	Interface type (relevant for master interface)
+ * @carrier:	Whether the carrier is up
  * @mtu:	Interface MTU
- * @carrier:    Carrier mode of the interface
- * @mode:       Link mode of the interface
+ * @type:	Interface type (relevant for master interface)
+ * @mode:	Link mode of the interface
  * @qdisc:	Queuing discipline
  * @numtxq:	Number of TX queues
  * @txqlen:	TX queue length
- * @master:	Information about master interface (if present)
+ * @master:	Link to master interface (if present)
  */
 struct if_info {
 	int			ifindex;
 	char			ifname[64];
+
 	struct ether_addr	hwaddr;
 	struct addr_info	v4,
 				v6;
-	char			type[16];
+
 	uint16_t		flags;
+	bool			carrier;
 	uint16_t		mtu;
-	char			carrier[16],
+
+	char			type[16],
 				mode[16],
 				qdisc[16];
+
 	uint16_t		numtxq,
 				txqlen;
 
 	struct if_info		*master;
 };
+extern bool ifinfo_is_up(const struct if_info *const if_info);
 
 extern bool if_is_up(const char *ifname);
 extern int  if_set_up(const char *ifname);
