@@ -359,7 +359,10 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 			waddstr_b(w_info, pretty_time(ls_cur->connected_time));
 
 			waddstr(w_info, ", inactive: ");
-			sprintf(tmp, "%.1fs", (float)ls_cur->inactive_time/1e3);
+			if  (ls_cur->inactive_time > 100)
+				sprintf(tmp, "%.1fs", (float)ls_cur->inactive_time/1e3);
+			else
+				sprintf(tmp, "%dms", ls_cur->inactive_time);
 			waddstr_b(w_info, tmp);
 		}
 	}
