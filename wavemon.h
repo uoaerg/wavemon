@@ -379,7 +379,7 @@ static inline char *int_counts(uint32_t count)
 	else if (count < 1e9)
 		sprintf(result, "%.0fk", count/1e3);
 	else
-		sprintf(result, "%.lG", (double)count);
+		sprintf(result, "%.1G", (double)count);
 
 	return result;
 }
