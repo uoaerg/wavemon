@@ -132,8 +132,9 @@ static char *get_confname(void)
 	char *full_path;
 	char *homedir = getenv("HOME");
 	char *xdg_env = getenv("XDG_CONFIG_HOME");
-	char *xdg_config_dir = strcat(xdg_env,NAME);
+	char *xdg_config_dir;
 	struct passwd *pw;
+
 
 	if (homedir == NULL && xdg_env == NULL) {
 		pw = getpwuid(getuid());
@@ -143,6 +144,8 @@ static char *get_confname(void)
 	}
 
 	// use XDG_CONFIG_HOME/wavemon if available
+	xdg_config_dir = malloc(strlen(xdg_env) + strlen(NAME) + 2);
+	sprintf(xdg_config_dir, "%s/%s", xdg_env, NAME);
 	DIR* check_xdgdir = opendir(xdg_config_dir);
 
 	if (check_xdgdir) {
