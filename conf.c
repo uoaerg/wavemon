@@ -128,17 +128,27 @@ const char *conf_ifname(void)
 /* Return full path of rcfile. Allocates string which must bee free()-d. */
 static char *get_confname(void)
 {
-	char *full_path, *homedir = getenv("HOME");
+	char *full_path;
+	char *homedir = getenv("HOME");
+	char *xdgconfigdir = getenv("XDG_CONFIG_HOME");
 	struct passwd *pw;
 
-	if (homedir == NULL) {
+	if (homedir == NULL && xdgconfigdir == NULL) {
 		pw = getpwuid(getuid());
 		if (pw == NULL)
 			err_quit("can not determine $HOME");
 		homedir = pw->pw_dir;
 	}
-	full_path = malloc(strlen(homedir) + strlen(CFNAME) + 3);
-	sprintf(full_path, "%s/%s", homedir, CFNAME);
+
+	// use XDG_CONFIG_HOME if available
+	if (xdgconfigdir != NULL) {
+		full_path = malloc(strlen(xdgconfigdir) + strlen(CFNAME) + 9);
+		sprintf(full_path, "%s/wavemon/%s", xdgconfigdir, CFNAME);
+	} else {
+		// Default to ~/.wavemonrc
+		full_path = malloc(strlen(homedir) + strlen(CFNAME) + 3);
+		sprintf(full_path, "%s/.%s", homedir, CFNAME);
+	}
 
 	return full_path;
 }
