@@ -19,6 +19,7 @@
 #include "iw_if.h"
 #include <pwd.h>
 #include <netlink/version.h>
+#include <dirent.h>
 
 /* GLOBALS */
 static char **if_names = NULL;	/* Array of WiFi interface names */
@@ -130,20 +131,24 @@ static char *get_confname(void)
 {
 	char *full_path;
 	char *homedir = getenv("HOME");
-	char *xdgconfigdir = getenv("XDG_CONFIG_HOME");
+	char *xdg_env = getenv("XDG_CONFIG_HOME");
+	char *xdg_config_dir = strcat(xdg_env,NAME);
 	struct passwd *pw;
 
-	if (homedir == NULL && xdgconfigdir == NULL) {
+	if (homedir == NULL && xdg_env == NULL) {
 		pw = getpwuid(getuid());
 		if (pw == NULL)
 			err_quit("can not determine $HOME");
 		homedir = pw->pw_dir;
 	}
 
-	// use XDG_CONFIG_HOME if available
-	if (xdgconfigdir != NULL) {
-		full_path = malloc(strlen(xdgconfigdir) + strlen(CFNAME) + 9);
-		sprintf(full_path, "%s/wavemon/%s", xdgconfigdir, CFNAME);
+	// use XDG_CONFIG_HOME/wavemon if available
+	DIR* check_xdgdir = opendir(xdg_config_dir);
+
+	if (check_xdgdir) {
+		full_path = malloc(strlen(xdg_config_dir) + strlen(CFNAME) + 3);
+		sprintf(full_path, "%s/%s", xdg_config_dir, CFNAME);
+
 	} else {
 		// Default to ~/.wavemonrc
 		full_path = malloc(strlen(homedir) + strlen(CFNAME) + 3);
