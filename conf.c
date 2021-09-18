@@ -126,17 +126,10 @@ const char *conf_ifname(void)
 	return if_names[conf.if_idx];
 }
 
-/**
- * get_confname - Return full path of wavemon runtime configuration file.
- * Returns allocated string, which caller needs to de-allocate.
- */
-#define CFNAME	(PACKAGE_NAME "rc")
-static char *get_confname(void)
+/** Return $HOME directory of current user. */
+static char *get_homedir(void)
 {
-	char *xdg_env = getenv("XDG_CONFIG_HOME");
 	char *homedir = getenv("HOME");
-	char *full_path = NULL;
-	struct stat sb;
 
 	if (homedir == NULL) {
 		struct passwd *pw = getpwuid(getuid());
@@ -146,20 +139,28 @@ static char *get_confname(void)
 		homedir = pw->pw_dir;
 	}
 
+	return homedir;
+}
+
+/**
+ * get_confname - Return full path of wavemon runtime configuration file.
+ * Returns allocated string, which caller needs to de-allocate.
+ */
+#define CFNAME	(PACKAGE_NAME "rc")
+static char *get_confname(void)
+{
+	char *xdg_env = getenv("XDG_CONFIG_HOME");
 	// Default to ~/.wavemonrc
-	full_path = malloc(strlen(homedir) + strlen(CFNAME) + 3);
-	sprintf(full_path, "%s/.%s", homedir, CFNAME);
+	char *full_path = a_sprintf("%s/.%s", get_homedir(), CFNAME);
 
 	// Use XDG_CONFIG_HOME/wavemon/wavemonrc if available
 	if (xdg_env != NULL) {
-		char *xdg_config_dir = malloc(strlen(xdg_env) + strlen(PACKAGE_NAME) + 2);
-
-		sprintf(xdg_config_dir, "%s/%s", xdg_env, PACKAGE_NAME);
+		char *xdg_config_dir = a_sprintf("%s/%s", xdg_env, PACKAGE_NAME);
+		struct stat sb;
 
 		if (stat(xdg_config_dir, &sb) == 0 && S_ISDIR(sb.st_mode)) {
 			free(full_path);
-			full_path = malloc(strlen(xdg_config_dir) + strlen(CFNAME) + 3);
-			sprintf(full_path, "%s/%s", xdg_config_dir, CFNAME);
+			full_path = a_sprintf("%s/%s", xdg_config_dir, CFNAME);
 		}
 		free(xdg_config_dir);
 	}

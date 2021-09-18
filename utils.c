@@ -3,6 +3,7 @@
  */
 #include "wavemon.h"
 #include "nl80211.h"
+#include <stdarg.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -82,6 +83,33 @@ char *mac_addr(const struct sockaddr *sa)
 	if (sa->sa_family != ARPHRD_ETHER)
 		return "00:00:00:00:00:00";
 	return ether_lookup((const struct ether_addr *)sa->sa_data);
+}
+
+
+/* Print into allocated string (reimplementation of asprintf(3), since not standard). */
+char *a_sprintf(const char *fmt, ...)
+{
+	char *p = NULL;
+	int size;
+	va_list ap;
+
+	va_start(ap, fmt);
+	size = vsnprintf(NULL, 0, fmt, ap);
+	if (size < 0)
+		err_quit("unable to determine '%s' string size", fmt);
+	va_end(ap);
+
+	p = malloc(++size);	/* Add one for '\0'. */
+	if (p == NULL)
+		err_sys("unable to allocate string space");
+
+	va_start(ap, fmt);
+	size = vsnprintf(p, size, fmt, ap);
+	if (size < 0)
+		err_quit("unable to format '%s' properly", fmt);
+	va_end(ap);
+
+	return p;
 }
 
 /* count bits set in @mask the Brian Kernighan way */

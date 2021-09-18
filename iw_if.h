@@ -172,6 +172,7 @@ extern int read_number_file(const char *path, uint32_t *num);
 extern char *ether_addr(const struct ether_addr *ea);
 extern char *ether_lookup(const struct ether_addr *ea);
 extern char *mac_addr(const struct sockaddr *sa);
+extern char *a_sprintf(const char *fmt, ...);
 extern uint8_t bit_count(uint32_t mask);
 extern uint8_t prefix_len(const struct sockaddr *netmask);
 extern const char *lft2str(const uint32_t lifetime);
