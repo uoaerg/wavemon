@@ -126,12 +126,16 @@ const char *conf_ifname(void)
 	return if_names[conf.if_idx];
 }
 
-/* Return full path of rcfile. Allocates string which must bee free()-d. */
+/**
+ * get_confname - Return full path of wavemon runtime configuration file.
+ * Returns allocated string, which caller needs to de-allocate.
+ */
+#define CFNAME	(PACKAGE_NAME "rc")
 static char *get_confname(void)
 {
-	char *full_path = NULL;
-	char *homedir = getenv("HOME");
 	char *xdg_env = getenv("XDG_CONFIG_HOME");
+	char *homedir = getenv("HOME");
+	char *full_path = NULL;
 	struct stat sb;
 
 	if (homedir == NULL) {
@@ -148,9 +152,9 @@ static char *get_confname(void)
 
 	// Use XDG_CONFIG_HOME/wavemon/wavemonrc if available
 	if (xdg_env != NULL) {
-		char *xdg_config_dir = malloc(strlen(xdg_env) + strlen(NAME) + 2);
+		char *xdg_config_dir = malloc(strlen(xdg_env) + strlen(PACKAGE_NAME) + 2);
 
-		sprintf(xdg_config_dir, "%s/%s", xdg_env, NAME);
+		sprintf(xdg_config_dir, "%s/%s", xdg_env, PACKAGE_NAME);
 
 		if (stat(xdg_config_dir, &sb) == 0 && S_ISDIR(sb.st_mode)) {
 			free(full_path);
@@ -566,11 +570,11 @@ void getconf(int argc, char *argv[])
 	}
 
 	if (version) {
-		printf("wavemon %s\n", PACKAGE_VERSION);
+		printf("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
-		printf("usage: wavemon [ -hgv ] [ -i ifname ]\n");
+		printf("usage: %s [ -hgv ] [ -i ifname ]\n", PACKAGE_NAME);
 		printf("  -g            Ensure screen is sufficiently dimensioned\n");
 		printf("  -h            This help screen\n");
 		printf("  -i <ifname>   Use specified network interface (default: auto)\n");

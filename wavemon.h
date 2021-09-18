@@ -40,9 +40,6 @@
 
 #include "llist.h"
 
-#define CFNAME	"wavemonrc"
-#define NAME	"wavemon"
-
 /**
  * Minimum screen dimensions.
  * The number of lines depends on the size requirements of scr_info(). The
