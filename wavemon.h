@@ -40,7 +40,8 @@
 
 #include "llist.h"
 
-#define CFNAME	".wavemonrc"
+#define CFNAME	"wavemonrc"
+#define NAME	"wavemon"
 
 /**
  * Minimum screen dimensions.
