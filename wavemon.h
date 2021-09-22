@@ -148,7 +148,7 @@ extern void getconf(int argc, char *argv[]);
 /* Configuration items to manipulate the current configuration */
 struct conf_item {
 	char	*name,		/* name for preferences screen */
-		*cfname;	/* name for ~/.wavemonrc */
+		*cfname;	/* name for wavemonrc(5) */
 
 	enum {			/* type of parameter */
 		t_int,		/* @v.i is interpreted as raw value */
@@ -164,7 +164,7 @@ struct conf_item {
 
 	char	**list;		/* t_list: NULL-terminated array of strings */
 	int	*dep;		/* dependency */
-	bool	hidden;		/* only allow to set via wavemonrc */
+	bool	hidden;		/* only allow to set via wavemonrc(5) */
 
 	int	min,		/* value boundaries */
 		max,

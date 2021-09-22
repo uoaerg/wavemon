@@ -142,29 +142,54 @@ static char *get_homedir(void)
 	return homedir;
 }
 
+/** Ensure that @dirpath is available as directory. */
+static void ensure_is_directory(const char *dirpath)
+{
+	struct stat sb;
+
+	if (stat(dirpath, &sb) == 0) {
+		if (!S_ISDIR(sb.st_mode))
+			err_quit("%s is not a directory", dirpath);
+	} else if (errno != ENOENT) {
+		err_sys("unable to access %s", dirpath);
+	} else if (mkdir(dirpath, 0755) != 0) {
+		err_sys("unable to create directory %s", dirpath);
+	}
+}
+
 /**
- * get_confname - Return full path of wavemon runtime configuration file.
+ * get_config_path - Return full path of wavemon runtime configuration file.
+ * This is one of
+ * - $XDG_CONFIG_HOME/wavemon/wavemonrc, or
+ * -    $HOME/.config/wavemon/wavemonrc (fallback).
  * Returns allocated string, which caller needs to de-allocate.
  */
-#define CFNAME	(PACKAGE_NAME "rc")
-static char *get_confname(void)
+static char *get_config_path(void)
 {
-	char *xdg_env = getenv("XDG_CONFIG_HOME");
-	// Default to ~/.wavemonrc
-	char *full_path = a_sprintf("%s/.%s", get_homedir(), CFNAME);
+	char *xdg_config_env = getenv("XDG_CONFIG_HOME"),
+	     *xdg_config_home = NULL,
+	     *config_dir,
+	     *config_path;
+	struct stat sb;
 
-	// Use XDG_CONFIG_HOME/wavemon/wavemonrc if available
-	if (xdg_env != NULL) {
-		char *xdg_config_dir = a_sprintf("%s/%s", xdg_env, PACKAGE_NAME);
-		struct stat sb;
-
-		if (stat(xdg_config_dir, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-			free(full_path);
-			full_path = a_sprintf("%s/%s", xdg_config_dir, CFNAME);
-		}
-		free(xdg_config_dir);
+	// If $XDG_CONFIG_HOME is set, but unusable, fall back to ~/.config.
+	if (xdg_config_env && (stat(xdg_config_env, &sb) || !S_ISDIR(sb.st_mode))) {
+		xdg_config_env = NULL;
 	}
-	return full_path;
+
+	if (xdg_config_env == NULL) {
+		xdg_config_home = a_sprintf("%s/.config", get_homedir());
+		ensure_is_directory(xdg_config_home);
+	}
+
+	config_dir = a_sprintf("%s/%s", xdg_config_env ?: xdg_config_home, PACKAGE_NAME);
+	ensure_is_directory(config_dir);
+	free(xdg_config_home);
+
+	config_path = a_sprintf("%s/%src", config_dir, PACKAGE_NAME);
+	free(config_dir);
+
+	return config_path;
 }
 
 static void write_cf(void)
@@ -174,7 +199,7 @@ static void write_cf(void)
 	char *lp, *cp;
 	bool add = false;
 	size_t i;
-	char *cfname = get_confname();
+	char *cfname = get_config_path();
 	int cfld = ll_create();
 	FILE *fd = fopen(cfname, "w");
 
@@ -246,12 +271,18 @@ static void read_cf(void)
 	FILE *fd;
 	size_t len;
 	int lnum, found, v_int;
-	char *lp, *conv_err;
+	char *lp, *conv_err, *cfname;
 	bool file_needs_update = false;
-	char *cfname = get_confname();
+	char *legacy_location = a_sprintf("%s/.%src", get_homedir(), PACKAGE_NAME);
 
-	if (access(cfname, F_OK) != 0)
-		goto done;
+	// If a legacy configuration (~/.wavemonrc) exists, read it one last time.
+	if (access(legacy_location, F_OK) == 0) {
+		cfname = legacy_location;
+	} else {
+		cfname = get_config_path();
+		if (access(cfname, F_OK) != 0)
+			goto done;
+	}
 
 	fd = fopen(cfname, "r");
 	if (fd == NULL)
@@ -333,12 +364,15 @@ static void read_cf(void)
 		}
 	}
 	fclose(fd);
-done:
-	free(cfname);
 
+done:
 	if (file_needs_update) {
 		write_cf();
 	}
+	if (cfname == legacy_location && unlink(legacy_location) != 0) {
+		err_sys("unable to remove %s", legacy_location);
+	}
+	free(cfname);
 }
 
 static void init_conf_items(void)
