@@ -231,7 +231,7 @@ static void display_packet_counts(void)
 
 	if (ls_cur->rx_drop_misc) {
 		waddstr(w_stats, ", drop: ");
-		sprintf(tmp, "%'llu (%.1f%%)", (unsigned long long)ls_cur->rx_drop_misc,
+		sprintf(tmp, "%'llu (%.1g%%)", (unsigned long long)ls_cur->rx_drop_misc,
 				(1e2 * ls_cur->rx_drop_misc)/ls_cur->rx_packets);
 		waddstr_b(w_stats, tmp);
 	}
@@ -258,7 +258,7 @@ static void display_packet_counts(void)
 
 	if (ls_cur->tx_retries) {
 		waddstr(w_stats, ", retries: ");
-		sprintf(tmp, "%s (%.1f%%)", int_counts(ls_cur->tx_retries),
+		sprintf(tmp, "%s (%.1g%%)", int_counts(ls_cur->tx_retries),
 			(1e2 * ls_cur->tx_retries)/ls_cur->tx_packets);
 		waddstr_b(w_stats, tmp);
 	}
