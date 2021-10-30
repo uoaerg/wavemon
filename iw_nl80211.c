@@ -458,10 +458,10 @@ static int link_handler(struct nl_msg *msg, void *arg)
 	static struct nla_policy bss_policy[NL80211_BSS_MAX + 1] = {
 		[NL80211_BSS_TSF] = { .type = NLA_U64 },
 		[NL80211_BSS_FREQUENCY] = { .type = NLA_U32 },
-		[NL80211_BSS_BSSID] = { },
+		[NL80211_BSS_BSSID] = { 0 },
 		[NL80211_BSS_BEACON_INTERVAL] = { .type = NLA_U16 },
 		[NL80211_BSS_CAPABILITY] = { .type = NLA_U16 },
-		[NL80211_BSS_INFORMATION_ELEMENTS] = { },
+		[NL80211_BSS_INFORMATION_ELEMENTS] = { 0 },
 		[NL80211_BSS_SIGNAL_MBM] = { .type = NLA_U32 },
 		[NL80211_BSS_SIGNAL_UNSPEC] = { .type = NLA_U8 },
 		[NL80211_BSS_STATUS] = { .type = NLA_U32 },

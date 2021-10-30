@@ -231,7 +231,7 @@ static void display_packet_counts(void)
 
 	if (ls_cur->rx_drop_misc) {
 		waddstr(w_stats, ", drop: ");
-		sprintf(tmp, "%'llu (%.2g%%)", (unsigned long long)ls_cur->rx_drop_misc,
+		sprintf(tmp, "%llu (%.2g%%)", (unsigned long long)ls_cur->rx_drop_misc,
 				(1e2 * ls_cur->rx_drop_misc)/ls_cur->rx_packets);
 		waddstr_b(w_stats, tmp);
 	}
@@ -423,7 +423,7 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 	wmove(w_info, 3, 1);
 	if (ls_cur->beacons) {
 		waddstr(w_info, "beacons: ");
-		sprintf(tmp, "%'llu", (unsigned long long)ls_cur->beacons);
+		sprintf(tmp, "%llu", (unsigned long long)ls_cur->beacons);
 		waddstr_b(w_info, tmp);
 
 		if (ls_cur->beacon_loss) {
@@ -560,7 +560,7 @@ static void display_info(WINDOW *w_info, struct iw_nl80211_ifstat *ifs)
 /** Network information pertaining to interface with interface index @ifindex. */
 static void display_netinfo(WINDOW *w_net, struct if_info *info)
 {
-	struct if_info *active = info->master ?: info;
+	struct if_info *active = info->master ? info->master : info;
 	char tmp[0x40];
 
 	wmove(w_net, 1, 1);

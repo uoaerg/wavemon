@@ -182,7 +182,7 @@ static char *get_config_path(void)
 		ensure_is_directory(xdg_config_home);
 	}
 
-	config_dir = a_sprintf("%s/%s", xdg_config_env ?: xdg_config_home, PACKAGE_NAME);
+	config_dir = a_sprintf("%s/%s", xdg_config_env ? xdg_config_env : xdg_config_home, PACKAGE_NAME);
 	ensure_is_directory(config_dir);
 	free(xdg_config_home);
 
