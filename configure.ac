@@ -8,7 +8,7 @@ AC_INIT([wavemon], [0.9.4], [https://github.com/uoaerg/wavemon], [wavemon-curren
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_FILES([Makefile])
 
-: ${CFLAGS="-O2 -Wall -Wextra"}
+: ${CFLAGS="-O2 -Wall -Wextra -Wpedantic"}
 
 # wavemon is only supported on Linux, warn user about futile compilations
 AC_CANONICAL_HOST
@@ -28,10 +28,10 @@ m4_define([NCURSES_CHECK_CONFIG],
    ncurses_save_CFLAGS="$CFLAGS"
    if test "x$ncurses_config_script_libs" != x; then
       LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
-      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      CFLAGS="$CFLAGS $ncurses_config_script_cflags"
       AC_CHECK_LIB([$1], [addnwstr], [
                      AC_DEFINE([HAVE_LIBNCURSESW], 1)
-                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
+                     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
                      LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
                    ], [

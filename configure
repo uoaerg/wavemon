@@ -2224,7 +2224,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 ac_config_files="$ac_config_files Makefile"
 
 
-: ${CFLAGS="-O2 -Wall -Wextra"}
+: ${CFLAGS="-O2 -Wall -Wextra -Wpedantic"}
 
 # wavemon is only supported on Linux, warn user about futile compilations
 # Make sure we can run config.sub.
@@ -3871,7 +3871,7 @@ fi
    ncurses_save_CFLAGS="$CFLAGS"
    if test "x$ncurses_config_script_libs" != x; then
       LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
-      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      CFLAGS="$CFLAGS $ncurses_config_script_cflags"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw6" >&5
 $as_echo_n "checking for addnwstr in -lncursesw6... " >&6; }
 if ${ac_cv_lib_ncursesw6_addnwstr+:} false; then :
@@ -3912,7 +3912,7 @@ if test "x$ac_cv_lib_ncursesw6_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
-                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
+                     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
                      LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
@@ -3934,7 +3934,7 @@ fi
    ncurses_save_CFLAGS="$CFLAGS"
    if test "x$ncurses_config_script_libs" != x; then
       LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
-      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      CFLAGS="$CFLAGS $ncurses_config_script_cflags"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw" >&5
 $as_echo_n "checking for addnwstr in -lncursesw... " >&6; }
 if ${ac_cv_lib_ncursesw_addnwstr+:} false; then :
@@ -3975,7 +3975,7 @@ if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
-                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
+                     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
                      LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
@@ -3997,7 +3997,7 @@ fi
    ncurses_save_CFLAGS="$CFLAGS"
    if test "x$ncurses_config_script_libs" != x; then
       LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
-      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      CFLAGS="$CFLAGS $ncurses_config_script_cflags"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw" >&5
 $as_echo_n "checking for addnwstr in -lncursesw... " >&6; }
 if ${ac_cv_lib_ncursesw_addnwstr+:} false; then :
@@ -4038,7 +4038,7 @@ if test "x$ac_cv_lib_ncursesw_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
-                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
+                     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
                      LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
@@ -4060,7 +4060,7 @@ fi
    ncurses_save_CFLAGS="$CFLAGS"
    if test "x$ncurses_config_script_libs" != x; then
       LDFLAGS="$ncurses_config_script_libs $LDFLAGS"
-      CFLAGS="$ncurses_config_script_cflags $CFLAGS"
+      CFLAGS="$CFLAGS $ncurses_config_script_cflags"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncurses" >&5
 $as_echo_n "checking for addnwstr in -lncurses... " >&6; }
 if ${ac_cv_lib_ncurses_addnwstr+:} false; then :
@@ -4101,7 +4101,7 @@ if test "x$ac_cv_lib_ncurses_addnwstr" = xyes; then :
 
                      $as_echo "#define HAVE_LIBNCURSESW 1" >>confdefs.h
 
-                     CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
+                     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
                      LIBS="$ncurses_config_script_libs $LIBS"
                      ncurses_script_success=yes
 
