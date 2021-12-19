@@ -101,13 +101,14 @@ void if_set_down_on_exit(void)
 const char *get_bonding_mode(const char *bonding_iface) {
 	static char mode[64];
 	char path[128];
+	int i;
 
 	snprintf(path, sizeof(path)-1, "/sys/class/net/%s/bonding/mode", bonding_iface);
 	if (read_file(path, mode, sizeof(mode)) > 0) {
 		char *p = mode;
 
 		// File contents look like: "active-backup 1". Return first word only.
-		for (int i = strlen(mode); --i > 0 && !isspace(*p);)
+		for (i = strlen(mode); --i > 0 && !isspace(*p);)
 			p++;
 		*p = '\0';
 		return mode;

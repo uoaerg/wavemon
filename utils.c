@@ -127,10 +127,11 @@ uint8_t bit_count(uint32_t mask)
 uint8_t prefix_len(const struct sockaddr *netmask)
 {
 	uint8_t bs = 0;
+	int i;
 
 	if (netmask->sa_family == AF_INET)
 		return bit_count(((const struct sockaddr_in *)netmask)->sin_addr.s_addr);
-	for (int i = 0; i < 16; i++)
+	for (i = 0; i < 16; i++)
 		bs += bit_count(((const struct sockaddr_in6 *)netmask)->sin6_addr.s6_addr[i]);
 	return bs;
 }

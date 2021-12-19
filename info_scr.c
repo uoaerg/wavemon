@@ -778,6 +778,7 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 {
 	struct iw_nl80211_ifstat ifs;
 	struct if_info net_info;
+	int i;
 
 	iw_nl80211_getifstat(&ifs);
 	if_getinf(conf_ifname(), &net_info);
@@ -787,7 +788,7 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 	if (ifinfo_is_up(&net_info)) {
 		display_info(w_info, &ifs);
 	} else {
-		for (int i = 1; i <= WH_INFO; i++)
+		for (i = 1; i <= WH_INFO; i++)
 			mvwclrtoborder(w_info, i, 1);
 	}
 	wrefresh(w_info);

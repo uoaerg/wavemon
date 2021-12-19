@@ -39,6 +39,7 @@ int handle_cmd(struct cmd *cmd)
 	struct nl_msg *msg;
 	static int nl80211_id = -1;
 	int ret;
+	size_t idx;
 
 	/*
 	 * Initialization of static components:
@@ -76,7 +77,7 @@ int handle_cmd(struct cmd *cmd)
 
 	/* Message attributes */
 	if (cmd->msg_args) {
-		for (size_t idx = 0; idx < cmd->msg_args_len; idx++)
+		for (idx = 0; idx < cmd->msg_args_len; idx++)
 			NLA_PUT(msg, cmd->msg_args[idx].type,
 				     cmd->msg_args[idx].len,
 				     cmd->msg_args[idx].data);

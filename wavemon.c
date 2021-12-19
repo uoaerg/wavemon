@@ -112,11 +112,13 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 {
 	WINDOW *menu = newwin(1, WAV_WIDTH, WAV_HEIGHT, 0);
 	char fkey[8];
+	enum wavemon_screen cur;
+	int i;
 
 	nodelay(menu, TRUE);
 	keypad(menu, TRUE);
 	wmove(menu, 0, 0);
-	for (enum wavemon_screen cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
+	for (cur = SCR_INFO; cur <= SCR_QUIT; cur++) {
 		const char *p = screens[cur].key_name;
 		const int attrs = cur != active ? COLOR_PAIR(CP_CYAN)
 						: COLOR_PAIR(CP_CYAN_ON_BLUE) | A_BOLD;
@@ -128,7 +130,7 @@ static WINDOW *init_menubar(const enum wavemon_screen active)
 
 			wattrset(menu, attrs);
 
-			for (int i = 0; i < MAX_MENU_KEY; i++) {
+			for (i = 0; i < MAX_MENU_KEY; i++) {
 				if (*p == screens[cur].shortcut)	{
 					wattron(menu, A_UNDERLINE);
 					waddch(menu, *p++);
@@ -158,7 +160,7 @@ static void check_geometry(void)
 int main(int argc, char *argv[])
 {
 	int bg_color = COLOR_BLACK;
-	enum wavemon_screen cur;
+	enum wavemon_screen cur, s;
 	volatile enum wavemon_screen next;
 	sigset_t blockmask, oldmask;
 
@@ -242,7 +244,7 @@ int main(int argc, char *argv[])
 				}
 
 				/* Main menu */
-				for (enum wavemon_screen s = SCR_INFO; s <= SCR_QUIT; s++) {
+				for (s = SCR_INFO; s <= SCR_QUIT; s++) {
 					if (*screens[s].key_name && (
 					    (unsigned)key == (s == SCR_QUIT ? '0' : '1' + s) ||
 					    (unsigned)key == KEY_F(s + 1) ||

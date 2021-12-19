@@ -305,8 +305,9 @@ static inline size_t argv_count(char **argv)
 static inline int argv_find(char **argv, const char *what)
 {
 	const size_t len = strlen(what);
+	size_t i;
 
-	for (size_t i = 0; argv[i]; i++)
+	for (i = 0; argv[i]; i++)
 		if (strncasecmp(argv[i], what, len) == 0)
 			return i;
 	return -1;
