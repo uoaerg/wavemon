@@ -28,7 +28,6 @@
 #include <net/ethernet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <linux/if.h>
 
 /* Definitions from linux/ieee80211.h (not necessarily part of distro headers) */
 #define WLAN_CAPABILITY_ESS		(1<<0)
