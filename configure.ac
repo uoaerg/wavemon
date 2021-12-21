@@ -45,7 +45,7 @@ m4_define([NCURSES_CHECK_CONFIG],
 ])
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C99
 AC_PROG_CPP
 AC_PROG_INSTALL
 

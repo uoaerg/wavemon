@@ -8,7 +8,13 @@ datadir     = $(datarootdir)/@PACKAGE_NAME@
 exec_perms  = 0755
 install-suid-root: exec_perms = 4755
 
-CC	 ?= @CC@
+# Allow overriding CC from the command-line.
+CC_DEFAULT := @CC@
+ifeq ($(origin CC), default)
+CC	 := $(CC_DEFAULT)
+else
+CC	 ?= $(CC_DEFAULT)
+endif
 CFLAGS	 ?= @CFLAGS@ @LIBNL3_CLI_CFLAGS@
 CPPFLAGS ?= @CPPFLAGS@
 LDFLAGS  ?= @LDFLAGS@
