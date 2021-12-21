@@ -158,8 +158,7 @@ static void check_geometry(void)
 int main(int argc, char *argv[])
 {
 	int bg_color = COLOR_BLACK;
-	enum wavemon_screen cur;
-	volatile enum wavemon_screen next;
+	volatile enum wavemon_screen cur, next;
 	sigset_t blockmask, oldmask;
 
 	getconf(argc, argv);
