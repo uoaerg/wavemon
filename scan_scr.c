@@ -97,13 +97,13 @@ static void display_aplist(WINDOW *w_aplst)
 {
 	char s[256];
 	const char *sort_type[] = {
-		[SO_CHAN]	= "Chan",
-		[SO_SIGNAL]	= "Sig",
-		[SO_MAC]        = "Mac",
-		[SO_ESSID]	= "Essid",
-		[SO_OPEN]	= "Open",
-		[SO_CHAN_SIG]	= "Ch/Sg",
-		[SO_OPEN_SIG]	= "Op/Sg"
+		[SO_CHAN]     = "Chan",
+		[SO_SIGNAL]   = "Sig",
+		[SO_MAC]      = "Mac",
+		[SO_ESSID]    = "Essid",
+		[SO_OPEN]     = "Open",
+		[SO_CHAN_SIG] = "Ch/Sg",
+		[SO_OPEN_SIG] = "Op/Sg"
 	};
 	int i, col, line = 1;
 	struct scan_entry *cur;
