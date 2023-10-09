@@ -183,7 +183,6 @@ int main(int argc, char *argv[])
 		use_default_colors();
 	}
 
-	init_pair(CP_STANDARD,	COLOR_WHITE,	bg_color);
 	init_pair(CP_RED,	COLOR_RED,	bg_color);
 	init_pair(CP_YELLOW,	COLOR_YELLOW,	bg_color);
 	init_pair(CP_GREEN,	COLOR_GREEN,	bg_color);
