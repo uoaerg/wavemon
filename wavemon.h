@@ -236,7 +236,8 @@ extern void waddbar(WINDOW *win, int y, float v, float min, float max,
 extern void waddthreshold(WINDOW *win, int y, float v, float tv,
 			  float minv, float maxv, int8_t *cscale, chtype tch);
 enum colour_pair {
-	CP_STANDARD = 1,
+	/* CP_STANDARD must be 0 for transparency to work */
+	CP_STANDARD,
 	CP_RED,
 	CP_YELLOW,
 	CP_GREEN,
