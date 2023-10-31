@@ -98,8 +98,8 @@ AC_CHECK_FUNCS([gettimeofday ether_ntohost], [],
 	       [AC_MSG_ERROR(function '$ac_func' not supported)])
 
 # libnl3 cli package (pulls in genl and route package).
-PKG_CHECK_MODULES([LIBNL3_CLI], [libnl-cli-3.0 >= 3.2], [],
-		  [AC_MSG_ERROR(need libnl-cli-3.0 >= 3.2)])
+PKG_CHECK_MODULES([LIBNL3_CLI], [libnl-cli-3.0 >= 3.2.22], [],
+		  [AC_MSG_ERROR(need libnl-cli-3.0 >= 3.2.22)])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_PROG_GCC_TRADITIONAL
