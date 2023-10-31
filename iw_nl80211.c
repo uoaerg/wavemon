@@ -96,8 +96,13 @@ int handle_cmd(struct cmd *cmd)
 	if (cmd->handler)
 		nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, cmd->handler, cmd->handler_arg);
 
+	/* Do not block, otherwise UI might get stalled waiting for updates */
+	nl_socket_set_nonblocking(cmd->sk);
 	while (ret > 0)
-		nl_recvmsgs(cmd->sk, cb);
+		if (nl_recvmsgs(cmd->sk, cb) == -NLE_AGAIN) {
+			ret = -NLE_AGAIN;
+			break;
+		}
 
 	nl_cb_put(cb);
 	nlmsg_free(msg);
