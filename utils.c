@@ -233,10 +233,24 @@ int ieee80211_frequency_to_channel(int freq)
 const char *channel_width_name(enum nl80211_chan_width width)
 {
 	switch (width) {
-	case NL80211_CHAN_WIDTH_20_NOHT:
-		return "20 MHz (no HT)";
+	case NL80211_CHAN_WIDTH_1:
+		return "1 MHz";
+	case NL80211_CHAN_WIDTH_2:
+		return "2 MHz";
+	case NL80211_CHAN_WIDTH_4:
+		return "4 MHz";
+	case NL80211_CHAN_WIDTH_8:
+		return "8 MHz";
+	case NL80211_CHAN_WIDTH_16:
+		return "16 MHz";
+	case NL80211_CHAN_WIDTH_5:
+		return "5 MHz";
+	case NL80211_CHAN_WIDTH_10:
+		return "10 MHz";
 	case NL80211_CHAN_WIDTH_20:
 		return "20 MHz";
+	case NL80211_CHAN_WIDTH_20_NOHT:
+		return "20 MHz (no HT)";
 	case NL80211_CHAN_WIDTH_40:
 		return "40 MHz";
 	case NL80211_CHAN_WIDTH_80:
@@ -245,13 +259,10 @@ const char *channel_width_name(enum nl80211_chan_width width)
 		return "80+80 MHz";
 	case NL80211_CHAN_WIDTH_160:
 		return "160 MHz";
-	case NL80211_CHAN_WIDTH_5:
-		return "5 MHz";
-	case NL80211_CHAN_WIDTH_10:
-		return "10 MHz";
-	default:
-		return "unknown";
+	case NL80211_CHAN_WIDTH_320:
+		return "320 MHz";
 	}
+	return "unknown";
 }
 
 /* stolen from iw:interface.c */
@@ -266,9 +277,8 @@ const char *channel_type_name(enum nl80211_channel_type channel_type)
 		return "HT40-";
 	case NL80211_CHAN_HT40PLUS:
 		return "HT40+";
-	default:
-		return "unknown";
 	}
+	return "unknown";
 }
 
 /* stolen from iw:util.c */
