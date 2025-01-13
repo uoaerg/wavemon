@@ -582,6 +582,8 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 
 	if (sinfo[NL80211_STA_INFO_RX_BYTES64])
 		ls->rx_bytes = nla_get_u64(sinfo[NL80211_STA_INFO_RX_BYTES64]);
+	else if (sinfo[NL80211_STA_INFO_RX_BYTES])
+		ls->rx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]);
 	if (sinfo[NL80211_STA_INFO_RX_PACKETS])
 		ls->rx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]);
 	if (sinfo[NL80211_STA_INFO_RX_DROP_MISC])
@@ -589,6 +591,8 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 
 	if (sinfo[NL80211_STA_INFO_TX_BYTES64])
 		ls->tx_bytes = nla_get_u64(sinfo[NL80211_STA_INFO_TX_BYTES64]);
+	else if (sinfo[NL80211_STA_INFO_TX_BYTES])
+		ls->tx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]);
 	if (sinfo[NL80211_STA_INFO_TX_PACKETS])
 		ls->tx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_TX_PACKETS]);
 
