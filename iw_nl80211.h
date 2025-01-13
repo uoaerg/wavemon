@@ -181,9 +181,9 @@ struct iw_nl80211_linkstat {
 	 * Station details (not always filled in):
 	 */
 	uint32_t		inactive_time,
-				connected_time,
-				rx_bytes,
-				rx_packets;
+				connected_time;
+	uint64_t		rx_bytes;
+	uint32_t		rx_packets;
 	uint64_t		rx_drop_misc;
 
 	uint16_t		beacon_int;
@@ -192,8 +192,8 @@ struct iw_nl80211_linkstat {
 	uint64_t		beacons;
 	uint32_t		beacon_loss;
 
-	uint32_t		tx_bytes,
-				tx_packets,
+	uint64_t		tx_bytes;
+	uint32_t		tx_packets,
 				tx_retries,
 				tx_failed;
 

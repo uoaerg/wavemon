@@ -518,7 +518,9 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 		[NL80211_STA_INFO_CONNECTED_TIME] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_INACTIVE_TIME] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_RX_BYTES] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_RX_BYTES64] = { .type = NLA_U64 },
 		[NL80211_STA_INFO_TX_BYTES] = { .type = NLA_U32 },
+		[NL80211_STA_INFO_TX_BYTES64] = { .type = NLA_U64 },
 		[NL80211_STA_INFO_RX_PACKETS] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_TX_PACKETS] = { .type = NLA_U32 },
 		[NL80211_STA_INFO_SIGNAL] = { .type = NLA_U8 },
@@ -578,15 +580,15 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 	if (sinfo[NL80211_STA_INFO_CONNECTED_TIME])
 		ls->connected_time = nla_get_u32(sinfo[NL80211_STA_INFO_CONNECTED_TIME]);
 
-	if (sinfo[NL80211_STA_INFO_RX_BYTES])
-		ls->rx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_RX_BYTES]);
+	if (sinfo[NL80211_STA_INFO_RX_BYTES64])
+		ls->rx_bytes = nla_get_u64(sinfo[NL80211_STA_INFO_RX_BYTES64]);
 	if (sinfo[NL80211_STA_INFO_RX_PACKETS])
 		ls->rx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_RX_PACKETS]);
 	if (sinfo[NL80211_STA_INFO_RX_DROP_MISC])
 		ls->rx_drop_misc = nla_get_u64(sinfo[NL80211_STA_INFO_RX_DROP_MISC]);
 
-	if (sinfo[NL80211_STA_INFO_TX_BYTES])
-		ls->tx_bytes = nla_get_u32(sinfo[NL80211_STA_INFO_TX_BYTES]);
+	if (sinfo[NL80211_STA_INFO_TX_BYTES64])
+		ls->tx_bytes = nla_get_u64(sinfo[NL80211_STA_INFO_TX_BYTES64]);
 	if (sinfo[NL80211_STA_INFO_TX_PACKETS])
 		ls->tx_packets = nla_get_u32(sinfo[NL80211_STA_INFO_TX_PACKETS]);
 
