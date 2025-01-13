@@ -4279,7 +4279,7 @@ fi
 
       LDFLAGS="$ncurses_save_LDFLAGS"
    fi
-   if test "x$ncurses_script_success" == xno; then
+   if test "x$ncurses_script_success" = xno; then
 
    ncurses_config_script_libs=$("ncursesw6-config" --libs 2> /dev/null)
    ncurses_config_script_cflags=$("ncursesw6-config" --cflags 2> /dev/null)
@@ -4342,7 +4342,7 @@ fi
 
       LDFLAGS="$ncurses_save_LDFLAGS"
    fi
-   if test "x$ncurses_script_success" == xno; then
+   if test "x$ncurses_script_success" = xno; then
 
    ncurses_config_script_libs=$("ncursesw5-config" --libs 2> /dev/null)
    ncurses_config_script_cflags=$("ncursesw5-config" --cflags 2> /dev/null)
@@ -4405,7 +4405,7 @@ fi
 
       LDFLAGS="$ncurses_save_LDFLAGS"
    fi
-   if test "x$ncurses_script_success" == xno; then
+   if test "x$ncurses_script_success" = xno; then
 
    ncurses_config_script_libs=$("ncurses5-config" --libs 2> /dev/null)
    ncurses_config_script_cflags=$("ncurses5-config" --cflags 2> /dev/null)
@@ -4468,7 +4468,7 @@ fi
 
       LDFLAGS="$ncurses_save_LDFLAGS"
    fi
-   if test "x$ncurses_script_success" == xno; then
+   if test "x$ncurses_script_success" = xno; then
       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for addnwstr in -lncursesw" >&5
 printf %s "checking for addnwstr in -lncursesw... " >&6; }
 if test ${ac_cv_lib_ncursesw_addnwstr+y}
