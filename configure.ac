@@ -38,7 +38,7 @@ m4_define([NCURSES_CHECK_CONFIG],
                    ])
       LDFLAGS="$ncurses_save_LDFLAGS"
    fi
-   if test "x$ncurses_script_success" == xno; then
+   if test "x$ncurses_script_success" = xno; then
       [$3]
    fi
 ])
