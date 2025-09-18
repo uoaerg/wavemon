@@ -216,11 +216,17 @@ void if_getinf(const char *ifname, struct if_info *info)
 	nl_cache_foreach(link_cache, if_info_link_cb, info);
 	if (info->master)
 		nl_cache_foreach(link_cache, if_info_link_cb, info->master);
+
 	nl_cache_foreach(addr_cache, if_info_addr_cb, info->master ? info->master : info);
 
+	/* Clean up. */
+	nl_cache_mngt_unprovide(link_cache);
+	nl_cache_put(link_cache);
+
+	nl_cache_mngt_unprovide(addr_cache);
+	nl_cache_put(addr_cache);
+
 	nl_socket_free(sock);
-	nl_cache_free(link_cache);
-	nl_cache_free(addr_cache);
 }
 
 static int iface_list_handler(struct nl_msg *msg, void *arg)
