@@ -83,7 +83,7 @@ int handle_cmd(struct cmd *cmd)
 		free_msg_args(cmd);
 	}
 
-	ret = nl_send_auto_complete(cmd->sk, msg);
+	ret = nl_send_auto(cmd->sk, msg);
 	if (ret < 0)
 		err_sys("failed to send netlink message");
 
@@ -854,7 +854,7 @@ int nl_get_multicast_id(struct nl_sock *sock, const char *family, const char *gr
 	ret = -ENOBUFS;
 	NLA_PUT_STRING(msg, CTRL_ATTR_FAMILY_NAME, family);
 
-	ret = nl_send_auto_complete(sock, msg);
+	ret = nl_send_auto(sock, msg);
 	if (ret < 0)
 		goto out;
 
