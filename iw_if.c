@@ -187,7 +187,7 @@ static void if_info_addr_cb(struct nl_object *obj, void *data) {
 			return;
 		}
 
-		if (!ai->count) {
+		if (!ai->count || (ai == &info->v6 && rtnl_addr_get_prefixlen(addr) < 128)) {
 			const struct nl_addr *local = rtnl_addr_get_local(addr);
 
 			if (!local)
