@@ -30,7 +30,7 @@ static struct iw_nl80211_linkstat *ls_tmp = NULL,
 				  *ls_new = NULL;
 static pthread_mutex_t linkstat_mutex;
 
-/** Sampling pthread - shared by info and histogram screen. */
+/** Sampling pthread - shared by info and level-history screen. */
 static void *sampling_loop(void *arg)
 {
 	const bool do_not_swap_pointers = (bool)arg;

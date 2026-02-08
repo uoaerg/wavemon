@@ -1,4 +1,4 @@
-.TH wavemon 1 "September 2021" Linux "User Manuals"
+.TH wavemon 1 "February 2026" Linux "User Manuals"
 .SH NAME
 wavemon \- a wireless network monitor
 .SH SYNOPSIS
@@ -13,7 +13,7 @@ related device information.
 The \fIwavemon\fR interface splits into different "screens".
 Each screen presents information in a specific manner. For example, the
 "info" screen shows current levels as bargraphs, whereas the "level" screen
-represents the same levels as a moving histogram.
+represents them along a moving timeline.
 
 On startup, you'll see (depending on configuration) one of the different monitor
 screens. At the bottom, you'll find a \fImenu-bar\fR listing the screens and
@@ -62,8 +62,8 @@ to 1), that address is shown only if it does not derive from the interface
 address and prefix length. Likewise, the interface MTU is shown only if it
 differs from the default Ethernet MTU of 1500 bytes.
 .TP
-.B Level histogram (F2 or 'l')
-This is a full-screen histogram plot showing the evolution of the signal
+.B Level history (F2 or 'l')
+This is a full-screen history plot showing the evolution of the signal
 level over time.
 The screen is partitioned into a grid, with dBm levels shown in green at
 the right hand side.

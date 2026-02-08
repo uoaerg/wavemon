@@ -137,7 +137,7 @@ extern struct wavemon_conf {
 		scan_filter_band,	/* 2.4ghz|5ghz|both */
 		lthreshold_action,	/* disabled|beep|flash|beep+flash */
 		hthreshold_action,	/* disabled|beep|flash|beep+flash */
-		startup_scr;		/* info|histogram|aplist */
+		startup_scr;		/* info|history|aplist */
 } conf;
 
 /*

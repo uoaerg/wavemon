@@ -22,13 +22,13 @@
 /* Number of lines in the key window at the bottom */
 #define KEY_WIN_HEIGHT	3
 
-/* Total number of lines in the histogram window */
+/* Total number of lines in the history window */
 #define HIST_WIN_HEIGHT	(WAV_HEIGHT - KEY_WIN_HEIGHT)
 
 /*
  * Analogous to MAXYLEN, the following sets both the
  * - highest y/line index and the
- * - total count of lines inside the histogram window.
+ * - total count of lines inside the history window.
  */
 #define HIST_MAXYLEN	(HIST_WIN_HEIGHT - 1)
 
@@ -159,7 +159,7 @@ void iw_cache_update(struct iw_nl80211_linkstat *ls)
 }
 
 /*
- * Histogram-specific display functions
+ * Level-history display functions
  */
 static double hist_level(double val, int min, int max)
 {
@@ -260,7 +260,7 @@ static void display_key(WINDOW *w_key)
 
 void scr_lhist_init(void)
 {
-	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level histogram", true);
+	w_lhist = newwin_title(0, HIST_WIN_HEIGHT, "Level history", true);
 	w_key   = newwin_title(HIST_MAXYLEN + 1, KEY_WIN_HEIGHT, "Key", false);
 
 	if (last_if_idx != conf.if_idx) {

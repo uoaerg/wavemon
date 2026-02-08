@@ -47,7 +47,7 @@ static char *scan_filter_bands[] = {
 
 static char *screen_names[] = {
 	[SCR_INFO]	= "Info screen",
-	[SCR_LHIST]	= "Histogram",
+	[SCR_LHIST]	= "Level history",
 	[SCR_SCAN]	= "Scan window",
 	NULL
 };
@@ -466,7 +466,7 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Histogram update cycles");
+	item->name	= strdup("Level history update cycles");
 	item->cfname	= strdup("lhist_slot_size");
 	item->type	= t_int;
 	item->v.i	= &conf.slotsize;

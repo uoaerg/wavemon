@@ -1,4 +1,4 @@
-.TH wavemonrc 5 "September 2021" Linux "User Manuals"
+.TH wavemonrc 5 "February 2026" Linux "User Manuals"
 .SH NAME
 $XDG_CONFIG_HOME/wavemon/wavemonrc \- wavemon configuration file
 .SH DESCRIPTION
@@ -72,11 +72,11 @@ Time interval for polling new statistics (including scan refresh). Range: 10..40
 .B lhist_slot_size = <n>
 .RS
 .RE
-(Histogram update cycles)
+(Level history update cycles)
 .RS
-Number of samples used per each histogram slot. For example, if the stat_updates
-interval is 500ms and the histogram slot size is 4, the histogram is moved
-one slot further every 2 seconds. Range: 1..64.
+Number of samples per each level history slot. For example, if the stat_updates
+interval is 500ms and the hslot size is 4, the timeline is advanced by one
+slot every 2 seconds. Range: 1..64.
 .P
 .RE
 .B meter_smoothness = <n>
@@ -104,7 +104,7 @@ refresh interval for the Scan window (F3). Range: 1..60s.
 .RE
 (Override scale autodetect)
 .RS
-Override the auto-scaling of the bar graphs and histogram, allowing you to set your own scales.
+Override the auto-scaling of the bar graphs and level history, allowing you to set your own scales.
 .P
 .RE
 .B min_signal_level, max_signal_level = <n>
@@ -123,7 +123,7 @@ Set the left and right boundaries of the signal level scales. Ranges: \-100..\-3
 Use a transparent background instead of black. This is enabled by default and can only be turned off via the startup file.
 .P
 .RE
-.B startup_screen = (info|histogram|scan window)
+.B startup_screen = (info|history|scan window)
 .RS
 .RE
 (Startup screen)
