@@ -16,9 +16,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "wavemon.h"
+#include "iw_if.h"
 #include <locale.h>
 #include <setjmp.h>
+#include <fcntl.h>
 
 /* GLOBALS */
 
@@ -194,6 +195,84 @@ int main(int argc, char *argv[])
 	init_pair(CP_CYAN_ON_BLUE,	COLOR_CYAN,	COLOR_BLUE);
 	init_pair(CP_BLUE_ON_BLUE,	COLOR_BLUE,	COLOR_BLUE);
 
+	/* If no interface was specified and multiple are available, let user pick. */
+	{
+		size_t n_ifaces = conf_interface_count();
+
+		if (!conf.iface_given && n_ifaces > 1) {
+			int w = COLS > 72 ? 70 : COLS - 2;
+			WINDOW *sel = newwin(n_ifaces + 4, w,
+					     (LINES - (int)n_ifaces - 4) / 2,
+					     (COLS - w) / 2);
+			box(sel, 0, 0);
+			mvwaddstr(sel, 1, 2, "select wireless interface:");
+			for (size_t i = 0; i < n_ifaces; i++) {
+				char line[128], product[96];
+
+				if_get_product(conf_interface_name(i),
+					       product, sizeof(product));
+				snprintf(line, sizeof(line), " %zu) %s (%s)",
+					 i + 1, conf_interface_name(i), product);
+				if ((int)i == conf.if_idx)
+					wattron(sel, A_REVERSE);
+				mvwaddnstr(sel, (int)i + 2, 2, line, w - 4);
+				wattroff(sel, A_REVERSE);
+			}
+			mvwaddstr(sel, (int)n_ifaces + 2, 2,
+				  "arrows/j/k to move, enter to select");
+			wrefresh(sel);
+			keypad(sel, TRUE);
+
+			int choice = conf.if_idx;
+			int key;
+
+			for (;;) {
+				key = wgetch(sel);
+				if (key == '\n' || key == '\r')
+					break;
+				if (key == KEY_UP || key == 'k') {
+					if (choice > 0)
+						choice--;
+				} else if (key == KEY_DOWN || key == 'j') {
+					if (choice < (int)n_ifaces - 1)
+						choice++;
+				} else if (key >= '1' && key < '1' + (int)n_ifaces) {
+					choice = key - '1';
+					break;
+				} else if (key == 'q' || key == 27) {
+					endwin();
+					exit(EXIT_SUCCESS);
+				}
+
+				for (size_t i = 0; i < n_ifaces; i++) {
+					char line[128], product[96];
+
+					if_get_product(conf_interface_name(i),
+						       product, sizeof(product));
+					snprintf(line, sizeof(line),
+						 " %zu) %s (%s)",
+						 i + 1, conf_interface_name(i),
+						 product);
+					if ((int)i == choice)
+						wattron(sel, A_REVERSE);
+					mvwaddnstr(sel, (int)i + 2, 2, line, w - 4);
+					wattroff(sel, A_REVERSE);
+				}
+				wrefresh(sel);
+			}
+			conf.if_idx = choice;
+			delwin(sel);
+			clear();
+			refresh();
+		}
+	}
+
+	/* Check for driver-specific quirks after interface is known. */
+	if_check_driver_quirks(conf_ifname());
+
+	/* Save USB path for carl9170 crash recovery (before ncurses). */
+	carl9170_recovery_init(conf_ifname());
+
 	/* Override signal handlers installed during ncurses initialisation. */
 	xsignal(SIGCHLD, SIG_IGN);
 	xsignal(SIGWINCH, sig_winch);	/* triggers only when env_winch_ready */
@@ -256,6 +335,181 @@ int main(int argc, char *argv[])
 		(*screens[cur].fini)();
 
 		/*
+		 * carl9170 crash: USB present but driver dead.
+		 * Show banner, attempt recovery, show result.
+		 */
+		if (interface_crash) {
+			interface_crash = 0;
+			int mid = LINES / 2, i;
+			int attempts;
+			bool recovered = false;
+			const char *l1 = conf_ifname();
+			char line1[128];
+
+			snprintf(line1, sizeof(line1),
+				 "%s crashed — recovering", l1);
+			attron(COLOR_PAIR(CP_RED) | A_BOLD | A_REVERSE);
+			for (i = mid - 2; i <= mid + 2; i++)
+				mvhline(i, 1, ' ', COLS - 2);
+			mvprintw(mid,
+				 (COLS - (int)strlen(line1)) / 2,
+				 "%s", line1);
+			attroff(COLOR_PAIR(CP_RED) | A_BOLD | A_REVERSE);
+			refresh();
+
+			/* Suppress stderr during recovery (ncurses active) */
+			{
+				int saved_fd = dup(STDERR_FILENO);
+				int null_fd = open("/dev/null", O_WRONLY);
+				if (null_fd >= 0) {
+					dup2(null_fd, STDERR_FILENO);
+					close(null_fd);
+				}
+
+				for (attempts = 0;
+				     attempts < CARL9170_MAX_REBIND_ATTEMPTS;
+				     attempts++) {
+					if (carl9170_recovery_attempt()) {
+						recovered = true;
+						break;
+					}
+				}
+
+				if (saved_fd >= 0) {
+					dup2(saved_fd, STDERR_FILENO);
+					close(saved_fd);
+				}
+			}
+
+			if (recovered) {
+				char ok[128];
+
+				snprintf(ok, sizeof(ok),
+					 "%s recovered", l1);
+				attron(COLOR_PAIR(CP_GREEN) | A_BOLD | A_REVERSE);
+				for (i = mid - 2; i <= mid + 2; i++)
+					mvhline(i, 1, ' ', COLS - 2);
+				mvprintw(mid,
+					 (COLS - (int)strlen(ok)) / 2,
+					 "%s", ok);
+				attroff(COLOR_PAIR(CP_GREEN) | A_BOLD | A_REVERSE);
+				refresh();
+				sleep(3);
+
+				next = cur;
+				goto screen_done;
+			}
+
+			/* Recovery failed — fall through to interface_lost */
+			interface_lost = 1;
+		}
+
+		/*
+		 * Interface lost: try to fall back to another wireless
+		 * interface, or exit if none are available.
+		 */
+		if (interface_recovered) {
+			interface_recovered = 0;
+			conf_get_interface_list();
+
+			/* Find the preferred interface in the new list */
+			for (size_t i = 0; i < conf_interface_count(); i++) {
+				if (strcmp(conf_interface_name(i),
+					   preferred_ifname) == 0) {
+					conf.if_idx = (int)i;
+					break;
+				}
+			}
+
+			carl9170_recovery_init(conf_ifname());
+			if_check_driver_quirks(conf_ifname());
+
+			{
+				char line1[128], line2[64];
+				int mid = LINES / 2, i;
+
+				snprintf(line1, sizeof(line1),
+					 "%s is back", preferred_ifname);
+				snprintf(line2, sizeof(line2),
+					 "switching from %s", conf_ifname());
+				attron(COLOR_PAIR(CP_GREEN) | A_BOLD | A_REVERSE);
+				for (i = mid - 2; i <= mid + 2; i++)
+					mvhline(i, 1, ' ', COLS - 2);
+				mvprintw(mid - 1,
+					 (COLS - (int)strlen(line1)) / 2,
+					 "%s", line1);
+				mvprintw(mid + 1,
+					 (COLS - (int)strlen(line2)) / 2,
+					 "%s", line2);
+				attroff(COLOR_PAIR(CP_GREEN) | A_BOLD | A_REVERSE);
+				refresh();
+				sleep(3);
+			}
+
+			preferred_ifname[0] = '\0';
+			next = cur;
+			goto screen_done;
+		}
+
+		if (interface_lost) {
+			struct interface_info *head = NULL;
+
+			interface_lost = 0;
+			iw_nl80211_get_interface_list(&head);
+
+			if (head) {
+				const char *old_if = conf_ifname();
+				char old_name[IF_NAMESIZE];
+
+				snprintf(old_name, sizeof(old_name),
+					 "%s", old_if);
+
+				/* Remember preferred interface for comeback */
+				if (!preferred_ifname[0])
+					snprintf(preferred_ifname,
+						 sizeof(preferred_ifname),
+						 "%s", old_name);
+
+				conf.if_idx = 0;
+				conf_get_interface_list();
+				free_interface_list(head);
+
+				carl9170_recovery_init(conf_ifname());
+				if_check_driver_quirks(conf_ifname());
+
+				{
+					char line1[128], line2[64];
+					int mid = LINES / 2, i;
+
+					snprintf(line1, sizeof(line1),
+						 "%s lost", old_name);
+					snprintf(line2, sizeof(line2),
+						 "switching to %s",
+						 conf_ifname());
+					attron(COLOR_PAIR(CP_RED) | A_BOLD | A_REVERSE);
+					for (i = mid - 2; i <= mid + 2; i++)
+						mvhline(i, 1, ' ', COLS - 2);
+					mvprintw(mid - 1,
+						 (COLS - (int)strlen(line1)) / 2,
+						 "%s", line1);
+					mvprintw(mid + 1,
+						 (COLS - (int)strlen(line2)) / 2,
+						 "%s", line2);
+					attroff(COLOR_PAIR(CP_RED) | A_BOLD | A_REVERSE);
+					refresh();
+					sleep(3);
+				}
+
+				next = cur;
+				goto screen_done;
+			}
+
+			/* No wireless interfaces at all */
+			endwin();
+			err_quit("all wireless interfaces lost");
+		}
+
+		/*
 		 * next = cur is set in the protected critical section before
 		 * sigsetjmp. Due to the loop condition, it can not occur when
 		 * no SIGWINCH occurred, hence it indicates a resizing event.
@@ -268,6 +522,7 @@ int main(int argc, char *argv[])
 			resizeterm(size.ws_row, size.ws_col);
 			check_geometry();
 		}
+screen_done:
 		clear();
 		refresh();
 	}

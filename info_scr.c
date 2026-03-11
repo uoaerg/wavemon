@@ -18,11 +18,18 @@
  */
 #include "iw_if.h"
 #include "iw_nl80211.h"
+#include <net/if.h>
 
 /* GLOBALS */
 static WINDOW *w_levels, *w_stats, *w_if, *w_info, *w_net;
 static pthread_t sampling_thread;
 static time_t last_update;
+static bool info_have_noise;
+
+volatile sig_atomic_t interface_lost;
+volatile sig_atomic_t interface_recovered;
+volatile sig_atomic_t interface_crash;
+char preferred_ifname[16];
 
 /* Linkstat pointers, shared between sampling thread and UI main thread. */
 static struct iw_nl80211_linkstat *ls_tmp = NULL,
@@ -35,6 +42,7 @@ static void *sampling_loop(void *arg)
 {
 	const bool do_not_swap_pointers = (bool)arg;
 	sigset_t blockmask;
+	int rebind_attempts = 0;
 
 	/* See comment in iw_scan.c for rationale of blocking SIGWINCH. */
 	sigemptyset(&blockmask);
@@ -42,8 +50,27 @@ static void *sampling_loop(void *arg)
 	pthread_sigmask(SIG_BLOCK, &blockmask, NULL);
 
 	do {
+		/* Check if preferred interface came back after fallback */
+		if (preferred_ifname[0] &&
+		    strcmp(preferred_ifname, conf_ifname()) != 0 &&
+		    if_nametoindex(preferred_ifname) != 0) {
+			interface_recovered = 1;
+			return NULL;
+		}
+
 		if (!ls_new && ls_tmp) {
-			iw_nl80211_get_linkstat(ls_tmp);
+			if (iw_nl80211_get_linkstat(ls_tmp) == -ENODEV) {
+				if (!carl9170_is_recoverable() ||
+				    !carl9170_usb_present()) {
+					/* Unplugged or not carl9170 */
+					interface_lost = 1;
+					return NULL;
+				}
+				/* Crash: USB present but driver dead */
+				interface_crash = 1;
+				return NULL;
+			}
+			rebind_attempts = 0;
 			iw_cache_update(ls_tmp);
 
 			if (do_not_swap_pointers)
@@ -89,8 +116,6 @@ static void display_levels(void)
 	 *        satisfactorily, maybe it is better to have a simple
 	 *        solution using 3 levels of different colour.
 	 */
-	int8_t nscale[2] = { conf.noise_min, conf.noise_max },
-	     lvlscale[2] = { -40, -20};
 	char tmp[0x100];
 	int line;
 	bool noise_data_valid;
@@ -109,7 +134,7 @@ static void display_levels(void)
 	if (sig_level > 0)
 		sig_level *= -1;
 
-	for (line = 1; line <= WH_LEVEL; line++)
+	for (line = 1; line < getmaxy(w_levels) - 1; line++)
 		mvwclrtoborder(w_levels, line, 1);
 
 	if (ls_cur->bss_signal_qual) {
@@ -128,71 +153,43 @@ static void display_levels(void)
 
 	line = 1;
 
-	/* Noise data is rare. Use the space for spreading out. */
-	if (!noise_data_valid)
-		line++;
-
-	if (sig_qual == -1) {
-		line++;
-	} else {
+	if (sig_qual != -1) {
 		qual = ewma(qual, sig_qual, conf.meter_decay / 100.0);
 
 		mvwclrtoborder(w_levels, line, 1);
 		mvwaddstr(w_levels, line++, 1, "link quality: ");
 		sprintf(tmp, "%0.f%%  ", (1e2 * qual)/sig_qual_max);
 		waddstr_b(w_levels, tmp);
-		sprintf(tmp, "(%0.f/%d)  ", qual, sig_qual_max);
+		sprintf(tmp, "(%0.f/%d)", qual, sig_qual_max);
 		waddstr(w_levels, tmp);
-
-		waddbar(w_levels, line++, qual, 0, sig_qual_max, lvlscale, true);
 	}
-
-	/* Spacer */
-	line++;
-	if (!noise_data_valid)
-		line++;
 
 	if (sig_level != 0) {
 		signal = ewma(signal, sig_level, conf.meter_decay / 100.0);
 
 		mvwclrtoborder(w_levels, line, 1);
-		mvwaddstr(w_levels, line++, 1, "signal level: ");
+		mvwaddstr(w_levels, line++, 1, "rssi:         ");
 		sprintf(tmp, "%.0f dBm (%s)", signal, dbm2units(signal));
 		waddstr_b(w_levels, tmp);
-
-		waddbar(w_levels, line, signal, conf.sig_min, conf.sig_max,
-			lvlscale, true);
-		if (conf.lthreshold_action)
-			waddthreshold(w_levels, line, signal, conf.lthreshold,
-				      conf.sig_min, conf.sig_max, lvlscale, '>');
-		if (conf.hthreshold_action)
-			waddthreshold(w_levels, line, signal, conf.hthreshold,
-				      conf.sig_min, conf.sig_max, lvlscale, '<');
 	}
-
-	line++;
 
 	if (noise_data_valid) {
 		noise = ewma(noise, ls_cur->survey.noise, conf.meter_decay / 100.0);
 
+		mvwclrtoborder(w_levels, line, 1);
 		mvwaddstr(w_levels, line++, 1, "noise level:  ");
 		sprintf(tmp, "%.0f dBm (%s)", noise, dbm2units(noise));
 		waddstr_b(w_levels, tmp);
-
-		waddbar(w_levels, line++, noise, conf.noise_min, conf.noise_max,
-			nscale, false);
 
 		if (sig_level) {
 			ssnr = ewma(ssnr, sig_level - ls_cur->survey.noise,
 					  conf.meter_decay / 100.0);
 
-			mvwaddstr(w_levels, line++, 1, "SNR:           ");
+			mvwclrtoborder(w_levels, line, 1);
+			mvwaddstr(w_levels, line++, 1, "snr:          ");
 			sprintf(tmp, "%.0f dB", ssnr);
 			waddstr_b(w_levels, tmp);
 		}
-	} else {
-		// Force redraw on next line (needed on some terminals).
-		mvwaddstr(w_levels, line++, 1, "");
 	}
 	wrefresh(w_levels);
 }
@@ -204,7 +201,7 @@ static void display_packet_counts(void)
 	/*
 	 * Interface RX stats
 	 */
-	mvwaddstr(w_stats, 1, 1, "RX: ");
+	mvwaddstr(w_stats, 1, 1, "rx: ");
 
 	if (ls_cur->rx_packets) {
 		sprintf(tmp, "%s (%s)", int_counts(ls_cur->rx_packets),
@@ -241,7 +238,7 @@ static void display_packet_counts(void)
 	/*
 	 * Interface TX stats
 	 */
-	mvwaddstr(w_stats, 2, 1, "TX: ");
+	mvwaddstr(w_stats, 2, 1, "tx: ");
 
 	if (ls_cur->tx_packets) {
 		sprintf(tmp, "%s (%s)", int_counts(ls_cur->tx_packets),
@@ -271,56 +268,14 @@ static void display_packet_counts(void)
 	wrefresh(w_stats);
 }
 
-/** Wireless interface information */
-static void display_interface(WINDOW *w_if, struct iw_nl80211_ifstat *ifs, bool if_is_up)
+static void display_interface_header(void)
 {
-	struct iw_nl80211_reg ir;
-	char tmp[0x100];
+	const struct ether_addr *bssid = NULL;
 
-	iw_nl80211_getreg(&ir);
+	if (!ether_addr_is_zero(&ls_cur->bssid))
+		bssid = &ls_cur->bssid;
 
-	wmove(w_if, 1, 1);
-	waddstr_b(w_if, conf_ifname());
-	waddstr(w_if, " - ");
-
-	if (if_is_up) {
-		/* Wireless device index */
-		waddstr(w_if, "wdev ");
-		sprintf(tmp, "%d", ifs->wdev);
-		waddstr_b(w_if, tmp);
-
-		/* PHY */
-		waddstr(w_if, ", phy ");
-		sprintf(tmp, "%d", ifs->phy_id);
-		waddstr_b(w_if, tmp);
-
-		/* Regulatory domain */
-		waddstr(w_if, ", reg: ");
-		if (ir.region > 0) {
-			waddstr_b(w_if, ir.country);
-			sprintf(tmp, " (%s)", dfs_domain_name(ir.region));
-			waddstr(w_if, tmp);
-		} else {
-			waddstr_b(w_if, "n/a");
-		}
-
-		if (ifs->ssid[0]) {
-			waddstr(w_if, ", SSID: ");
-			waddstr_b(w_if, ifs->ssid);
-		}
-	} else {
-		rfkill_state_t rfkill_state = get_rfkill_state(ifs->wdev);
-
-		if (is_rfkill_blocked_state(rfkill_state)) {
-			sprintf(tmp, "Interface is blocked by %s", rfkill_state_name(rfkill_state));
-		} else {
-			sprintf(tmp, "Interface is DOWN");
-		}
-		wadd_attr_str(w_if, COLOR_PAIR(CP_RED) | A_REVERSE, tmp);
-	}
-
-	wclrtoborder(w_if);
-	wrefresh(w_if);
+	display_link_header(w_if, bssid);
 }
 
 /** General information section */
@@ -774,7 +729,7 @@ static void display_netinfo(WINDOW *w_net, struct if_info *info)
 	wrefresh(w_net);
 }
 
-static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
+static void display_static_parts(WINDOW *w_info, WINDOW *w_net)
 {
 	struct iw_nl80211_ifstat ifs;
 	struct if_info net_info;
@@ -782,12 +737,12 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 	iw_nl80211_getifstat(&ifs);
 	if_getinf(conf_ifname(), &net_info);
 
-	display_interface(w_if, &ifs, net_info.flags & IFF_UP);
+	display_interface_header();
 
 	if (ifinfo_is_up(&net_info)) {
 		display_info(w_info, &ifs);
 	} else {
-		for (int i = 1; i <= WH_INFO; i++)
+		for (int i = 1; i < getmaxy(w_info) - 1; i++)
 			mvwclrtoborder(w_info, i, 1);
 	}
 	wrefresh(w_info);
@@ -795,21 +750,32 @@ static void display_static_parts(WINDOW *w_if, WINDOW *w_info, WINDOW *w_net)
 	display_netinfo(w_net, &net_info);
 }
 
-void scr_info_init(void)
+static void create_info_windows(bool have_noise)
 {
 	int line = 0;
+	int wh_level, wh_net;
+
+	wh_level = have_noise ? 5 : 3;
+
+	w_if	 = newwin_title(line, WH_IFACE, "link", true);
+	line += WH_IFACE;
+	w_levels = newwin_title(line, wh_level,
+				have_noise ? "levels" : "level", true);
+	line += wh_level;
+	w_stats	 = newwin_title(line, WH_STATS, "packet counts", true);
+	line += WH_STATS;
+	w_info	 = newwin_title(line, WH_INFO, "info", true);
+	line += WH_INFO;
+	wh_net = WAV_HEIGHT - line;
+	if (wh_net > WH_NET)
+		wh_net = WH_NET;
+	w_net = newwin_title(line, wh_net, "network", false);
+}
+
+void scr_info_init(void)
+{
 	bool ready = false;
 	static bool initialized = false;
-
-	w_if	 = newwin_title(line, WH_IFACE, "Interface", true);
-	line += WH_IFACE;
-	w_levels = newwin_title(line, WH_LEVEL, "Levels", true);
-	line += WH_LEVEL;
-	w_stats	 = newwin_title(line, WH_STATS, "Packet Counts", true);
-	line += WH_STATS;
-	w_info	 = newwin_title(line, WH_INFO, "Info", true);
-	line += WH_INFO;
-	w_net = newwin_title(line, WH_NET, "Network", false);
 
 	if (!initialized) {
 		pthread_mutexattr_t attr;
@@ -827,11 +793,23 @@ void scr_info_init(void)
 		ready = ls_new && !ls_tmp;
 		pthread_mutex_unlock(&linkstat_mutex);
 	}
+
+	/* First sample is ready — check if noise data is available. */
+	{
+		struct iw_nl80211_linkstat *first = ls_new ? ls_new : ls_cur;
+
+		info_have_noise = first && iw_nl80211_have_survey_data(first);
+	}
+
+	create_info_windows(info_have_noise);
 }
 
 int scr_info_loop(WINDOW *w_menu)
 {
 	time_t now = time(NULL);
+
+	if (interface_lost || interface_recovered || interface_crash)
+		return KEY_F(10);
 
 	if (pthread_mutex_trylock(&linkstat_mutex) == 0) {
 		if (ls_new && !ls_tmp) {
@@ -846,8 +824,9 @@ int scr_info_loop(WINDOW *w_menu)
 
 	if (now - last_update >= conf.info_iv) {
 		last_update = now;
-		display_static_parts(w_if, w_info, w_net);
+		display_static_parts(w_info, w_net);
 	}
+	display_root_warning();
 	return wgetch(w_menu);
 }
 

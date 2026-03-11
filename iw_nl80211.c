@@ -121,8 +121,10 @@ int handle_interface_cmd(struct cmd *cmd)
 {
 	uint32_t ifindex = if_nametoindex(conf_ifname());
 
-	if (ifindex == 0 && errno)
-		err_sys("failed to look up interface index of '%s'", conf_ifname());
+	if (ifindex == 0 && errno) {
+		free_msg_args(cmd);
+		return -ENODEV;
+	}
 
 	/* netdev identifier: interface index */
 	add_msg_arg(cmd, NL80211_ATTR_IFINDEX, sizeof(ifindex), &ifindex);
@@ -660,7 +662,7 @@ static int link_sta_handler(struct nl_msg *msg, void *arg)
 /*
  * COMMAND HANDLERS
  */
-void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
+int iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
 {
 	static struct cmd cmd_linkstat = {
 		.cmd	 = NL80211_CMD_GET_SCAN,
@@ -672,24 +674,30 @@ void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls)
 		.flags	 = 0,
 		.handler = link_sta_handler
 	};
+	int ret;
 
 	cmd_linkstat.handler_arg = ls;
 	memset(ls, 0, sizeof(*ls));
-	handle_interface_cmd(&cmd_linkstat);
+	ret = handle_interface_cmd(&cmd_linkstat);
+	if (ret == -ENODEV)
+		return ret;
 
 	/* If not associated to another station, the bssid is zeroed out */
 	if (ether_addr_is_zero(&ls->bssid))
-		return;
+		return 0;
 	/*
 	 * Details of the associated station
 	 */
 	cmd_getstation.handler_arg  = ls;
 	add_msg_arg(&cmd_getstation, NL80211_ATTR_MAC, sizeof(ls->bssid), &ls->bssid);
 
-	handle_interface_cmd(&cmd_getstation);
+	ret = handle_interface_cmd(&cmd_getstation);
+	if (ret == -ENODEV)
+		return ret;
 
 	/* Channel survey data */
 	iw_nl80211_get_survey(&ls->survey);
+	return 0;
 }
 
 void iw_nl80211_getreg(struct iw_nl80211_reg *ir)

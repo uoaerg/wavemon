@@ -1,3 +1,5 @@
+#ifndef WAVEMON_H
+#define WAVEMON_H
 /*
  * wavemon - a wireless network monitoring application
  *
@@ -19,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <net/ethernet.h>
 #include <signal.h>
 #include <assert.h>
 #include <errno.h>
@@ -131,6 +134,9 @@ extern struct wavemon_conf {
 		override_bounds,	/* Override autodetection */
 		scan_sort_asc,		/* Direction of @scan_sort_order */
 		scan_hidden_essids;	/* Whether to include hidden SSIDs */
+
+	char	ping_target[64];	/* RTT ping target (default: 8.8.8.8) */
+	bool	iface_given;		/* Whether -i was passed on cmdline */
 
 	/* Enumerated values */
 	int	scan_sort_order,	/* channel|signal|open|chan/sig ... */
@@ -268,6 +274,53 @@ static inline int cp_from_scale(float value, int8_t const *cscale, bool reverse)
  */
 extern void conf_get_interface_list(void);
 extern const char *conf_ifname(void);
+extern size_t conf_interface_count(void);
+extern const char *conf_interface_name(size_t idx);
+
+/*
+ *	AP-name mapping (BSSID -> friendly name)
+ */
+extern void ap_names_set_file(const char *path);
+extern void ap_names_load(void);
+extern const char *ap_names_lookup(const struct ether_addr *bssid);
+
+/*
+ *	Shared link header (used by info and level-history screens)
+ */
+extern void display_link_header(WINDOW *w, const struct ether_addr *bssid);
+extern void display_root_warning(void);
+
+/*
+ *	Ping RTT measurement thread
+ */
+extern void ping_start(const char *target);
+extern void ping_stop(void);
+extern bool ping_get_rtt(float *rtt_ms);
+
+/*
+ *	UniFi AP-name sync
+ */
+extern void unifi_sync(bool reset);
+
+/*
+ *	carl9170 USB recovery
+ */
+extern bool carl9170_startup_recovery(void);
+extern void carl9170_recovery_init(const char *ifname);
+extern bool carl9170_is_recoverable(void);
+extern bool carl9170_usb_present(void);
+extern bool carl9170_recovery_attempt(void);
+extern bool carl9170_needs_root(void);
+
+#define CARL9170_MAX_REBIND_ATTEMPTS	3
+
+/*
+ *	Interface loss detection (set by sampling thread)
+ */
+extern volatile sig_atomic_t interface_lost;
+extern volatile sig_atomic_t interface_recovered;
+extern volatile sig_atomic_t interface_crash;
+extern char preferred_ifname[16];
 
 /*
  *	Error handling
@@ -276,6 +329,12 @@ extern bool has_net_admin_capability(void);
 extern void err_msg(const char *format, ...);
 extern void err_quit(const char *format, ...);
 extern void err_sys(const char *format, ...);
+
+/*
+ *	sudo-aware file helpers
+ */
+extern const char *get_real_home(void);
+extern void fix_file_owner(const char *path);
 
 /*
  *	Helper functions
@@ -413,3 +472,5 @@ static inline int reverse_range(int val, int min, int max)
 	assert(min <= val && val <= max);
 	return max - (val - min);
 }
+
+#endif /* WAVEMON_H */

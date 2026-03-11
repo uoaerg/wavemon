@@ -18,6 +18,7 @@
  */
 #include "iw_if.h"
 #include <pwd.h>
+#include <getopt.h>
 #include <netlink/version.h>
 #include <sys/stat.h>
 
@@ -29,7 +30,7 @@ static char *on_off_names[] = { [false] = "Off", [true] = "On", NULL };
 
 static char *sort_order[] = {
 	[SO_CHAN]	= "Channel",
-	[SO_SIGNAL]	= "Signal",
+	[SO_SIGNAL]	= "RSSI",
 	[SO_MAC]	= "MAC",
 	[SO_ESSID]	= "Essid",
 	[SO_OPEN]	= "Open",
@@ -67,6 +68,10 @@ struct wavemon_conf conf = {
 
 	.sig_min		= -100,
 	.sig_max		= -10,
+	.noise_min		= -120,
+	.noise_max		= -30,
+
+	.ping_target		= "8.8.8.8",
 
 	.scan_sort_order	= SO_CHAN_SIG,
 	.scan_sort_asc		= false,
@@ -126,20 +131,102 @@ const char *conf_ifname(void)
 	return if_names[conf.if_idx];
 }
 
-/** Return $HOME directory of current user. */
-static char *get_homedir(void)
+/** Return the number of detected wireless interfaces. */
+size_t conf_interface_count(void)
 {
-	char *homedir = getenv("HOME");
+	return argv_count(if_names);
+}
 
-	if (homedir == NULL) {
-		struct passwd *pw = getpwuid(getuid());
+/** Return the name of the interface at @idx (NULL-terminated). */
+const char *conf_interface_name(size_t idx)
+{
+	return if_names[idx];
+}
 
-		if (pw == NULL)
-			err_quit("can not determine $HOME");
-		homedir = pw->pw_dir;
+/**
+ * Return $HOME of the invoking user (respects sudo and sudo su -).
+ * Resolution order when euid==0:
+ *   1. $SUDO_USER (set by direct sudo invocation)
+ *   2. logname() via getlogin() (survives sudo su -)
+ *   3. $HOME / getpwuid() fallback
+ */
+const char *get_real_home(void)
+{
+	static char cached[256];
+	char *sudo_user;
+	struct passwd *pw;
+
+	if (cached[0])
+		return cached;
+
+	if (geteuid() == 0) {
+		sudo_user = getenv("SUDO_USER");
+		if (!sudo_user)
+			sudo_user = getlogin();
+		if (sudo_user && strcmp(sudo_user, "root") != 0) {
+			pw = getpwnam(sudo_user);
+			if (pw) {
+				snprintf(cached, sizeof(cached),
+					 "%s", pw->pw_dir);
+				return cached;
+			}
+		}
 	}
 
-	return homedir;
+	{
+		char *home = getenv("HOME");
+
+		if (home) {
+			snprintf(cached, sizeof(cached), "%s", home);
+			return cached;
+		}
+	}
+
+	pw = getpwuid(getuid());
+	if (pw == NULL)
+		err_quit("can not determine $HOME");
+	snprintf(cached, sizeof(cached), "%s", pw->pw_dir);
+	return cached;
+}
+
+/**
+ * Fix file ownership after writing under sudo.
+ * Chowns @path to the invoking user (SUDO_UID:SUDO_GID).
+ */
+void fix_file_owner(const char *path)
+{
+	struct passwd *pw;
+	char *user;
+
+	if (geteuid() != 0)
+		return;
+
+	/* Try SUDO_UID/SUDO_GID first (direct sudo) */
+	{
+		char *uid_str = getenv("SUDO_UID");
+		char *gid_str = getenv("SUDO_GID");
+
+		if (uid_str && gid_str) {
+			chown(path, (uid_t)atoi(uid_str),
+			      (gid_t)atoi(gid_str));
+			return;
+		}
+	}
+
+	/* Fallback: resolve via SUDO_USER or login name (sudo su -) */
+	user = getenv("SUDO_USER");
+	if (!user)
+		user = getlogin();
+	if (user && strcmp(user, "root") != 0) {
+		pw = getpwnam(user);
+		if (pw)
+			chown(path, pw->pw_uid, pw->pw_gid);
+	}
+}
+
+static char *get_homedir(void)
+{
+	return (char *)get_real_home();
 }
 
 /** Ensure that @dirpath is available as directory. */
@@ -516,7 +603,7 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Minimum signal level");
+	item->name	= strdup("Minimum RSSI level");
 	item->cfname	= strdup("min_signal_level");
 	item->type	= t_int;
 	item->v.i	= &conf.sig_min;
@@ -528,7 +615,7 @@ static void init_conf_items(void)
 	ll_push(conf_items, "*", item);
 
 	item = calloc(1, sizeof(*item));
-	item->name	= strdup("Maximum signal level");
+	item->name	= strdup("Maximum RSSI level");
 	item->cfname	= strdup("max_signal_level");
 	item->type	= t_int;
 	item->v.i	= &conf.sig_max;
@@ -584,8 +671,17 @@ void getconf(int argc, char *argv[])
 {
 	int arg, help = 0, version = 0;
 	const char *iface = NULL;
+	const char *ap_map = NULL;
+	const char *ping_ip = NULL;
 
-	while ((arg = getopt(argc, argv, "ghi:v")) >= 0) {
+	enum { OPT_UNIFI_SYNC = 256, OPT_UNIFI_RESET };
+	static const struct option long_opts[] = {
+		{ "unifi-sync",  no_argument, NULL, OPT_UNIFI_SYNC },
+		{ "unifi-reset", no_argument, NULL, OPT_UNIFI_RESET },
+		{ NULL, 0, NULL, 0 }
+	};
+
+	while ((arg = getopt_long(argc, argv, "ghi:m:p:v", long_opts, NULL)) >= 0) {
 		switch (arg) {
 		case 'g':
 			conf.check_geometry = true;
@@ -596,9 +692,21 @@ void getconf(int argc, char *argv[])
 		case 'i':
 			iface = optarg;
 			break;
+		case 'm':
+			ap_map = optarg;
+			break;
+		case 'p':
+			ping_ip = optarg;
+			break;
 		case 'v':
 			version++;
 			break;
+		case OPT_UNIFI_SYNC:
+			unifi_sync(false);
+			exit(EXIT_SUCCESS);
+		case OPT_UNIFI_RESET:
+			unifi_sync(true);
+			exit(EXIT_SUCCESS);
 		default:
 			exit(EXIT_FAILURE);
 		}
@@ -609,11 +717,32 @@ void getconf(int argc, char *argv[])
 		printf("Distributed under the terms of the GPLv3.\n%s", help ? "\n" : "");
 	}
 	if (help) {
-		printf("usage: %s [ -hgv ] [ -i ifname ]\n", PACKAGE_NAME);
-		printf("  -g            Ensure screen is sufficiently dimensioned\n");
-		printf("  -h            This help screen\n");
-		printf("  -i <ifname>   Use specified network interface (default: auto)\n");
-		printf("  -v            Print version details\n");
+		printf("usage: %s [ -hgv ] [ -i ifname ] [ -m mapfile ] [ -p ip ]\n", PACKAGE_NAME);
+		printf("  -g              Ensure screen is sufficiently dimensioned\n");
+		printf("  -h              This help screen\n");
+		printf("  -i <ifname>     Use specified network interface (default: auto)\n");
+		printf("  -m <mapfile>    BSSID-to-AP-name mapping file\n");
+		printf("  -p <ip>         Ping target for RTT graph (default: 8.8.8.8)\n");
+		printf("  -v              Print version details\n");
+		printf("  --unifi-sync    Fetch AP names from UniFi controller\n");
+		printf("  --unifi-reset   Re-enter UniFi controller credentials\n");
+		printf("\n");
+		printf("ap-name mapping:\n");
+		printf("  wavemon displays friendly AP names in the link header when a\n");
+		printf("  mapping file is available. Two ways to provide it:\n");
+		printf("\n");
+		printf("  1) UniFi users:  wavemon --unifi-sync\n");
+		printf("     Fetches BSSID/AP-name mappings automatically via the UniFi API.\n");
+		printf("     Requires curl, jq, openssl. API key from https://unifi.ui.com/\n");
+		printf("     > Settings > Control Plane > Integrations.\n");
+		printf("\n");
+		printf("  2) Manual/other vendors:  wavemon -m <mapfile>\n");
+		printf("     Provide a CSV file (or place it at ~/.wavemon/ap_names.map).\n");
+		printf("     Format (RFC 4180 CSV with header row):\n");
+		printf("       bssid,ap_name,ssid\n");
+		printf("       aa:bb:cc:dd:ee:ff,my-access-point,MySSID\n");
+		printf("       11:22:33:44:55:66,office-ap,GuestWiFi\n");
+		printf("     The ssid column is optional.\n");
 	}
 
 	if (version || help) {
@@ -621,6 +750,7 @@ void getconf(int argc, char *argv[])
 	}
 
 	/* Actual initialization. */
+	carl9170_startup_recovery();
 	conf_get_interface_list();
 	init_conf_items();
 	read_cf();
@@ -629,7 +759,25 @@ void getconf(int argc, char *argv[])
 		conf.if_idx = argv_find(if_names, iface);
 		if (conf.if_idx < 0)
 			err_quit("%s is not a usable wireless interface", iface);
+		conf.iface_given = true;
 	}
+
+	if (ap_map) {
+		ap_names_set_file(ap_map);
+		ap_names_load();
+	} else {
+		char default_map[256];
+
+		snprintf(default_map, sizeof(default_map),
+			 "%s/.wavemon/ap_names.map", get_homedir());
+		if (default_map[0] && access(default_map, R_OK) == 0) {
+			ap_names_set_file(default_map);
+			ap_names_load();
+		}
+	}
+
+	if (ping_ip)
+		snprintf(conf.ping_target, sizeof(conf.ping_target), "%s", ping_ip);
 
 	atexit(write_cf);
 }

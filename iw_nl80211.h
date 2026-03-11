@@ -218,7 +218,7 @@ struct iw_nl80211_linkstat {
 	 */
 	struct iw_nl80211_survey	survey;
 };
-extern void iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
+extern int  iw_nl80211_get_linkstat(struct iw_nl80211_linkstat *ls);
 extern void iw_cache_update(struct iw_nl80211_linkstat *ls);
 
 /* Indicate whether @ls contains usable channel survey data */

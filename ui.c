@@ -17,6 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "wavemon.h"
+#include "iw_if.h"
+#include "iw_nl80211.h"
 
 /**
  * newwin_title  -  Create a new bordered window at (y, 0)
@@ -152,4 +154,109 @@ void waddthreshold(WINDOW *win, int y, float v, float tv,
 
 		mvwaddch(win, y, 1 + MAXXLEN * interpolate(tv, minv, maxv), tch);
 	}
+}
+
+void display_link_header(WINDOW *w, const struct ether_addr *bssid)
+{
+	char buf[512];
+	struct iw_nl80211_ifstat ifs;
+	bool iface_exists;
+
+	wmove(w, 1, 1);
+	wclrtoborder(w);
+
+	wattrset(w, COLOR_PAIR(CP_STANDARD));
+	waddstr(w, "if: ");
+	waddstr_b(w, conf_ifname());
+
+	iface_exists = if_nametoindex(conf_ifname()) != 0;
+
+	if (!iface_exists) {
+		wattrset(w, COLOR_PAIR(CP_RED) | A_BOLD);
+		waddstr(w, " | device unavailable");
+		if (carl9170_needs_root()) {
+			wattrset(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+			waddstr(w, " | run with sudo for auto-recovery");
+		}
+		wattrset(w, COLOR_PAIR(CP_STANDARD));
+		wrefresh(w);
+		return;
+	}
+
+	memset(&ifs, 0, sizeof(ifs));
+	iw_nl80211_getifstat(&ifs);
+
+	{
+		char drv[32], product[128];
+
+		if_get_driver(conf_ifname(), drv, sizeof(drv));
+		if_get_product(conf_ifname(), product, sizeof(product));
+
+		snprintf(buf, sizeof(buf), " (%s, %s)", product, drv);
+		wattrset(w, COLOR_PAIR(CP_STANDARD) | A_DIM);
+		waddstr(w, buf);
+		wattrset(w, COLOR_PAIR(CP_STANDARD));
+	}
+
+	if (ifs.ssid[0]) {
+		const char *ap_name = bssid ? ap_names_lookup(bssid) : NULL;
+		int chan = ieee80211_frequency_to_channel(ifs.freq);
+		const char *width = channel_width_name(ifs.chan_width);
+
+		waddstr(w, " | ssid: ");
+		wattrset(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+		waddstr(w, ifs.ssid);
+		wattrset(w, COLOR_PAIR(CP_STANDARD));
+
+		if (ap_name) {
+			snprintf(buf, sizeof(buf), " (%s)", ap_name);
+			wattrset(w, COLOR_PAIR(CP_CYAN));
+			waddstr(w, buf);
+			wattrset(w, COLOR_PAIR(CP_STANDARD));
+		}
+
+		if (bssid) {
+			snprintf(buf, sizeof(buf),
+				 " | bssid: %02X:%02X:%02X:%02X:%02X:%02X",
+				 bssid->ether_addr_octet[0],
+				 bssid->ether_addr_octet[1],
+				 bssid->ether_addr_octet[2],
+				 bssid->ether_addr_octet[3],
+				 bssid->ether_addr_octet[4],
+				 bssid->ether_addr_octet[5]);
+			waddstr(w, buf);
+		}
+
+		snprintf(buf, sizeof(buf),
+			 " | freq: %u MHz | ch: %d | width: %s | tx-pwr: %.0f dBm",
+			 ifs.freq, chan, width, ifs.tx_power);
+		waddstr(w, buf);
+	} else {
+		wattrset(w, COLOR_PAIR(CP_YELLOW));
+		waddstr(w, " | not associated");
+		wattrset(w, COLOR_PAIR(CP_STANDARD));
+	}
+
+	wrefresh(w);
+}
+
+void display_root_warning(void)
+{
+	const char *line1 = "carl9170 USB crash recovery needs root";
+	const char *line2 = "restart with:  sudo wavemon";
+	int mid = WAV_HEIGHT / 2;
+	int i;
+
+	if (!carl9170_needs_root())
+		return;
+
+	/* Full-width red bars: blank line, message, blank line, hint, blank line */
+	attron(COLOR_PAIR(CP_RED) | A_BOLD | A_REVERSE);
+	for (i = mid - 2; i <= mid + 2; i++) {
+		mvhline(i, 1, ' ', COLS - 2);
+	}
+	mvprintw(mid - 1, (COLS - (int)strlen(line1)) / 2, "%s", line1);
+	mvprintw(mid + 1, (COLS - (int)strlen(line2)) / 2, "%s", line2);
+	attroff(COLOR_PAIR(CP_RED) | A_BOLD | A_REVERSE);
+	refresh();
 }

@@ -128,6 +128,11 @@ extern int  if_set_up(const char *ifname);
 extern void if_set_down_on_exit(void);
 extern void if_getinf(const char *ifname, struct if_info *info);
 
+/** Driver and hardware identification. */
+extern void if_get_driver(const char *ifname, char *buf, size_t len);
+extern void if_get_product(const char *ifname, char *buf, size_t len);
+extern void if_check_driver_quirks(const char *ifname);
+
 /** Interface bonding. */
 extern const char *get_bonding_mode(const char *bonding_iface);
 extern bool is_primary_slave(const char *bonding_iface, const char *slave);
@@ -137,6 +142,10 @@ extern bool is_primary_slave(const char *bonding_iface, const char *slave);
  */
 struct iw_levelstat {
 	float	signal;		/* Signal level in dBm. */
+	float	noise;		/* Noise level in dBm. */
+	float	rtt_ms;		/* Ping RTT in milliseconds. */
+	bool	noise_valid;	/* Whether a valid @noise was registered. */
+	bool	rtt_valid;	/* Whether a valid RTT was registered. */
 	bool	valid;		/* Whether a valid @signal was registered. */
 };
 

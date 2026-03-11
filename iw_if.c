@@ -94,6 +94,229 @@ void if_set_down_on_exit(void)
 	}
 }
 
+/*
+ * Driver and chip vendor identification via sysfs.
+ */
+static const struct {
+	uint16_t	id;
+	const char	*name;
+} pci_wifi_vendors[] = {
+	{ 0x8086, "Intel" },
+	{ 0x168c, "Qualcomm Atheros" },
+	{ 0x14e4, "Broadcom" },
+	{ 0x10ec, "Realtek" },
+	{ 0x1814, "Ralink" },
+	{ 0x02d0, "Broadcom (SDIO)" },
+	{ 0x1ae9, "Wilocity" },
+	{ 0x17cb, "Qualcomm" },
+	{ 0x1a3b, "AzureWave" },
+	{ 0,      NULL }
+};
+
+static const struct {
+	uint16_t	id;
+	const char	*name;
+} usb_wifi_vendors[] = {
+	{ 0x0cf3, "Qualcomm Atheros" },
+	{ 0x0bda, "Realtek" },
+	{ 0x148f, "Ralink" },
+	{ 0x8086, "Intel" },
+	{ 0x2357, "TP-Link" },
+	{ 0x0b05, "ASUS" },
+	{ 0x7392, "Edimax" },
+	{ 0x2001, "D-Link" },
+	{ 0x0846, "Netgear" },
+	{ 0x057c, "AVM" },
+	{ 0x0e8d, "MediaTek" },
+	{ 0x2c4e, "MediaTek" },
+	{ 0x0411, "Buffalo" },
+	{ 0x13b1, "Linksys" },
+	{ 0x050d, "Belkin" },
+	{ 0x20f4, "TRENDnet" },
+	{ 0x1058, "Western Digital" },
+	{ 0x0586, "ZyXEL" },
+	{ 0x1737, "Linksys" },
+	{ 0x1740, "Senao" },
+	{ 0x0df6, "Sitecom" },
+	{ 0x07b8, "AboCom" },
+	{ 0x15a9, "Gemtek" },
+	{ 0x04bb, "I-O Data" },
+	{ 0x1eda, "AirTies" },
+	{ 0x2604, "Tenda" },
+	{ 0x0e66, "Hawking" },
+	{ 0x1286, "Marvell" },
+	{ 0x1b75, "Ovislink" },
+	{ 0x13d3, "IMC Networks" },
+	{ 0x0ace, "ZyDAS" },
+	{ 0x0cde, "Z-Com" },
+	{ 0x1435, "Wistron NeWeb" },
+	{ 0x083a, "Accton" },
+	{ 0x0409, "NEC" },
+	{ 0x0471, "Philips" },
+	{ 0x06f8, "Guillemot" },
+	{ 0,      NULL }
+};
+
+static const char *lookup_vendor(uint16_t id, bool usb)
+{
+	if (usb) {
+		for (int i = 0; usb_wifi_vendors[i].name; i++)
+			if (usb_wifi_vendors[i].id == id)
+				return usb_wifi_vendors[i].name;
+	} else {
+		for (int i = 0; pci_wifi_vendors[i].name; i++)
+			if (pci_wifi_vendors[i].id == id)
+				return pci_wifi_vendors[i].name;
+	}
+	return NULL;
+}
+
+void if_get_driver(const char *ifname, char *buf, size_t len)
+{
+	char link[256], resolved[256];
+
+	snprintf(link, sizeof(link), "/sys/class/net/%s/device/driver", ifname);
+	ssize_t n = readlink(link, resolved, sizeof(resolved) - 1);
+	if (n > 0) {
+		resolved[n] = '\0';
+		const char *base = strrchr(resolved, '/');
+		snprintf(buf, len, "%s", base ? base + 1 : resolved);
+	} else {
+		snprintf(buf, len, "unknown");
+	}
+}
+
+/**
+ * Lookup vendor + device name from /usr/share/misc/pci.ids.
+ * Format: vendor line at col 0 ("8086  Intel Corporation"),
+ *         device line indented by tab ("\t51f1  Raptor Lake PCH CNVi WiFi").
+ * Writes "Vendor Device" into @buf, e.g. "Intel Corporation Raptor Lake PCH CNVi WiFi".
+ */
+static bool pci_ids_lookup(uint16_t vendor, uint16_t device, char *buf, size_t len)
+{
+	static const char *pci_ids_paths[] = {
+		"/usr/share/misc/pci.ids",
+		"/usr/share/hwdata/pci.ids",
+		NULL
+	};
+	FILE *fp = NULL;
+	char line[256], vendor_name[256] = "", dev_name[256] = "";
+	char vhex[8], dhex[8];
+	bool in_vendor = false;
+
+	for (int i = 0; pci_ids_paths[i]; i++) {
+		fp = fopen(pci_ids_paths[i], "r");
+		if (fp)
+			break;
+	}
+	if (!fp)
+		return false;
+
+	snprintf(vhex, sizeof(vhex), "%04x", vendor);
+	snprintf(dhex, sizeof(dhex), "%04x", device);
+
+	while (fgets(line, sizeof(line), fp)) {
+		if (line[0] == '#' || line[0] == '\n')
+			continue;
+
+		if (!isspace(line[0])) {
+			/* Vendor line */
+			if (in_vendor)
+				break;	/* past our vendor, device not found */
+			if (strncmp(line, vhex, 4) == 0 && line[4] == ' ') {
+				char *p = line + 4;
+				while (*p == ' ') p++;
+				char *nl = strchr(p, '\n');
+				if (nl) *nl = '\0';
+				snprintf(vendor_name, sizeof(vendor_name), "%s", p);
+				in_vendor = true;
+			}
+		} else if (in_vendor && line[0] == '\t' && line[1] != '\t') {
+			/* Device line (single tab) */
+			if (strncmp(line + 1, dhex, 4) == 0 && line[5] == ' ') {
+				char *p = line + 5;
+				while (*p == ' ') p++;
+				char *nl = strchr(p, '\n');
+				if (nl) *nl = '\0';
+				snprintf(dev_name, sizeof(dev_name), "%s", p);
+				break;
+			}
+		}
+	}
+	fclose(fp);
+
+	if (vendor_name[0] && dev_name[0]) {
+		snprintf(buf, len, "%s %s", vendor_name, dev_name);
+		return true;
+	}
+	if (vendor_name[0]) {
+		snprintf(buf, len, "%s", vendor_name);
+		return true;
+	}
+	return false;
+}
+
+void if_get_product(const char *ifname, char *buf, size_t len)
+{
+	char path[256], val[128];
+
+	/* USB devices: read product string directly */
+	snprintf(path, sizeof(path), "/sys/class/net/%s/device/../product", ifname);
+	if (read_file(path, val, sizeof(val)) > 0) {
+		snprintf(buf, len, "%s", val);
+		return;
+	}
+
+	/* PCI devices: lookup vendor+device in pci.ids */
+	{
+		char vbuf[16], dbuf[16];
+		uint16_t vendor_id, device_id;
+
+		snprintf(path, sizeof(path), "/sys/class/net/%s/device/vendor", ifname);
+		if (read_file(path, vbuf, sizeof(vbuf)) <= 0)
+			goto fallback;
+		snprintf(path, sizeof(path), "/sys/class/net/%s/device/device", ifname);
+		if (read_file(path, dbuf, sizeof(dbuf)) <= 0)
+			goto fallback;
+
+		if (sscanf(vbuf, "%hx", &vendor_id) == 1 &&
+		    sscanf(dbuf, "%hx", &device_id) == 1 &&
+		    pci_ids_lookup(vendor_id, device_id, buf, len))
+			return;
+
+		/* pci.ids lookup failed — fall back to vendor table */
+		const char *name = lookup_vendor(vendor_id, false);
+		if (name) {
+			snprintf(buf, len, "%s (0x%04x)", name, device_id);
+			return;
+		}
+		snprintf(buf, len, "0x%04x:0x%04x", vendor_id, device_id);
+		return;
+	}
+
+fallback:
+	snprintf(buf, len, "unknown");
+}
+
+void if_check_driver_quirks(const char *ifname)
+{
+	char drv[32], path[256], val[8];
+
+	if_get_driver(ifname, drv, sizeof(drv));
+
+	if (strcmp(drv, "carl9170") == 0) {
+		snprintf(path, sizeof(path),
+			 "/sys/module/carl9170/parameters/nohwcrypt");
+		if (read_file(path, val, sizeof(val)) > 0 && val[0] == 'N')
+			err_quit("carl9170 on %s: hardware crypto is enabled.\n"
+				 "This causes instability. Disable it:\n\n"
+				 "  sudo modprobe -r carl9170 && sudo modprobe carl9170 nohwcrypt=1\n\n"
+				 "To make it permanent:\n"
+				 "  echo 'options carl9170 nohwcrypt=1' | sudo tee /etc/modprobe.d/carl9170.conf",
+				 ifname);
+	}
+}
+
 /**
  * Return bonding mode of @bonding_iface, or NULL if not appropriate.
  * https://www.kernel.org/doc/Documentation/networking/bonding.txt for possible modes.
