@@ -1,5 +1,6 @@
 /*
  * Auxiliary declarations and functions to process and parse scan events.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "iw_scan.h"
 #include <search.h>

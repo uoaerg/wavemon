@@ -1,5 +1,7 @@
 /*
  * General-purpose utilities used by multiple files.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "wavemon.h"
 #include "nl80211.h"

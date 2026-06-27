@@ -2,6 +2,8 @@
  * Routines to check and describe the rfkill state of a wireless interface.
  *
  * Based on https://www.kernel.org/doc/Documentation/ABI/stable/sysfs-class-rfkill
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "iw_if.h"
 #include <string.h>

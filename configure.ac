@@ -1,4 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
+dnl SPDX-License-Identifier: GPL-3.0-or-later
 AC_PREREQ([2.71])
 AC_INIT([wavemon],[0.9.7],[https://github.com/uoaerg/wavemon],[wavemon-current],[https://github.com/uoaerg/wavemon])
 

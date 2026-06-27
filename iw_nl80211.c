@@ -1,5 +1,6 @@
 /*
  * nl80211 calls and utilies. These were mostly taken from the iw code.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "wavemon.h"
 #include <net/if.h>

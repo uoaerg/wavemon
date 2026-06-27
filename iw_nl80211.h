@@ -1,5 +1,6 @@
 /*
  * Definitions and functions for nl80211 based routines.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include <stdbool.h>
 #include <netinet/ether.h>

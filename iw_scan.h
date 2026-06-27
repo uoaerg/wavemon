@@ -1,5 +1,6 @@
 /*
  * Scan-related definitions.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "iw_if.h"
 

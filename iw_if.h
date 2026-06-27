@@ -1,6 +1,7 @@
 /*
  * wavemon - a wireless network monitoring application
- *
+
+ * SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (c) 2001-2002 Jan Morgenstern <jan@jm-music.de>
  *
  * This program is free software: you can redistribute it and/or modify
