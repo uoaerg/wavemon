@@ -13,6 +13,10 @@ See the man page for an in-depth description of operation and configuration.
 
 Apart from debian/ubuntu packages (`apt-cache search wavemon`) and [slackbuild  scripts for wavemon](https://slackbuilds.org/result/?search=wavemon&sv=), this repository contains the full source code.
 
+## License
+
+This project is licensed under the GNU General Public License v3.0 or later - see the [`LICENSE`](LICENSE) file for details.
+
 ### Dependencies
 
 Minimally the following are required:
