@@ -12,6 +12,7 @@
  * Copyright 2008 Colin McCabe <colin@cozybit.com>
  * Copyright 2015-2017	Intel Deutschland GmbH
  * Copyright (C) 2018-2026 Intel Corporation
+ * Copyright 2026, Gerrit Renker, to fix compiler warning.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -6598,7 +6599,7 @@ enum nl80211_feature_flags {
 	NL80211_FEATURE_TDLS_CHANNEL_SWITCH		= 1 << 28,
 	NL80211_FEATURE_SCAN_RANDOM_MAC_ADDR		= 1 << 29,
 	NL80211_FEATURE_SCHED_SCAN_RANDOM_MAC_ADDR	= 1 << 30,
-	NL80211_FEATURE_ND_RANDOM_MAC_ADDR		= 1U << 31,
+	NL80211_FEATURE_ND_RANDOM_MAC_ADDR		= (int)0x80000000, // Note(Gerrit): 1U << 31 causes compiler warning.
 };
 
 /**
