@@ -3,7 +3,6 @@
 /*
  * 802.11 netlink interface public header
  *
- * SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright 2006-2010 Johannes Berg <johannes@sipsolutions.net>
  * Copyright 2008 Michael Wu <flamingice@sourmilk.net>
  * Copyright 2008 Luis Carlos Cobo <luisca@cozybit.com>
