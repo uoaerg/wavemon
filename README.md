@@ -15,8 +15,9 @@ Apart from debian/ubuntu packages (`apt-cache search wavemon`) and [slackbuild  
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 or later - see the [`LICENSE`](LICENSE) file for details.
-Source code files carry `SPDX-License-Identifier: GPL-3.0-or-later` to mark the "or later" part of the license.
+This project is licensed under the GNU General Public License v3.0 or later - see the [`LICENSE`](LICENSE) file for details,
+as well as the `SPDX-License-Identifier` for `GPL-3.0-or-later` in the source files.
+It includes third-party [code](nl80211.h) from the `iw` utility, which is licensed under the ISC License (see [`LICENSE.iw`](LICENSE.iw)).
 
 ### Dependencies
 
